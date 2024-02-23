@@ -15,7 +15,7 @@ env:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: pub-hk-ubuntu-22.04-small # TODO: change to ubuntu-latest once repo is public
     steps:
       - name: Checkout
         uses: actions/checkout@v4
