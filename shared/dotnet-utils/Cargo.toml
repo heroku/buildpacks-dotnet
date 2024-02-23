@@ -1,0 +1,7 @@
+[package]
+name = "heroku-dotnet-utils"
+rust-version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
