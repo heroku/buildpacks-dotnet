@@ -1,0 +1,29 @@
+[workspace]
+resolver = "2"
+members = [
+    "shared/dotnet-utils"
+]
+
+[workspace.package]
+rust-version = "1.76"
+edition = "2021"
+
+[workspace.lints.rust]
+unreachable_pub = "warn"
+unsafe_code = "warn"
+unused_crate_dependencies = "warn"
+
+[workspace.lints.clippy]
+panic_in_result_fn = "warn"
+pedantic = "warn"
+unwrap_used = "warn"
+enum_variant_names = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+
+[workspace.dependencies]
+heroku-dotnet-utils = { path = "./shared/dotnet-utils" }
+
+[profile.release]
+strip = true
