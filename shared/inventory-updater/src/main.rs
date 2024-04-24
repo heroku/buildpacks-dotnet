@@ -12,7 +12,7 @@ use std::{env, fs, process};
 /// Updates the local .NET SDK inventory.toml with artifacts published in the upstream feed.
 fn main() {
     let inventory_path = env::args().nth(1).unwrap_or_else(|| {
-        eprintln!("Usage: update_inventory <path/to/inventory.toml>");
+        eprintln!("Usage: inventory-updater <path/to/inventory.toml>");
         process::exit(2);
     });
 
