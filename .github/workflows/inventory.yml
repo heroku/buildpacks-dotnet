@@ -1,0 +1,61 @@
+name: Update Inventory
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '00 4 * * 1-5'
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-dotnet-inventory:
+    name: Update .NET SDK inventory
+    runs-on: pub-hk-ubuntu-22.04-small
+    steps:
+      - uses: heroku/use-app-token-action@main
+        id: generate-token
+        with:
+          app_id: ${{ vars.LINGUIST_GH_APP_ID }}
+          private_key: ${{ secrets.LINGUIST_GH_PRIVATE_KEY }}
+
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - id: install-rust-toolchain
+        name: Install Rust Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Rebuild Inventory
+        id: rebuild-inventory
+        run: |
+          delimiter="$(openssl rand -hex 8)"
+          {
+            echo "msg<<${delimiter}"
+            cargo run --bin inventory-updater buildpacks/dotnet/inventory.toml
+            echo "${delimiter}"
+          } >> $GITHUB_OUTPUT
+
+      - name: Update Changelog
+        run: echo "${{ steps.rebuild-inventory.outputs.msg }}" | xargs -r -I '{}' perl -i -p -e 's/\[Unreleased\]\s+/[Unreleased]\n\n- {}/' CHANGELOG.md
+
+      - name: Create Pull Request
+        id: pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ steps.generate-token.outputs.app_token }}
+          title: "Update .NET Inventory"
+          commit-message: "Update Inventory for heroku/dotnet\n\n${{ steps.rebuild-inventory.outputs.msg }}"
+          committer: ${{ vars.LINGUIST_GH_APP_USERNAME }} <${{ vars.LINGUIST_GH_APP_EMAIL }}>
+          author: ${{ vars.LINGUIST_GH_APP_USERNAME }} <${{ vars.LINGUIST_GH_APP_EMAIL }}>
+          branch: update-dotnet-inventory
+          body: "Automated pull-request to update heroku/dotnet inventory:\n\n${{ steps.rebuild-inventory.outputs.msg }}"
+
+      - name: Configure PR
+        if: steps.pr.outputs.pull-request-operation == 'created'
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.app_token }}
+        run: gh pr merge --squash --auto "${{ steps.pr.outputs.pull-request-number }}"
