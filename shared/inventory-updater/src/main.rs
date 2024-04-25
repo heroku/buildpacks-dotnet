@@ -1,6 +1,6 @@
 use heroku_inventory_utils::checksum::Checksum;
 use heroku_inventory_utils::inv::{read_inventory_file, Arch, Artifact, Inventory, Os};
-use keep_a_changelog::ChangeGroup;
+use keep_a_changelog::{ChangeGroup, Changelog};
 use semver::Version;
 use serde::Deserialize;
 use sha2::Sha512;
@@ -54,11 +54,10 @@ fn main() {
         process::exit(1);
     });
 
-    let mut changelog =
-        keep_a_changelog::Changelog::from_str(&changelog_contents).unwrap_or_else(|e| {
-            eprintln!("Error parsing changelog at '{changelog_path}': {e}");
-            process::exit(1);
-        });
+    let mut changelog = Changelog::from_str(&changelog_contents).unwrap_or_else(|e| {
+        eprintln!("Error parsing changelog at '{changelog_path}': {e}");
+        process::exit(1);
+    });
 
     [
         (ChangeGroup::Added, &remote_artifacts - &inventory_artifacts),
