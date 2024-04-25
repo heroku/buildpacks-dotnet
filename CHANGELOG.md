@@ -10,3 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Initial release
+- Inventory .NET SDKs: 8.0.103 (linux-amd64), 8.0.202 (linux-amd64)
+
+### Removed
+
+- Inventory .NET SDKs: 8.0.202 (linux-amd64)
