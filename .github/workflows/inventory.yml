@@ -31,16 +31,7 @@ jobs:
 
       - name: Rebuild Inventory
         id: rebuild-inventory
-        run: |
-          delimiter="$(openssl rand -hex 8)"
-          {
-            echo "msg<<${delimiter}"
-            cargo run --bin inventory-updater buildpacks/dotnet/inventory.toml
-            echo "${delimiter}"
-          } >> $GITHUB_OUTPUT
-
-      - name: Update Changelog
-        run: echo "${{ steps.rebuild-inventory.outputs.msg }}" | xargs -r -I '{}' perl -i -p -e 's/\[Unreleased\]\s+/[Unreleased]\n\n- {}/' CHANGELOG.md
+        run: cargo run --bin inventory-updater buildpacks/dotnet/inventory.toml CHANGELOG.md
 
       - name: Create Pull Request
         id: pr
@@ -48,11 +39,11 @@ jobs:
         with:
           token: ${{ steps.generate-token.outputs.app_token }}
           title: "Update .NET Inventory"
-          commit-message: "Update Inventory for heroku/dotnet\n\n${{ steps.rebuild-inventory.outputs.msg }}"
+          commit-message: "Update Inventory for heroku/dotnet"
           committer: ${{ vars.LINGUIST_GH_APP_USERNAME }} <${{ vars.LINGUIST_GH_APP_EMAIL }}>
           author: ${{ vars.LINGUIST_GH_APP_USERNAME }} <${{ vars.LINGUIST_GH_APP_EMAIL }}>
           branch: update-dotnet-inventory
-          body: "Automated pull-request to update heroku/dotnet inventory:\n\n${{ steps.rebuild-inventory.outputs.msg }}"
+          body: "Automated pull-request to update heroku/dotnet inventory"
 
       - name: Configure PR
         if: steps.pr.outputs.pull-request-operation == 'created'

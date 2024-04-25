@@ -1,15 +1,22 @@
 use heroku_inventory_utils::checksum::Checksum;
 use heroku_inventory_utils::inv::{read_inventory_file, Arch, Artifact, Inventory, Os};
+use keep_a_changelog::ChangeGroup;
 use semver::Version;
 use serde::Deserialize;
 use sha2::Sha512;
 use std::collections::HashSet;
+use std::str::FromStr;
 use std::{env, fs, process};
 
 /// Updates the local .NET SDK inventory.toml with artifacts published in the upstream feed.
 fn main() {
     let inventory_path = env::args().nth(1).unwrap_or_else(|| {
-        eprintln!("Usage: inventory-updater <path/to/inventory.toml>");
+        eprintln!("Usage: inventory-updater <path/to/inventory.toml> <path/to/CHANGELOG.md>");
+        process::exit(2);
+    });
+
+    let changelog_path = env::args().nth(2).unwrap_or_else(|| {
+        eprintln!("Usage: inventory-updater <path/to/inventory.toml> <path/to/CHANGELOG.md>");
         process::exit(2);
     });
 
@@ -42,23 +49,44 @@ fn main() {
     let remote_artifacts: HashSet<Artifact<Version, Sha512>> =
         inventory.artifacts.into_iter().collect();
 
+    let changelog_contents = fs::read_to_string(changelog_path.clone()).unwrap_or_else(|e| {
+        eprintln!("Error reading changelog at '{changelog_path}': {e}");
+        process::exit(1);
+    });
+
+    let mut changelog =
+        keep_a_changelog::Changelog::from_str(&changelog_contents).unwrap_or_else(|e| {
+            eprintln!("Error parsing changelog at '{changelog_path}': {e}");
+            process::exit(1);
+        });
+
     [
-        ("Added", &remote_artifacts - &inventory_artifacts),
-        ("Removed", &inventory_artifacts - &remote_artifacts),
+        (ChangeGroup::Added, &remote_artifacts - &inventory_artifacts),
+        (
+            ChangeGroup::Removed,
+            &inventory_artifacts - &remote_artifacts,
+        ),
     ]
     .iter()
     .filter(|(_, artifact_diff)| !artifact_diff.is_empty())
     .for_each(|(action, artifacts)| {
         let mut list: Vec<&Artifact<Version, Sha512>> = artifacts.iter().collect();
         list.sort_by_key(|a| &a.version);
-        println!(
-            "{} {}.",
-            action,
-            list.iter()
-                .map(ToString::to_string)
-                .collect::<Vec<_>>()
-                .join(", ")
+        changelog.unreleased.add(
+            action.clone(),
+            format!(
+                "Inventory .NET SDKs: {}",
+                list.iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            ),
         );
+    });
+
+    fs::write(changelog_path, changelog.to_string()).unwrap_or_else(|e| {
+        eprintln!("Failed to write to changelog: {e}");
+        process::exit(1);
     });
 }
 
