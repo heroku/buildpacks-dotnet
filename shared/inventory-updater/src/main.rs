@@ -1,6 +1,3 @@
-// Required due to: https://github.com/rust-lang/rust/issues/95513
-#![allow(unused_crate_dependencies)]
-
 use heroku_inventory_utils::checksum::Checksum;
 use heroku_inventory_utils::inv::{read_inventory_file, Arch, Artifact, Inventory, Os};
 use semver::Version;
