@@ -12,12 +12,12 @@ use std::{env, fs, process};
 fn main() {
     let inventory_path = env::args().nth(1).unwrap_or_else(|| {
         eprintln!("Usage: inventory-updater <path/to/inventory.toml> <path/to/CHANGELOG.md>");
-        process::exit(2);
+        process::exit(1);
     });
 
     let changelog_path = env::args().nth(2).unwrap_or_else(|| {
         eprintln!("Usage: inventory-updater <path/to/inventory.toml> <path/to/CHANGELOG.md>");
-        process::exit(2);
+        process::exit(1);
     });
 
     let inventory_artifacts: HashSet<Artifact<Version, Sha512>> =
@@ -38,12 +38,12 @@ fn main() {
 
     let toml = toml::to_string(&inventory).unwrap_or_else(|e| {
         eprintln!("Error serializing inventory as toml: {e}");
-        process::exit(6);
+        process::exit(1);
     });
 
     fs::write(inventory_path, toml).unwrap_or_else(|e| {
         eprintln!("Error writing inventory to file: {e}");
-        process::exit(7);
+        process::exit(1);
     });
 
     let remote_artifacts: HashSet<Artifact<Version, Sha512>> =
