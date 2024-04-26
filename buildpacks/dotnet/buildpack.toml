@@ -1,0 +1,12 @@
+api = "0.10"
+
+[buildpack]
+id = "heroku/dotnet"
+version = "0.1.0"
+name = "Heroku .NET"
+homepage = "https://github.com/heroku/buildpacks-dotnet"
+description = "Heroku's buildpack for .NET applications."
+keywords = ["dotnet", ".NET", "heroku"]
+
+[[buildpack.licenses]]
+type = "BSD-3-Clause"
