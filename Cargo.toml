@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "buildpacks/dotnet",
     "shared/inventory-updater"
 ]
 

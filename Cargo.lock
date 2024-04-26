@@ -54,6 +54,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "buildpack-heroku-dotnet"
+version = "0.0.0"
+
+[[package]]
 name = "bumpalo"
 version = "3.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
