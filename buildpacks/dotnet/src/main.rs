@@ -1,6 +1,8 @@
 use libcnb::build::BuildResultBuilder;
+use libcnb::data::layer_name;
 use libcnb::detect::DetectResultBuilder;
 use libcnb::generic::{GenericMetadata, GenericPlatform};
+use libcnb::layer::{CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction};
 use libcnb::{buildpack_main, Buildpack};
 use serde::{Deserialize, Serialize};
 
@@ -32,8 +34,19 @@ impl Buildpack for DotnetBuildpack {
 
     fn build(
         &self,
-        _context: libcnb::build::BuildContext<Self>,
+        context: libcnb::build::BuildContext<Self>,
     ) -> libcnb::Result<libcnb::build::BuildResult, Self::Error> {
+        let _sdk_layer = context.cached_layer(
+            layer_name!("sdk"),
+            CachedLayerDefinition {
+                build: true,
+                launch: true,
+                invalid_metadata: &|_| InvalidMetadataAction::DeleteLayer,
+                inspect_existing: &|_metadata: &SdkLayerMetadata, _path| {
+                    InspectExistingAction::Keep
+                },
+            },
+        )?;
         println!("Hello, World!");
         BuildResultBuilder::new().build()
     }
