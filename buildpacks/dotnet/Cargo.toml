@@ -5,3 +5,7 @@ edition.workspace = true
 
 [lints]
 workspace = true
+
+[dependencies]
+libcnb = { git = "https://github.com/heroku/libcnb.rs", branch = "malax/layer-api"}
+thiserror = "1.0.60"
