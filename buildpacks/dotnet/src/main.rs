@@ -1,21 +1,33 @@
+mod layers;
+
+use std::env::consts;
+
+use inventory::artifact::{Arch, Artifact, Os};
+use inventory::inventory::Inventory;
 use libcnb::build::BuildResultBuilder;
-use libcnb::data::layer_name;
 use libcnb::detect::DetectResultBuilder;
 use libcnb::generic::{GenericMetadata, GenericPlatform};
-use libcnb::layer::{CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction};
 use libcnb::{buildpack_main, Buildpack};
-use serde::{Deserialize, Serialize};
+use libherokubuildpack::log::{log_header, log_info};
+use semver::{Version, VersionReq};
+use sha2::Sha512;
+
+use crate::layers::sdk::SdkLayerError;
 
 buildpack_main! { DotnetBuildpack }
 
 struct DotnetBuildpack;
 
 #[derive(thiserror::Error, Debug)]
-enum DotnetBuildpackError {}
-
-#[derive(Serialize, Deserialize)]
-pub struct SdkLayerMetadata {
-    sdk_version: String,
+enum DotnetBuildpackError {
+    #[error(transparent)]
+    SdkLayerError(#[from] SdkLayerError),
+    #[error("Couldn't parse .NET SDK inventory: {0}")]
+    InventoryParse(toml::de::Error),
+    #[error("Couldn't parse .NET SDK version: {0}")]
+    SemVer(#[from] semver::Error),
+    #[error("Couldn't resolve .NET SDK version: {0}")]
+    VersionResolution(semver::VersionReq),
 }
 
 impl Buildpack for DotnetBuildpack {
@@ -36,18 +48,30 @@ impl Buildpack for DotnetBuildpack {
         &self,
         context: libcnb::build::BuildContext<Self>,
     ) -> libcnb::Result<libcnb::build::BuildResult, Self::Error> {
-        let _sdk_layer = context.cached_layer(
-            layer_name!("sdk"),
-            CachedLayerDefinition {
-                build: true,
-                launch: true,
-                invalid_metadata: &|_| InvalidMetadataAction::DeleteLayer,
-                inspect_existing: &|_metadata: &SdkLayerMetadata, _path| {
-                    InspectExistingAction::Keep
-                },
-            },
-        )?;
+        log_header("Resolving .NET SDK version");
+
+        let artifact = resolve_sdk_artifact().map_err(libcnb::Error::BuildpackError)?;
+
+        log_info(format!("Resolved .NET SDK version: {}", artifact.version));
+
+        layers::sdk::handle(&artifact, &context).map_err(libcnb::Error::BuildpackError)?;
         println!("Hello, World!");
         BuildResultBuilder::new().build()
     }
+}
+
+const INVENTORY: &str = include_str!("../inventory.toml");
+
+fn resolve_sdk_artifact() -> Result<Artifact<Version, Sha512>, DotnetBuildpackError> {
+    let inv: Inventory<Version, Sha512> =
+        toml::from_str(INVENTORY).map_err(DotnetBuildpackError::InventoryParse)?;
+
+    let requirement = VersionReq::parse("8.0")?;
+    let artifact = match (consts::OS.parse::<Os>(), consts::ARCH.parse::<Arch>()) {
+        (Ok(os), Ok(arch)) => inv.resolve(os, arch, &requirement),
+        (_, _) => None,
+    }
+    .ok_or(DotnetBuildpackError::VersionResolution(requirement.clone()))?;
+
+    Ok(artifact.clone())
 }
