@@ -111,7 +111,7 @@ pub(crate) fn handle(
                             .path()
                             .as_path()
                             .to_str()
-                            .expect("layer to be a str")
+                            .expect("layer path to be a str")
                     ),
                 ),
         )?;
