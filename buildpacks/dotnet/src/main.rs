@@ -32,9 +32,7 @@ enum DotnetBuildpackError {
 
 impl Buildpack for DotnetBuildpack {
     type Platform = GenericPlatform;
-
     type Metadata = GenericMetadata;
-
     type Error = DotnetBuildpackError;
 
     fn detect(
@@ -51,11 +49,10 @@ impl Buildpack for DotnetBuildpack {
         log_header("Resolving .NET SDK version");
 
         let artifact = resolve_sdk_artifact().map_err(libcnb::Error::BuildpackError)?;
-
         log_info(format!("Resolved .NET SDK version: {}", artifact.version));
 
         layers::sdk::handle(&artifact, &context).map_err(libcnb::Error::BuildpackError)?;
-        println!("Hello, World!");
+
         BuildResultBuilder::new().build()
     }
 }
