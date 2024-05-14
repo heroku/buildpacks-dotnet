@@ -39,3 +39,40 @@ jobs:
       uses: Swatinem/rust-cache@v2.7.3
     - name: Run unit tests
       run: cargo test --locked
+
+  integration-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ["amd64", "arm64"]
+    runs-on: ${{ matrix.arch == 'arm64' && 'pub-hk-ubuntu-22.04-arm-large' || 'pub-hk-ubuntu-22.04-small' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      # The beta ARM64 runners don't yet ship with the normal installed tools.
+      - name: Install Docker, Rust and missing development libs (ARM64 only)
+        if: matrix.arch == 'arm64'
+        run: |
+          sudo apt-get update --error-on=any
+          sudo apt-get install -y --no-install-recommends acl docker.io docker-buildx libc6-dev
+          sudo usermod -aG docker $USER
+          sudo setfacl --modify user:$USER:rw /var/run/docker.sock
+          curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          echo "${HOME}/.cargo/bin" >> "${GITHUB_PATH}"
+      - name: Install musl-tools
+        run: sudo apt-get install -y --no-install-recommends musl-tools
+      - name: Update Rust toolchain
+        run: rustup update
+      - name: Install Rust linux-musl target
+        run: rustup target add ${{ matrix.arch == 'arm64' && 'aarch64-unknown-linux-musl' || 'x86_64-unknown-linux-musl' }}
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2.7.3
+      - name: Install Pack CLI
+        uses: buildpacks/github-actions/setup-pack@v5.6.0
+      - name: Pull builder image
+        run: docker pull heroku/builder:24
+      # The integration tests are annotated with the `ignore` attribute, allowing us to run
+      # only those and not the unit tests, via the `--ignored` option. On the latest stack
+      # we run all integration tests, but on older stacks we only run stack-specific tests.
+      - name: Run integration tests (all tests)
+        run: cargo test --locked -- --ignored --test-threads 5
