@@ -27,3 +27,15 @@ jobs:
         run: cargo clippy --all-targets --locked -- --deny warnings
       - name: rustfmt
         run: cargo fmt -- --check
+
+  unit-test:
+    runs-on: pub-hk-ubuntu-22.04-small # TODO: change to ubuntu-latest once repo is public
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Update Rust toolchain
+      run: rustup update
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2.7.3
+    - name: Run unit tests
+      run: cargo test --locked
