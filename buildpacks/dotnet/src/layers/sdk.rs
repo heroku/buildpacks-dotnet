@@ -121,15 +121,12 @@ impl From<SdkLayerError> for libcnb::Error<DotnetBuildpackError> {
 }
 
 fn sha512(path: impl AsRef<Path>) -> Result<Vec<u8>, std::io::Error> {
-    let mut file = File::open(path.as_ref())?;
-    let mut buffer = [0x00; 10 * 1024];
-    let mut digest = sha2::Sha512::default();
+    let file = File::open(path.as_ref())?;
+    calculate_checksum::<Sha512>(file)
+}
 
-    let mut read = file.read(&mut buffer)?;
-    while read > 0 {
-        Digest::update(&mut digest, &buffer[..read]);
-        read = file.read(&mut buffer)?;
-    }
-
-    Ok(digest.finalize().to_vec())
+fn calculate_checksum<D: Digest>(data: impl Read) -> Result<Vec<u8>, std::io::Error> {
+    data.bytes()
+        .collect::<Result<Vec<_>, _>>()
+        .map(|data| D::digest(data).to_vec())
 }
