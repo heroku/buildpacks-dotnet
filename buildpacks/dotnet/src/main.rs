@@ -37,7 +37,7 @@ impl Buildpack for DotnetBuildpack {
 
         log_info(format!(
             "Using .NET SDK version {} ({}-{})",
-            artifact.version, artifact.os, artifact.url
+            artifact.version, artifact.os, artifact.arch
         ));
 
         let _sdk_layer = layers::sdk::handle(&artifact, &context)?;
