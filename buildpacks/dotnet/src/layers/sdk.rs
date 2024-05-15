@@ -81,24 +81,18 @@ pub(crate) fn handle(
         .map_err(SdkLayerError::UntarSdk)?;
         sdk_layer.replace_env(
             &LayerEnv::new()
+                .chainable_insert(Scope::All, ModificationBehavior::Delimiter, "PATH", ":")
+                .chainable_insert(
+                    Scope::All,
+                    ModificationBehavior::Prepend,
+                    "PATH",
+                    sdk_layer.path(),
+                )
                 .chainable_insert(
                     libcnb::layer_env::Scope::All,
                     ModificationBehavior::Override,
                     "DOTNET_EnableWriteXorExecute",
                     "0",
-                )
-                .chainable_insert(
-                    Scope::All,
-                    ModificationBehavior::Prepend,
-                    "PATH",
-                    format!(
-                        "{}:",
-                        sdk_layer
-                            .path()
-                            .as_path()
-                            .to_str()
-                            .expect("layer path to be a str")
-                    ),
                 ),
         )?;
     };
