@@ -21,20 +21,6 @@ pub(crate) struct SdkLayerMetadata {
     artifact: Artifact<Version, Sha512>,
 }
 
-#[derive(thiserror::Error, Debug)]
-pub(crate) enum SdkLayerError {
-    #[error("Couldn't create tempfile for .NET SDK: {0}")]
-    CreateTempFile(std::io::Error),
-    #[error("Couldn't download .NET SDK: {0}")]
-    DownloadSdk(libherokubuildpack::download::DownloadError),
-    #[error("Couldn't decompress .NET SDK: {0}")]
-    UntarSdk(std::io::Error),
-    #[error("Error verifying checksum")]
-    VerifyChecksum,
-    #[error("Couldn't read tempfile for .NET SDK: {0}")]
-    ReadTempFile(std::io::Error),
-}
-
 pub(crate) fn handle(
     artifact: &Artifact<Version, Sha512>,
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
@@ -120,6 +106,26 @@ pub(crate) fn handle(
     Ok(())
 }
 
+#[derive(thiserror::Error, Debug)]
+pub(crate) enum SdkLayerError {
+    #[error("Couldn't create tempfile for .NET SDK: {0}")]
+    CreateTempFile(std::io::Error),
+    #[error("Couldn't download .NET SDK: {0}")]
+    DownloadSdk(libherokubuildpack::download::DownloadError),
+    #[error("Couldn't decompress .NET SDK: {0}")]
+    UntarSdk(std::io::Error),
+    #[error("Error verifying checksum")]
+    VerifyChecksum,
+    #[error("Couldn't read tempfile for .NET SDK: {0}")]
+    ReadTempFile(std::io::Error),
+}
+
+impl From<libcnb::Error<DotnetBuildpackError>> for DotnetBuildpackError {
+    fn from(value: libcnb::Error<DotnetBuildpackError>) -> Self {
+        value.into()
+    }
+}
+
 fn sha512(path: impl AsRef<Path>) -> Result<Vec<u8>, std::io::Error> {
     let mut file = File::open(path.as_ref())?;
     let mut buffer = [0x00; 10 * 1024];
@@ -132,10 +138,4 @@ fn sha512(path: impl AsRef<Path>) -> Result<Vec<u8>, std::io::Error> {
     }
 
     Ok(digest.finalize().to_vec())
-}
-
-impl From<libcnb::Error<DotnetBuildpackError>> for DotnetBuildpackError {
-    fn from(value: libcnb::Error<DotnetBuildpackError>) -> Self {
-        value.into()
-    }
 }
