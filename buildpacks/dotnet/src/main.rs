@@ -17,13 +17,13 @@ struct DotnetBuildpack;
 #[derive(thiserror::Error, Debug)]
 enum DotnetBuildpackError {
     #[error(transparent)]
-    SdkLayerError(#[from] SdkLayerError),
+    SdkLayer(#[from] SdkLayerError),
     #[error("Couldn't parse .NET SDK inventory: {0}")]
-    InventoryParse(toml::de::Error),
+    ParseInventory(toml::de::Error),
     #[error("Couldn't parse .NET SDK version: {0}")]
-    SemVer(#[from] semver::Error),
+    ParseSdkVersion(#[from] semver::Error),
     #[error("Couldn't resolve .NET SDK version: {0}")]
-    VersionResolution(semver::VersionReq),
+    ResolveSdkVersion(semver::VersionReq),
 }
 
 impl Buildpack for DotnetBuildpack {
@@ -57,14 +57,14 @@ const INVENTORY: &str = include_str!("../inventory.toml");
 
 fn resolve_sdk_artifact() -> Result<Artifact<Version, Sha512>, DotnetBuildpackError> {
     let inv: Inventory<Version, Sha512> =
-        toml::from_str(INVENTORY).map_err(DotnetBuildpackError::InventoryParse)?;
+        toml::from_str(INVENTORY).map_err(DotnetBuildpackError::ParseInventory)?;
 
     let requirement = VersionReq::parse("8.0")?;
     let artifact = match (consts::OS.parse::<Os>(), consts::ARCH.parse::<Arch>()) {
         (Ok(os), Ok(arch)) => inv.resolve(os, arch, &requirement),
         (_, _) => None,
     }
-    .ok_or(DotnetBuildpackError::VersionResolution(requirement.clone()))?;
+    .ok_or(DotnetBuildpackError::ResolveSdkVersion(requirement.clone()))?;
 
     Ok(artifact.clone())
 }
