@@ -48,10 +48,14 @@ impl Buildpack for DotnetBuildpack {
         &self,
         context: libcnb::build::BuildContext<Self>,
     ) -> libcnb::Result<libcnb::build::BuildResult, Self::Error> {
-        log_header("Resolving .NET SDK version");
+        log_header("Determining .NET SDK version");
 
         let artifact = resolve_sdk_artifact().map_err(libcnb::Error::BuildpackError)?;
-        log_info(format!("Resolved .NET SDK version: {}", artifact.version));
+
+        log_info(format!(
+            "Using .NET SDK version {} ({}-{})",
+            artifact.version, artifact.os, artifact.url
+        ));
 
         let _sdk_layer = layers::sdk::handle(&artifact, &context)?;
 
