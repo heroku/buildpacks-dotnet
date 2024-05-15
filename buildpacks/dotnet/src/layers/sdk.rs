@@ -137,3 +137,22 @@ impl From<SdkLayerError> for libcnb::Error<DotnetBuildpackError> {
         libcnb::Error::BuildpackError(DotnetBuildpackError::SdkLayer(value))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::utils;
+
+    #[test]
+    fn sdk_layer_env() {
+        let layer_env = generate_layer_env(Path::new("/layers/sdk"));
+
+        assert_eq!(
+            utils::environment_as_sorted_vector(&layer_env.apply_to_empty(Scope::All)),
+            [
+                ("DOTNET_EnableWriteXorExecute", "0"),
+                ("PATH", "/layers/sdk")
+            ]
+        );
+    }
+}
