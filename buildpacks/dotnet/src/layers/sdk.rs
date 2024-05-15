@@ -106,6 +106,15 @@ fn generate_layer_env(layer_path: &Path) -> LayerEnv {
             "DOTNET_ROOT",
             layer_path,
         )
+        // Enable detection of running in a container: https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_running_in_container-and-dotnet_running_in_containers
+        // This is used by a few ASP.NET Core workloads.
+        // We don't need to set the (now deprecated) `DOTNET_RUNNING_IN_CONTAINER` environment variable as the framework will check for both: https://github.com/dotnet/aspnetcore/blob/8198eeb2b76305677cf94972746c2600d15ff58a/src/DataProtection/DataProtection/src/Internal/ContainerUtils.cs#L86
+        .chainable_insert(
+            Scope::All,
+            ModificationBehavior::Override,
+            "DOTNET_RUNNING_IN_CONTAINER",
+            "true",
+        )
 }
 
 fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>
@@ -164,6 +173,7 @@ mod tests {
             [
                 ("DOTNET_EnableWriteXorExecute", "0"),
                 ("DOTNET_ROOT", "/layers/sdk"),
+                ("DOTNET_RUNNING_IN_CONTAINER", "true"),
                 ("PATH", "/layers/sdk")
             ]
         );
