@@ -96,26 +96,6 @@ fn generate_layer_env(layer_path: &Path) -> LayerEnv {
         )
 }
 
-#[derive(thiserror::Error, Debug)]
-pub(crate) enum SdkLayerError {
-    #[error("Couldn't download .NET SDK: {0}")]
-    DownloadSdk(libherokubuildpack::download::DownloadError),
-    #[error("Couldn't decompress .NET SDK: {0}")]
-    UntarSdk(std::io::Error),
-    #[error("Error verifying checksum")]
-    VerifyChecksum,
-    #[error("Couldn't open tempfile for .NET SDK: {0}")]
-    OpenTempFile(std::io::Error),
-    #[error("Couldn't read tempfile for .NET SDK: {0}")]
-    ReadTempFile(std::io::Error),
-}
-
-impl From<SdkLayerError> for libcnb::Error<DotnetBuildpackError> {
-    fn from(value: SdkLayerError) -> Self {
-        libcnb::Error::BuildpackError(DotnetBuildpackError::SdkLayer(value))
-    }
-}
-
 fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>
 where
     D: Digest,
@@ -136,4 +116,24 @@ fn calculate_checksum<D: Digest>(data: impl Read) -> Result<Vec<u8>, std::io::Er
     data.bytes()
         .collect::<Result<Vec<_>, _>>()
         .map(|data| D::digest(data).to_vec())
+}
+
+#[derive(thiserror::Error, Debug)]
+pub(crate) enum SdkLayerError {
+    #[error("Couldn't download .NET SDK: {0}")]
+    DownloadSdk(libherokubuildpack::download::DownloadError),
+    #[error("Couldn't decompress .NET SDK: {0}")]
+    UntarSdk(std::io::Error),
+    #[error("Error verifying checksum")]
+    VerifyChecksum,
+    #[error("Couldn't open tempfile for .NET SDK: {0}")]
+    OpenTempFile(std::io::Error),
+    #[error("Couldn't read tempfile for .NET SDK: {0}")]
+    ReadTempFile(std::io::Error),
+}
+
+impl From<SdkLayerError> for libcnb::Error<DotnetBuildpackError> {
+    fn from(value: SdkLayerError) -> Self {
+        libcnb::Error::BuildpackError(DotnetBuildpackError::SdkLayer(value))
+    }
 }
