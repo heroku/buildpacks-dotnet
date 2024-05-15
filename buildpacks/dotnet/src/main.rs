@@ -14,8 +14,6 @@ use sha2::Sha512;
 
 use crate::layers::sdk::SdkLayerError;
 
-buildpack_main! { DotnetBuildpack }
-
 struct DotnetBuildpack;
 
 #[derive(thiserror::Error, Debug)]
@@ -72,3 +70,5 @@ fn resolve_sdk_artifact() -> Result<Artifact<Version, Sha512>, DotnetBuildpackEr
 
     Ok(artifact.clone())
 }
+
+buildpack_main! { DotnetBuildpack }
