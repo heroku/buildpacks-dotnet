@@ -1,3 +1,4 @@
+mod detect;
 mod layers;
 mod utils;
 
@@ -12,6 +13,7 @@ use libherokubuildpack::log::{log_header, log_info};
 use semver::{Version, VersionReq};
 use sha2::Sha512;
 use std::env::consts;
+use std::io;
 
 struct DotnetBuildpack;
 
@@ -22,9 +24,17 @@ impl Buildpack for DotnetBuildpack {
 
     fn detect(
         &self,
-        _context: libcnb::detect::DetectContext<Self>,
+        context: libcnb::detect::DetectContext<Self>,
     ) -> libcnb::Result<libcnb::detect::DetectResult, Self::Error> {
-        DetectResultBuilder::pass().build()
+        if detect::dotnet_project_files(context.app_dir)
+            .map_err(DotnetBuildpackError::BuildpackDetection)?
+            .is_empty()
+        {
+            log_info("No .NET project files (such as `foo.csproj`) found.");
+            DetectResultBuilder::fail().build()
+        } else {
+            DetectResultBuilder::pass().build()
+        }
     }
 
     fn build(
@@ -64,6 +74,8 @@ fn resolve_sdk_artifact() -> Result<Artifact<Version, Sha512>, DotnetBuildpackEr
 
 #[derive(thiserror::Error, Debug)]
 enum DotnetBuildpackError {
+    #[error("Error when performing buildpack detection")]
+    BuildpackDetection(io::Error),
     #[error(transparent)]
     SdkLayer(#[from] SdkLayerError),
     #[error("Couldn't parse .NET SDK inventory: {0}")]
