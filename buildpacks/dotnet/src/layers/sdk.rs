@@ -24,7 +24,7 @@ pub(crate) struct SdkLayerMetadata {
 pub(crate) fn handle(
     artifact: &Artifact<Version, Sha512>,
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
-) -> Result<(), DotnetBuildpackError> {
+) -> Result<(), libcnb::Error<DotnetBuildpackError>> {
     let sdk_layer = context.cached_layer(
         layer_name!("sdk"),
         CachedLayerDefinition {
@@ -120,9 +120,9 @@ pub(crate) enum SdkLayerError {
     ReadTempFile(std::io::Error),
 }
 
-impl From<libcnb::Error<DotnetBuildpackError>> for DotnetBuildpackError {
-    fn from(value: libcnb::Error<DotnetBuildpackError>) -> Self {
-        value.into()
+impl From<SdkLayerError> for libcnb::Error<DotnetBuildpackError> {
+    fn from(value: SdkLayerError) -> Self {
+        libcnb::Error::BuildpackError(DotnetBuildpackError::SdkLayer(value))
     }
 }
 

@@ -26,6 +26,12 @@ enum DotnetBuildpackError {
     ResolveSdkVersion(semver::VersionReq),
 }
 
+impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
+    fn from(error: DotnetBuildpackError) -> Self {
+        Self::BuildpackError(error)
+    }
+}
+
 impl Buildpack for DotnetBuildpack {
     type Platform = GenericPlatform;
     type Metadata = GenericMetadata;
@@ -47,7 +53,7 @@ impl Buildpack for DotnetBuildpack {
         let artifact = resolve_sdk_artifact().map_err(libcnb::Error::BuildpackError)?;
         log_info(format!("Resolved .NET SDK version: {}", artifact.version));
 
-        layers::sdk::handle(&artifact, &context).map_err(libcnb::Error::BuildpackError)?;
+        layers::sdk::handle(&artifact, &context)?;
 
         BuildResultBuilder::new().build()
     }
