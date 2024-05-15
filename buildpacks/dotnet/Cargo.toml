@@ -15,3 +15,6 @@ serde = "1"
 sha2 = "0.10"
 thiserror = "1.0.60"
 toml = "0.8"
+
+[dev-dependencies]
+tempdir = "0.3"
