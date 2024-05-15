@@ -66,17 +66,13 @@ pub(crate) fn handle(
         log_info("Verifying checksum");
         verify_checksum(&artifact.checksum, path.clone())?;
 
-        log_info(format!(
-            "Extracting .NET SDK version: {}",
-            &artifact.version
-        ));
-
-        log_info(format!("Installing .NET SDK version {}", &artifact.version));
+        log_info("Installing .NET SDK");
         decompress_tarball(
             &mut File::open(path.clone()).map_err(SdkLayerError::CreateTempFile)?,
             sdk_layer.path(),
         )
         .map_err(SdkLayerError::UntarSdk)?;
+
         sdk_layer.replace_env(
             &LayerEnv::new()
                 .chainable_insert(Scope::All, ModificationBehavior::Delimiter, "PATH", ":")
