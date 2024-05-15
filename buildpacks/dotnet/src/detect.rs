@@ -12,7 +12,7 @@ pub(crate) fn dotnet_project_files<P: AsRef<Path>>(dir: P) -> io::Result<Vec<Pat
     let project_files = fs::read_dir(dir)?
         .filter_map(std::result::Result::ok)
         .map(|entry| entry.path())
-        .filter(|path| path.is_file())
+        .filter(|path| path.is_file()) // TODO: This returns false if there's an error)
         .filter(|path| {
             path.extension()
                 .and_then(|ext| ext.to_str())
