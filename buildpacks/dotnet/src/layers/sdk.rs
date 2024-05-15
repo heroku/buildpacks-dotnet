@@ -93,7 +93,7 @@ fn generate_layer_env(layer_path: &Path) -> LayerEnv {
         // This environment variable disables W^X support.
         // TODO: Investigate performance implications of this on platforms where this feature is supported.
         .chainable_insert(
-            libcnb::layer_env::Scope::All,
+            Scope::All,
             ModificationBehavior::Override,
             "DOTNET_EnableWriteXorExecute",
             "0",
