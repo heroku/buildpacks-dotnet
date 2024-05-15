@@ -68,7 +68,7 @@ pub(crate) fn handle(
 
         log_info("Installing .NET SDK");
         decompress_tarball(
-            &mut File::open(path.clone()).map_err(SdkLayerError::CreateTempFile)?,
+            &mut File::open(path.clone()).map_err(SdkLayerError::OpenTempFile)?,
             sdk_layer.path(),
         )
         .map_err(SdkLayerError::UntarSdk)?;
