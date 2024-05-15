@@ -99,6 +99,13 @@ fn generate_layer_env(layer_path: &Path) -> LayerEnv {
             "DOTNET_EnableWriteXorExecute",
             "0",
         )
+        // Mute .NET welcome and telemetry messages: https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_nologo
+        .chainable_insert(
+            Scope::All,
+            ModificationBehavior::Override,
+            "DOTNET_NOLOGO",
+            "true",
+        )
         // Specify the location of .NET runtimes as they're not installed in the default location: https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86-dotnet_root_x86-dotnet_root_x64.
         .chainable_insert(
             Scope::All,
@@ -172,6 +179,7 @@ mod tests {
             utils::environment_as_sorted_vector(&layer_env.apply_to_empty(Scope::All)),
             [
                 ("DOTNET_EnableWriteXorExecute", "0"),
+                ("DOTNET_NOLOGO", "true"),
                 ("DOTNET_ROOT", "/layers/sdk"),
                 ("DOTNET_RUNNING_IN_CONTAINER", "true"),
                 ("PATH", "/layers/sdk")
