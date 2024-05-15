@@ -1,5 +1,6 @@
 use crate::{DotnetBuildpack, DotnetBuildpackError};
 use inventory::artifact::Artifact;
+use inventory::checksum::Checksum;
 use libcnb::data::layer_name;
 use libcnb::layer::{
     CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction, LayerContents, LayerRef,
@@ -63,10 +64,7 @@ pub(crate) fn handle(
         download_file(&artifact.url, path.clone()).map_err(SdkLayerError::DownloadSdk)?;
 
         log_info("Verifying checksum");
-        let digest = sha512(path.clone()).map_err(SdkLayerError::ReadTempFile)?;
-        if artifact.checksum.value != digest {
-            Err(SdkLayerError::VerifyChecksum)?;
-        }
+        verify_checksum(&artifact.checksum, path.clone())?;
 
         log_info(format!(
             "Extracting .NET SDK version: {}",
@@ -110,6 +108,8 @@ pub(crate) enum SdkLayerError {
     UntarSdk(std::io::Error),
     #[error("Error verifying checksum")]
     VerifyChecksum,
+    #[error("Couldn't open tempfile for .NET SDK: {0}")]
+    OpenTempFile(std::io::Error),
     #[error("Couldn't read tempfile for .NET SDK: {0}")]
     ReadTempFile(std::io::Error),
 }
@@ -120,9 +120,20 @@ impl From<SdkLayerError> for libcnb::Error<DotnetBuildpackError> {
     }
 }
 
-fn sha512(path: impl AsRef<Path>) -> Result<Vec<u8>, std::io::Error> {
-    let file = File::open(path.as_ref())?;
-    calculate_checksum::<Sha512>(file)
+fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>
+where
+    D: Digest,
+{
+    let calculated_checksum = File::open(path.as_ref())
+        .map_err(SdkLayerError::OpenTempFile)
+        .map(calculate_checksum::<D>)?
+        .map_err(SdkLayerError::ReadTempFile)?;
+
+    if calculated_checksum == checksum.value {
+        Ok(())
+    } else {
+        Err(SdkLayerError::VerifyChecksum)
+    }
 }
 
 fn calculate_checksum<D: Digest>(data: impl Read) -> Result<Vec<u8>, std::io::Error> {
