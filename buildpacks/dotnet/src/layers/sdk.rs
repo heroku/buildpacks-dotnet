@@ -2,7 +2,7 @@ use crate::{DotnetBuildpack, DotnetBuildpackError};
 use inventory::artifact::Artifact;
 use libcnb::data::layer_name;
 use libcnb::layer::{
-    CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction, LayerContents,
+    CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction, LayerContents, LayerRef,
 };
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libherokubuildpack::download::download_file;
@@ -24,7 +24,7 @@ pub(crate) struct SdkLayerMetadata {
 pub(crate) fn handle(
     artifact: &Artifact<Version, Sha512>,
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
-) -> Result<(), libcnb::Error<DotnetBuildpackError>> {
+) -> Result<LayerRef<DotnetBuildpack, (), ()>, libcnb::Error<DotnetBuildpackError>> {
     let sdk_layer = context.cached_layer(
         layer_name!("sdk"),
         CachedLayerDefinition {
@@ -97,7 +97,7 @@ pub(crate) fn handle(
         )?;
     };
 
-    Ok(())
+    Ok(sdk_layer)
 }
 
 #[derive(thiserror::Error, Debug)]

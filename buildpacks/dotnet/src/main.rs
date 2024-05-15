@@ -53,7 +53,7 @@ impl Buildpack for DotnetBuildpack {
         let artifact = resolve_sdk_artifact().map_err(libcnb::Error::BuildpackError)?;
         log_info(format!("Resolved .NET SDK version: {}", artifact.version));
 
-        layers::sdk::handle(&artifact, &context)?;
+        let _sdk_layer = layers::sdk::handle(&artifact, &context)?;
 
         BuildResultBuilder::new().build()
     }
