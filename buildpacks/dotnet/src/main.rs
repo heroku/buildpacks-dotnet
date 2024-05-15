@@ -1,7 +1,6 @@
 mod layers;
 
-use std::env::consts;
-
+use crate::layers::sdk::SdkLayerError;
 use inventory::artifact::{Arch, Artifact, Os};
 use inventory::inventory::Inventory;
 use libcnb::build::BuildResultBuilder;
@@ -11,8 +10,7 @@ use libcnb::{buildpack_main, Buildpack};
 use libherokubuildpack::log::{log_header, log_info};
 use semver::{Version, VersionReq};
 use sha2::Sha512;
-
-use crate::layers::sdk::SdkLayerError;
+use std::env::consts;
 
 struct DotnetBuildpack;
 
