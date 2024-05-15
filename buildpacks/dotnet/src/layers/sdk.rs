@@ -88,6 +88,13 @@ fn generate_layer_env(layer_path: &Path) -> LayerEnv {
             "PATH",
             layer_path,
         )
+        // Disable .NET tools usage collection: https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_cli_telemetry_optout
+        .chainable_insert(
+            Scope::All,
+            ModificationBehavior::Override,
+            "DOTNET_CLI_TELEMETRY_OPTOUT",
+            "true",
+        )
         // Using the buildpack on ARM64 Macs causes failures due to an incompatibility executing on emulated amd64 Docker images (such as builder/heroku:24).
         // This feature is disabled when executing dotnet directly on Apple Silicon (see <https://github.com/dotnet/runtime/pull/70912>).
         // The feature was opt-in for .NET 6.0, but enabled by default in later versions <https://devblogs.microsoft.com/dotnet/announcing-net-6-preview-7/#runtime-wx-write-xor-execute-support-for-all-platforms-and-architectures>.
@@ -178,6 +185,7 @@ mod tests {
         assert_eq!(
             utils::environment_as_sorted_vector(&layer_env.apply_to_empty(Scope::All)),
             [
+                ("DOTNET_CLI_TELEMETRY_OPTOUT", "true"),
                 ("DOTNET_EnableWriteXorExecute", "0"),
                 ("DOTNET_NOLOGO", "true"),
                 ("DOTNET_ROOT", "/layers/sdk"),
