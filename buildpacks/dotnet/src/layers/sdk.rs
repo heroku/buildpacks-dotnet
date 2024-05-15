@@ -99,6 +99,7 @@ fn generate_layer_env(layer_path: &Path) -> LayerEnv {
             "DOTNET_EnableWriteXorExecute",
             "0",
         )
+        // Specify the location of .NET runtimes as they're not installed in the default location: https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86-dotnet_root_x86-dotnet_root_x64.
         .chainable_insert(
             Scope::All,
             ModificationBehavior::Override,
