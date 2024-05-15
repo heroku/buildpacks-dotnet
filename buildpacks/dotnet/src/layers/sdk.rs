@@ -98,6 +98,12 @@ fn generate_layer_env(layer_path: &Path) -> LayerEnv {
             "DOTNET_EnableWriteXorExecute",
             "0",
         )
+        .chainable_insert(
+            Scope::All,
+            ModificationBehavior::Override,
+            "DOTNET_ROOT",
+            layer_path,
+        )
 }
 
 fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>
@@ -155,6 +161,7 @@ mod tests {
             utils::environment_as_sorted_vector(&layer_env.apply_to_empty(Scope::All)),
             [
                 ("DOTNET_EnableWriteXorExecute", "0"),
+                ("DOTNET_ROOT", "/layers/sdk"),
                 ("PATH", "/layers/sdk")
             ]
         );
