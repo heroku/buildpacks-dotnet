@@ -15,24 +15,6 @@ use std::env::consts;
 
 struct DotnetBuildpack;
 
-#[derive(thiserror::Error, Debug)]
-enum DotnetBuildpackError {
-    #[error(transparent)]
-    SdkLayer(#[from] SdkLayerError),
-    #[error("Couldn't parse .NET SDK inventory: {0}")]
-    ParseInventory(toml::de::Error),
-    #[error("Couldn't parse .NET SDK version: {0}")]
-    ParseSdkVersion(#[from] semver::Error),
-    #[error("Couldn't resolve .NET SDK version: {0}")]
-    ResolveSdkVersion(semver::VersionReq),
-}
-
-impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
-    fn from(error: DotnetBuildpackError) -> Self {
-        Self::BuildpackError(error)
-    }
-}
-
 impl Buildpack for DotnetBuildpack {
     type Platform = GenericPlatform;
     type Metadata = GenericMetadata;
@@ -78,6 +60,24 @@ fn resolve_sdk_artifact() -> Result<Artifact<Version, Sha512>, DotnetBuildpackEr
     .ok_or(DotnetBuildpackError::ResolveSdkVersion(requirement.clone()))?;
 
     Ok(artifact.clone())
+}
+
+#[derive(thiserror::Error, Debug)]
+enum DotnetBuildpackError {
+    #[error(transparent)]
+    SdkLayer(#[from] SdkLayerError),
+    #[error("Couldn't parse .NET SDK inventory: {0}")]
+    ParseInventory(toml::de::Error),
+    #[error("Couldn't parse .NET SDK version: {0}")]
+    ParseSdkVersion(#[from] semver::Error),
+    #[error("Couldn't resolve .NET SDK version: {0}")]
+    ResolveSdkVersion(semver::VersionReq),
+}
+
+impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
+    fn from(error: DotnetBuildpackError) -> Self {
+        Self::BuildpackError(error)
+    }
 }
 
 buildpack_main! { DotnetBuildpack }
