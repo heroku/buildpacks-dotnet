@@ -24,13 +24,13 @@ pub(crate) struct SdkLayerMetadata {
 #[derive(thiserror::Error, Debug)]
 pub(crate) enum SdkLayerError {
     #[error("Couldn't create tempfile for .NET SDK: {0}")]
-    TempFile(std::io::Error),
+    CreateTempFile(std::io::Error),
     #[error("Couldn't download .NET SDK: {0}")]
-    Download(libherokubuildpack::download::DownloadError),
+    DownloadSdk(libherokubuildpack::download::DownloadError),
     #[error("Couldn't decompress .NET SDK: {0}")]
-    Untar(std::io::Error),
+    UntarSdk(std::io::Error),
     #[error("Error verifying checksum")]
-    ChecksumVerification,
+    VerifyChecksum,
     #[error("Couldn't read tempfile for .NET SDK: {0}")]
     ReadTempFile(std::io::Error),
 }
@@ -74,12 +74,12 @@ pub(crate) fn handle(
         ));
 
         let path = temp_dir().as_path().join("dotnetsdk.tar.gz");
-        download_file(&artifact.url, path.clone()).map_err(SdkLayerError::Download)?;
+        download_file(&artifact.url, path.clone()).map_err(SdkLayerError::DownloadSdk)?;
 
         log_info("Verifying checksum");
         let digest = sha512(path.clone()).map_err(SdkLayerError::ReadTempFile)?;
         if artifact.checksum.value != digest {
-            Err(SdkLayerError::ChecksumVerification)?;
+            Err(SdkLayerError::VerifyChecksum)?;
         }
 
         log_info(format!(
@@ -89,10 +89,10 @@ pub(crate) fn handle(
 
         log_info(format!("Installing .NET SDK version {}", &artifact.version));
         decompress_tarball(
-            &mut File::open(path.clone()).map_err(SdkLayerError::TempFile)?,
+            &mut File::open(path.clone()).map_err(SdkLayerError::CreateTempFile)?,
             sdk_layer.path(),
         )
-        .map_err(SdkLayerError::Untar)?;
+        .map_err(SdkLayerError::UntarSdk)?;
         sdk_layer.replace_env(
             &LayerEnv::new()
                 .chainable_insert(
