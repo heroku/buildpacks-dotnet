@@ -88,6 +88,10 @@ fn generate_layer_env(layer_path: &Path) -> LayerEnv {
             "PATH",
             layer_path,
         )
+        // Using the buildpack on ARM64 Macs causes failures due to an incompatibility executing on emulated amd64 docker images (suc as builder/heroku:24)
+        // The feature was opt-in for .NET 6.0, but enabled by default in later versions <https://devblogs.microsoft.com/dotnet/announcing-net-6-preview-7/#runtime-wx-write-xor-execute-support-for-all-platforms-and-architectures>.
+        // This environment variable disables W^X support.
+        // TODO: Investigate performance implications of this on platforms where this feature is supported.
         .chainable_insert(
             libcnb::layer_env::Scope::All,
             ModificationBehavior::Override,
