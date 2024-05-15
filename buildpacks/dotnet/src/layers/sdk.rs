@@ -98,8 +98,6 @@ fn generate_layer_env(layer_path: &Path) -> LayerEnv {
 
 #[derive(thiserror::Error, Debug)]
 pub(crate) enum SdkLayerError {
-    #[error("Couldn't create tempfile for .NET SDK: {0}")]
-    CreateTempFile(std::io::Error),
     #[error("Couldn't download .NET SDK: {0}")]
     DownloadSdk(libherokubuildpack::download::DownloadError),
     #[error("Couldn't decompress .NET SDK: {0}")]
