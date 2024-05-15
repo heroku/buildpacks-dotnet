@@ -1,4 +1,5 @@
 mod layers;
+mod utils;
 
 use crate::layers::sdk::SdkLayerError;
 use inventory::artifact::{Arch, Artifact, Os};
