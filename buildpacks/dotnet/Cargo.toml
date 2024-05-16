@@ -2,6 +2,8 @@
 name = "buildpack-heroku-dotnet"
 rust-version.workspace = true
 edition.workspace = true
+# Disable automatic integration test discovery, since we import them in main.rs (see comment there).
+autotests = false
 
 [lints]
 workspace = true
@@ -17,4 +19,6 @@ thiserror = "1.0.60"
 toml = "0.8"
 
 [dev-dependencies]
+indoc = "2"
+libcnb-test = { git = "https://github.com/heroku/libcnb.rs", branch = "malax/layer-api"}
 tempdir = "0.3"

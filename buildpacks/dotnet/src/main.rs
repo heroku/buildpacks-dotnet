@@ -93,3 +93,11 @@ impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
 }
 
 buildpack_main! { DotnetBuildpack }
+
+// The integration tests are imported into the crate so that they can have access to private
+// APIs and constants, saving having to (a) run a dual binary/library crate, (b) expose APIs
+// publicly for things only used for testing. To prevent the tests from being imported twice,
+// automatic integration test discovery is disabled using `autotests = false` in Cargo.toml.
+#[cfg(test)]
+#[path = "../tests/mod.rs"]
+mod tests;
