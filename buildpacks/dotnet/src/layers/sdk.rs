@@ -19,11 +19,11 @@ use std::path::Path;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SdkLayerMetadata {
-    artifact: Artifact<Version, Sha512, ()>,
+    artifact: Artifact<Version, Sha512, Option<()>>,
 }
 
 pub(crate) fn handle(
-    artifact: &Artifact<Version, Sha512, ()>,
+    artifact: &Artifact<Version, Sha512, Option<()>>,
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
 ) -> Result<LayerRef<DotnetBuildpack, (), ()>, libcnb::Error<DotnetBuildpackError>> {
     let sdk_layer = context.cached_layer(

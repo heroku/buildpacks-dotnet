@@ -58,8 +58,8 @@ impl Buildpack for DotnetBuildpack {
 
 const INVENTORY: &str = include_str!("../inventory.toml");
 
-fn resolve_sdk_artifact() -> Result<Artifact<Version, Sha512, ()>, DotnetBuildpackError> {
-    let inv: Inventory<Version, Sha512, ()> =
+fn resolve_sdk_artifact() -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
+    let inv: Inventory<Version, Sha512, Option<()>> =
         toml::from_str(INVENTORY).map_err(DotnetBuildpackError::ParseInventory)?;
 
     let requirement = VersionReq::parse("8.0")?;
