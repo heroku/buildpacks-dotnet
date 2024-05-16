@@ -2,6 +2,7 @@ use libcnb_test::BuildConfig;
 use std::path::Path;
 
 mod detect_test;
+mod sdk_installation_test;
 
 pub(crate) fn default_build_config(fixture_path: impl AsRef<Path>) -> BuildConfig {
     #[cfg(target_arch = "amd64")]
