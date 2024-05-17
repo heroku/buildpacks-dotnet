@@ -15,6 +15,7 @@ libherokubuildpack = { git = "https://github.com/heroku/libcnb.rs", branch = "ma
 roxmltree = "0.19"
 semver = "1.0"
 serde = "1"
+serde_json = "1"
 sha2 = "0.10"
 thiserror = "1.0.60"
 toml = "0.8"

@@ -54,3 +54,22 @@ fn test_sdk_installation() {
         },
     );
 }
+
+#[test]
+#[ignore = "integration test"]
+fn sdk_installation_test_with_global_json() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/basic_web_8.0_with_global_json"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            assert_contains!(
+                context.pack_stdout,
+                &indoc! {r"
+                    Detected .NET project file: /workspace/foo.csproj
+                    Detected global.json file in the root directory
+                    Inferred SDK version requirement: =8.0.101
+                    Resolved .NET SDK version 8.0.101"}
+            );
+        },
+    );
+}
