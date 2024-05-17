@@ -1,4 +1,5 @@
 mod detect;
+mod dotnet_project;
 mod layers;
 mod utils;
 
