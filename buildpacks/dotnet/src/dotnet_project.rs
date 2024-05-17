@@ -31,9 +31,9 @@ impl FromStr for ProjectType {
 
 #[derive(Debug)]
 pub(crate) struct DotnetProject {
-    sdk_id: String,
-    target_framework: String,
-    project_type: ProjectType,
+    pub(crate) sdk_id: String,
+    pub(crate) target_framework: String,
+    pub(crate) project_type: ProjectType,
 }
 
 /// Enum representing possible errors that can occur during parsing.
