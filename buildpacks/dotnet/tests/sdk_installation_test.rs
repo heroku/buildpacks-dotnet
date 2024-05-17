@@ -33,7 +33,7 @@ fn sdk_installation_test() {
 #[test]
 #[ignore = "integration test"]
 #[cfg(target_arch = "aarch64")]
-fn sdk_installation_test() {
+fn test_sdk_installation() {
     TestRunner::default().build(
         default_build_config( "tests/fixtures/basic_web_8.0"),
         |context| {
