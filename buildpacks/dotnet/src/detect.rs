@@ -23,6 +23,21 @@ pub(crate) fn dotnet_project_files<P: AsRef<Path>>(dir: P) -> io::Result<Vec<Pat
     Ok(project_files)
 }
 
+/// Returns the path to `global.json` if it exists in the given directory.
+pub(crate) fn find_global_json<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
+    let dir = dir.as_ref();
+    if !dir.is_dir() {
+        return None;
+    }
+
+    let global_json_path = dir.join("global.json");
+    if global_json_path.exists() && global_json_path.is_file() {
+        Some(global_json_path)
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -42,5 +57,33 @@ mod tests {
         let project_files = dotnet_project_files(&temp_dir).unwrap();
 
         assert_eq!(3, project_files.len());
+    }
+
+    #[test]
+    fn test_find_global_json_exists() {
+        let temp_dir = TempDir::new("test_global_json").unwrap();
+        let global_json_path = temp_dir.path().join("global.json");
+
+        File::create(&global_json_path).unwrap();
+
+        let result = find_global_json(temp_dir.path());
+        assert_eq!(result, Some(global_json_path));
+    }
+
+    #[test]
+    fn test_find_global_json_does_not_exist() {
+        let temp_dir = TempDir::new("test_dir_not_exists").unwrap();
+        let result = find_global_json(temp_dir.path());
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_find_global_json_is_directory() {
+        let temp_dir = TempDir::new("test_dir_is_directory").unwrap();
+        let global_json_path = temp_dir.path().join("global.json");
+        fs::create_dir(global_json_path).unwrap();
+
+        let result = find_global_json(temp_dir.path());
+        assert_eq!(result, None);
     }
 }

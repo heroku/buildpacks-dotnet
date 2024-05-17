@@ -102,6 +102,7 @@ dependencies = [
  "roxmltree",
  "semver",
  "serde",
+ "serde_json",
  "sha2",
  "tempdir",
  "thiserror",

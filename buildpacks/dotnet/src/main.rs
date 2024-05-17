@@ -1,10 +1,12 @@
 mod detect;
 mod dotnet_project;
+mod global_json;
 mod layers;
 mod tfm;
 mod utils;
 
 use crate::dotnet_project::DotnetProject;
+use crate::global_json::GlobalJsonError;
 use crate::layers::sdk::SdkLayerError;
 use crate::tfm::ParseTargetFrameworkError;
 use inventory::artifact::{Arch, Artifact, Os};
@@ -58,18 +60,27 @@ impl Buildpack for DotnetBuildpack {
             dotnet_project_file.to_string_lossy()
         ));
 
-        let dotnet_project = fs::read_to_string(dotnet_project_file)
-            .map_err(DotnetBuildpackError::ReadProjectFile)?
-            .parse::<DotnetProject>()
-            .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
+        let requirement = if let Some(file) = detect::find_global_json(context.app_dir.clone()) {
+            log_info("Detected global.json file in the root directory");
 
-        // TODO: Remove this (currently here for debugging, and making the linter happy)
-        log_info(format!(
-            "Project type is {:?} using SDK \"{}\" specifies TFM \"{}\"",
-            dotnet_project.project_type, dotnet_project.sdk_id, dotnet_project.target_framework
-        ));
-        let requirement = tfm::parse_target_framework(&dotnet_project.target_framework)
-            .map_err(DotnetBuildpackError::ParseTargetFramework)?;
+            fs::read_to_string(file.as_path())
+                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)
+                .map(|content| global_json::parse_global_json(&content))?
+                .map_err(DotnetBuildpackError::ParseGlobalJson)?
+        } else {
+            let dotnet_project = fs::read_to_string(dotnet_project_file)
+                .map_err(DotnetBuildpackError::ReadProjectFile)?
+                .parse::<DotnetProject>()
+                .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
+
+            // TODO: Remove this (currently here for debugging, and making the linter happy)
+            log_info(format!(
+                "Project type is {:?} using SDK \"{}\" specifies TFM \"{}\"",
+                dotnet_project.project_type, dotnet_project.sdk_id, dotnet_project.target_framework
+            ));
+            tfm::parse_target_framework(&dotnet_project.target_framework)
+                .map_err(DotnetBuildpackError::ParseTargetFramework)?
+        };
 
         log_info(format!(
             "Inferred SDK version requirement: {}",
@@ -123,6 +134,10 @@ enum DotnetBuildpackError {
     ParseDotnetProjectFile(dotnet_project::ParseError),
     #[error("Error parsing target framework: {0}")]
     ParseTargetFramework(ParseTargetFrameworkError),
+    #[error("Error reading global.json file")]
+    ReadGlobalJsonFile(io::Error),
+    #[error("Error parsing global.json file: {0}")]
+    ParseGlobalJson(GlobalJsonError),
 }
 
 impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
