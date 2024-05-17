@@ -1,10 +1,13 @@
 use semver::VersionReq;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(thiserror::Error, Debug)]
 pub(crate) enum ParseTargetFrameworkError {
+    #[error("Invalid target framework format")]
     InvalidFormat,
+    #[error("Invalid target framework version: {0}")]
     InvalidVersion(semver::Error),
+    #[error("Unsupported OS-specific target framework")]
     UnsupportedOSTfm,
 }
 
