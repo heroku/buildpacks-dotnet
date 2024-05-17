@@ -1,6 +1,7 @@
 mod detect;
 mod dotnet_project;
 mod layers;
+mod tfm_to_semver;
 mod utils;
 
 use crate::layers::sdk::SdkLayerError;
