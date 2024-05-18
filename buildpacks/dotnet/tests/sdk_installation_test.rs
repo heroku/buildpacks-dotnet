@@ -8,7 +8,7 @@ use libcnb_test::{assert_contains, assert_empty, TestRunner};
 #[test]
 #[ignore = "integration test"]
 #[cfg(target_arch = "x86_64")]
-fn sdk_installation_test() {
+fn test_sdk_installation() {
     TestRunner::default().build(
         default_build_config( "tests/fixtures/basic_web_8.0"),
         |context| {
@@ -57,7 +57,7 @@ fn test_sdk_installation() {
 
 #[test]
 #[ignore = "integration test"]
-fn sdk_installation_test_with_global_json() {
+fn test_sdk_installation_with_global_json() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/basic_web_8.0_with_global_json"),
         |context| {
