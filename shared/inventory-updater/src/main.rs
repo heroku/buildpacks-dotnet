@@ -173,7 +173,7 @@ mod tests {
                 os: Os::Linux,
                 arch: Arch::Amd64,
                 url: "http://example.com/sdk1".to_string(),
-                checksum: "sha512:00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000".parse().unwrap(),
+                checksum: format!("sha512:{}", "0".repeat(128)).parse().unwrap(),
                 metadata: None,
             }],
         };
@@ -185,7 +185,7 @@ mod tests {
                     os: Os::Linux,
                     arch: Arch::Amd64,
                     url: "http://example.com/sdk1".to_string(),
-                    checksum: "sha512:00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000".parse().unwrap(),
+                    checksum: format!("sha512:{}", "0".repeat(128)).parse().unwrap(),
                     metadata: None,
                 },
                 Artifact {
@@ -193,7 +193,7 @@ mod tests {
                     os: Os::Linux,
                     arch: Arch::Amd64,
                     url: "http://example.com/sdk2".to_string(),
-                    checksum: "sha512:11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111".parse().unwrap(),
+                    checksum: format!("sha512:{}", "1".repeat(128)).parse().unwrap(),
                     metadata: None,
                 },
             ],
