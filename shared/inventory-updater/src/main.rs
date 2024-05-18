@@ -20,7 +20,7 @@ fn main() {
         (args[1].clone(), args[2].clone())
     };
 
-    let local_inventory = {
+    let local_inventory: Inventory<Version, Sha512, Option<()>> = {
         let content = fs::read_to_string(&inventory_path).unwrap_or_else(|e| {
             eprintln!("Error reading inventory file at '{inventory_path}': {e}");
             process::exit(1);
@@ -55,11 +55,16 @@ fn main() {
         process::exit(1);
     });
 
-    let added_artifacts = find_difference(&remote_inventory, &local_inventory);
-    let removed_artifacts = find_difference(&local_inventory, &remote_inventory);
-
-    add_artifacts_to_changelog(&mut changelog, ChangeGroup::Added, added_artifacts);
-    add_artifacts_to_changelog(&mut changelog, ChangeGroup::Removed, removed_artifacts);
+    update_changelog(
+        &mut changelog,
+        ChangeGroup::Added,
+        difference(&remote_inventory.artifacts, &local_inventory.artifacts),
+    );
+    update_changelog(
+        &mut changelog,
+        ChangeGroup::Removed,
+        difference(&local_inventory.artifacts, &remote_inventory.artifacts),
+    );
 
     fs::write(&changelog_path, changelog.to_string()).unwrap_or_else(|e| {
         eprintln!("Failed to write to changelog: {e}");
@@ -67,20 +72,13 @@ fn main() {
     });
 }
 
-/// Finds the difference between two inventories.
-fn find_difference<'a>(
-    inventory_a: &'a Inventory<Version, Sha512, Option<()>>,
-    inventory_b: &'a Inventory<Version, Sha512, Option<()>>,
-) -> Vec<&'a Artifact<Version, Sha512, Option<()>>> {
-    inventory_a
-        .artifacts
-        .iter()
-        .filter(|&artifact| !inventory_b.artifacts.contains(artifact))
-        .collect()
+/// Finds the difference between two slices.
+fn difference<'a, T: Eq>(a: &'a [T], b: &'a [T]) -> Vec<&'a T> {
+    a.iter().filter(|&artifact| !b.contains(artifact)).collect()
 }
 
-/// Helper function to add changes to the changelog.
-fn add_artifacts_to_changelog(
+/// Helper function to update the changelog.
+fn update_changelog(
     changelog: &mut Changelog,
     change_group: ChangeGroup,
     artifacts: Vec<&Artifact<Version, Sha512, Option<()>>>,
@@ -168,7 +166,7 @@ mod tests {
     #[test]
     fn test_find_difference() {
         let local_inventory = Inventory {
-            artifacts: vec![Artifact {
+            artifacts: vec![Artifact::<Version, Sha512, Option<()>> {
                 version: Version::parse("1.0.0").unwrap(),
                 os: Os::Linux,
                 arch: Arch::Amd64,
@@ -199,11 +197,11 @@ mod tests {
             ],
         };
 
-        let added_artifacts = find_difference(&remote_inventory, &local_inventory);
+        let added_artifacts = difference(&remote_inventory.artifacts, &local_inventory.artifacts);
         assert_eq!(added_artifacts.len(), 1);
         assert_eq!(added_artifacts[0].version, Version::parse("1.1.0").unwrap());
 
-        let removed_artifacts = find_difference(&local_inventory, &remote_inventory);
+        let removed_artifacts = difference(&local_inventory.artifacts, &remote_inventory.artifacts);
         assert!(removed_artifacts.is_empty());
     }
 }
