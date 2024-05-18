@@ -33,10 +33,6 @@ pub(crate) fn handle(
             invalid_metadata: &|_| InvalidMetadataAction::DeleteLayer,
             inspect_existing: &|metadata: &SdkLayerMetadata, _path| {
                 if &metadata.artifact == artifact {
-                    log_info(format!(
-                        "Reusing cached .NET SDK version: {}",
-                        artifact.version
-                    ));
                     InspectExistingAction::Keep
                 } else {
                     log_info(format!(
@@ -49,31 +45,39 @@ pub(crate) fn handle(
         },
     )?;
 
-    if let LayerContents::Empty { .. } = &sdk_layer.contents {
-        sdk_layer.replace_metadata(SdkLayerMetadata {
-            artifact: artifact.clone(),
-        })?;
+    match sdk_layer.contents {
+        LayerContents::Cached(()) => {
+            log_info(format!(
+                "Reusing cached .NET SDK version: {}",
+                artifact.version
+            ));
+        }
+        LayerContents::Empty(_) => {
+            sdk_layer.replace_metadata(SdkLayerMetadata {
+                artifact: artifact.clone(),
+            })?;
 
-        libherokubuildpack::log::log_info(format!(
-            "Downloading .NET SDK version {} from {}",
-            artifact.version, artifact.url
-        ));
+            libherokubuildpack::log::log_info(format!(
+                "Downloading .NET SDK version {} from {}",
+                artifact.version, artifact.url
+            ));
 
-        let path = temp_dir().as_path().join("dotnetsdk.tar.gz");
-        download_file(&artifact.url, path.clone()).map_err(SdkLayerError::DownloadSdk)?;
+            let path = temp_dir().as_path().join("dotnetsdk.tar.gz");
+            download_file(&artifact.url, path.clone()).map_err(SdkLayerError::DownloadSdk)?;
 
-        log_info("Verifying checksum");
-        verify_checksum(&artifact.checksum, path.clone())?;
+            log_info("Verifying checksum");
+            verify_checksum(&artifact.checksum, path.clone())?;
 
-        log_info("Installing .NET SDK");
-        decompress_tarball(
-            &mut File::open(path.clone()).map_err(SdkLayerError::OpenTempFile)?,
-            sdk_layer.path(),
-        )
-        .map_err(SdkLayerError::UntarSdk)?;
+            log_info("Installing .NET SDK");
+            decompress_tarball(
+                &mut File::open(path.clone()).map_err(SdkLayerError::OpenTempFile)?,
+                sdk_layer.path(),
+            )
+            .map_err(SdkLayerError::UntarSdk)?;
 
-        sdk_layer.replace_env(&generate_layer_env(sdk_layer.path().as_path()))?;
-    };
+            sdk_layer.replace_env(&generate_layer_env(sdk_layer.path().as_path()))?;
+        }
+    }
 
     Ok(sdk_layer)
 }
