@@ -10,39 +10,37 @@ use std::fs;
 use std::process;
 use std::str::FromStr;
 
-/// Updates the local .NET SDK inventory.toml with artifacts published in the upstream feed.
 fn main() {
-    let inventory_path = env::args().nth(1).unwrap_or_else(|| {
-        eprintln!("Usage: inventory-updater <path/to/inventory.toml> <path/to/CHANGELOG.md>");
-        process::exit(1);
-    });
+    let (inventory_path, changelog_path) = {
+        let args: Vec<String> = env::args().collect();
+        if args.len() != 3 {
+            eprintln!("Usage: inventory-updater <path/to/inventory.toml> <path/to/CHANGELOG.md>");
+            process::exit(1);
+        }
+        (args[1].clone(), args[2].clone())
+    };
 
-    let changelog_path = env::args().nth(2).unwrap_or_else(|| {
-        eprintln!("Usage: inventory-updater <path/to/inventory.toml> <path/to/CHANGELOG.md>");
-        process::exit(1);
-    });
-
-    let local_inventory: Inventory<Version, Sha512, Option<()>> = toml::from_str(
-        &fs::read_to_string(inventory_path.clone()).unwrap_or_else(|e| {
+    let local_inventory = {
+        let content = fs::read_to_string(&inventory_path).unwrap_or_else(|e| {
             eprintln!("Error reading inventory file at '{inventory_path}': {e}");
             process::exit(1);
-        }),
-    )
-    .unwrap_or_else(|e| {
-        eprintln!("Error parsing inventory file at '{inventory_path}': {e}");
-        process::exit(1);
-    });
+        });
+        toml::from_str(&content).unwrap_or_else(|e| {
+            eprintln!("Error parsing inventory file at '{inventory_path}': {e}");
+            process::exit(1);
+        })
+    };
 
-    let remote_inventory = Inventory::<Version, Sha512, Option<()>> {
+    let remote_inventory = Inventory {
         artifacts: list_upstream_artifacts(),
     };
 
-    let toml = toml::to_string(&remote_inventory).unwrap_or_else(|e| {
-        eprintln!("Error serializing inventory as toml: {e}");
+    let toml_content = toml::to_string(&remote_inventory).unwrap_or_else(|e| {
+        eprintln!("Error serializing inventory as TOML: {e}");
         process::exit(1);
     });
 
-    fs::write(&inventory_path, toml).unwrap_or_else(|e| {
+    fs::write(&inventory_path, toml_content).unwrap_or_else(|e| {
         eprintln!("Error writing inventory to file: {e}");
         process::exit(1);
     });
@@ -57,40 +55,11 @@ fn main() {
         process::exit(1);
     });
 
-    let added_artifacts: Vec<_> = remote_inventory
-        .artifacts
-        .iter()
-        .filter(|ra| !local_inventory.artifacts.contains(ra))
-        .collect();
-    let removed_artifacts: Vec<_> = local_inventory
-        .artifacts
-        .iter()
-        .filter(|ia| !remote_inventory.artifacts.contains(ia))
-        .collect();
+    let added_artifacts = find_difference(&remote_inventory, &local_inventory);
+    let removed_artifacts = find_difference(&local_inventory, &remote_inventory);
 
-    [
-        (ChangeGroup::Added, added_artifacts),
-        (ChangeGroup::Removed, removed_artifacts),
-    ]
-    .iter()
-    .filter(|(_, artifacts)| !artifacts.is_empty())
-    .for_each(|(action, artifacts)| {
-        let mut list: Vec<_> = artifacts.iter().collect();
-        list.sort_by_key(|a| &a.version);
-        changelog.unreleased.add(
-            action.clone(),
-            format!(
-                "Inventory .NET SDKs: {}",
-                list.iter()
-                    .map(|artifact| format!(
-                        "{} ({}-{})",
-                        artifact.version, artifact.os, artifact.arch
-                    ))
-                    .collect::<Vec<_>>()
-                    .join(", "),
-            ),
-        );
-    });
+    add_artifacts_to_changelog(&mut changelog, ChangeGroup::Added, added_artifacts);
+    add_artifacts_to_changelog(&mut changelog, ChangeGroup::Removed, removed_artifacts);
 
     fs::write(&changelog_path, changelog.to_string()).unwrap_or_else(|e| {
         eprintln!("Failed to write to changelog: {e}");
@@ -98,31 +67,63 @@ fn main() {
     });
 }
 
-/// Represents the .NET release feed containing multiple releases.
-#[derive(Debug, Deserialize)]
+/// Finds the difference between two inventories.
+fn find_difference<'a>(
+    inventory_a: &'a Inventory<Version, Sha512, Option<()>>,
+    inventory_b: &'a Inventory<Version, Sha512, Option<()>>,
+) -> Vec<&'a Artifact<Version, Sha512, Option<()>>> {
+    inventory_a
+        .artifacts
+        .iter()
+        .filter(|&artifact| !inventory_b.artifacts.contains(artifact))
+        .collect()
+}
+
+/// Helper function to add changes to the changelog.
+fn add_artifacts_to_changelog(
+    changelog: &mut Changelog,
+    change_group: ChangeGroup,
+    artifacts: Vec<&Artifact<Version, Sha512, Option<()>>>,
+) {
+    if !artifacts.is_empty() {
+        let mut sorted_artifacts: Vec<_> = artifacts.into_iter().collect();
+        sorted_artifacts.sort_by_key(|artifact| &artifact.version);
+        let formatted_artifacts = sorted_artifacts
+            .iter()
+            .map(|artifact| format!("{} ({}-{})", artifact.version, artifact.os, artifact.arch))
+            .collect::<Vec<_>>()
+            .join(", ");
+        changelog.unreleased.add(
+            change_group,
+            format!("Inventory .NET SDKs: {formatted_artifacts}"),
+        );
+    }
+}
+
+#[derive(Deserialize)]
 struct DotNetReleaseFeed {
     releases: Vec<Release>,
 }
 
 /// Represents a single .NET release within the release feed.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct Release {
     sdks: Vec<Sdk>,
 }
 
 /// Represents an SDK within a .NET release.
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 struct Sdk {
     version: Version,
-    files: Vec<SdkFile>,
+    files: Vec<File>,
 }
 
 /// Represents a file within an SDK.
-#[derive(Debug, Deserialize)]
-struct SdkFile {
-    hash: String,
+#[derive(Deserialize)]
+struct File {
     rid: String,
     url: String,
+    hash: String,
 }
 
 const DOTNET_UPSTREAM_RELEASE_FEED: &str =
@@ -133,29 +134,76 @@ fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, Option<()>>> {
         .call()
         .expect(".NET release feed should be available")
         .into_json::<DotNetReleaseFeed>()
-        .expect(".NET release feed to be parsable from json")
+        .expect(".NET release feed should be parsable from JSON")
         .releases
-        .iter()
+        .into_iter()
         .flat_map(|release| {
-            release.sdks.iter().flat_map(|sdk| {
-                sdk.files.iter().filter_map(|file| {
+            release.sdks.into_iter().flat_map(|sdk| {
+                sdk.files.into_iter().filter_map(move |file| {
                     let (os, arch) = match file.rid.as_str() {
                         "linux-x64" => (Os::Linux, Arch::Amd64),
                         "linux-arm64" => (Os::Linux, Arch::Arm64),
                         _ => return None,
                     };
-                    Some(Artifact::<_, _, _> {
+                    Some(Artifact {
                         version: sdk.version.clone(),
                         os,
                         arch,
                         url: file.url.clone(),
                         checksum: format!("sha512:{}", file.hash)
                             .parse::<Checksum<Sha512>>()
-                            .expect("checksum to be a valid hex-encoded SHA-512 string"),
+                            .expect("checksum should be a valid hex-encoded SHA-512 string"),
                         metadata: None,
                     })
                 })
             })
         })
-        .collect::<Vec<Artifact<_, _, _>>>()
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_find_difference() {
+        let local_inventory = Inventory {
+            artifacts: vec![Artifact {
+                version: Version::parse("1.0.0").unwrap(),
+                os: Os::Linux,
+                arch: Arch::Amd64,
+                url: "http://example.com/sdk1".to_string(),
+                checksum: "sha512:00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000".parse().unwrap(),
+                metadata: None,
+            }],
+        };
+
+        let remote_inventory = Inventory {
+            artifacts: vec![
+                Artifact {
+                    version: Version::parse("1.0.0").unwrap(),
+                    os: Os::Linux,
+                    arch: Arch::Amd64,
+                    url: "http://example.com/sdk1".to_string(),
+                    checksum: "sha512:00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000".parse().unwrap(),
+                    metadata: None,
+                },
+                Artifact {
+                    version: Version::parse("1.1.0").unwrap(),
+                    os: Os::Linux,
+                    arch: Arch::Amd64,
+                    url: "http://example.com/sdk2".to_string(),
+                    checksum: "sha512:11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111".parse().unwrap(),
+                    metadata: None,
+                },
+            ],
+        };
+
+        let added_artifacts = find_difference(&remote_inventory, &local_inventory);
+        assert_eq!(added_artifacts.len(), 1);
+        assert_eq!(added_artifacts[0].version, Version::parse("1.1.0").unwrap());
+
+        let removed_artifacts = find_difference(&local_inventory, &remote_inventory);
+        assert!(removed_artifacts.is_empty());
+    }
 }
