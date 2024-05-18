@@ -13,8 +13,7 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use std::env::temp_dir;
-use std::fs::File;
-use std::io::Read;
+use std::fs::{self, File};
 use std::path::Path;
 
 #[derive(Serialize, Deserialize)]
@@ -135,9 +134,8 @@ fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<
 where
     D: Digest,
 {
-    let calculated_checksum = File::open(path.as_ref())
-        .map_err(SdkLayerError::OpenTempFile)
-        .map(calculate_checksum::<D>)?
+    let calculated_checksum = fs::read(path.as_ref())
+        .map(|data| D::digest(data).to_vec())
         .map_err(SdkLayerError::ReadTempFile)?;
 
     if calculated_checksum == checksum.value {
@@ -145,12 +143,6 @@ where
     } else {
         Err(SdkLayerError::VerifyChecksum)
     }
-}
-
-fn calculate_checksum<D: Digest>(data: impl Read) -> std::io::Result<Vec<u8>> {
-    data.bytes()
-        .collect::<Result<Vec<_>, _>>()
-        .map(|data| D::digest(data).to_vec())
 }
 
 #[derive(thiserror::Error, Debug)]
