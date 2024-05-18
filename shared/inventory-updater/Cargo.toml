@@ -7,7 +7,7 @@ edition.workspace = true
 workspace = true
 
 [dependencies]
-heroku-inventory-utils = { git = "https://github.com/heroku/buildpacks-go/", rev = "2a86fae18332b9bd495eb29422c13ac3fcb2d0dc" }
+inventory = { git = "https://github.com/malax/inventory", features = ["sha2", "semver"]}
 keep_a_changelog = { git = "https://github.com/heroku/keep_a_changelog", rev = "f92ec48c9257ff8d67df1eb8e942a2c25cf2ba91" }
 semver = "1.0"
 serde = "1"

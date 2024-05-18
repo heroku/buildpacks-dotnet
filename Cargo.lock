@@ -378,19 +378,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
 
 [[package]]
-name = "heroku-inventory-utils"
-version = "0.0.0"
-source = "git+https://github.com/heroku/buildpacks-go/?rev=2a86fae18332b9bd495eb29422c13ac3fcb2d0dc#2a86fae18332b9bd495eb29422c13ac3fcb2d0dc"
-dependencies = [
- "hex",
- "semver",
- "serde",
- "sha2",
- "thiserror",
- "toml",
-]
-
-[[package]]
 name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -487,7 +474,7 @@ dependencies = [
 name = "inventory-updater"
 version = "0.0.0"
 dependencies = [
- "heroku-inventory-utils",
+ "inventory",
  "keep_a_changelog",
  "semver",
  "serde",
