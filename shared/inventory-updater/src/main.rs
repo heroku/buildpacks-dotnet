@@ -1,12 +1,14 @@
-use heroku_inventory_utils::checksum::Checksum;
-use heroku_inventory_utils::inv::{read_inventory_file, Arch, Artifact, Inventory, Os};
+use inventory::artifact::{Arch, Artifact, Os};
+use inventory::checksum::Checksum;
+use inventory::inventory::Inventory;
 use keep_a_changelog::{ChangeGroup, Changelog};
 use semver::Version;
 use serde::Deserialize;
 use sha2::Sha512;
-use std::collections::HashSet;
+use std::env;
+use std::fs;
+use std::process;
 use std::str::FromStr;
-use std::{env, fs, process};
 
 /// Updates the local .NET SDK inventory.toml with artifacts published in the upstream feed.
 fn main() {
@@ -20,36 +22,32 @@ fn main() {
         process::exit(1);
     });
 
-    let inventory_artifacts: HashSet<Artifact<Version, Sha512>> =
-        read_inventory_file(&inventory_path)
-            .unwrap_or_else(|e| {
-                eprintln!("Error reading inventory at '{inventory_path}': {e}");
-                process::exit(1);
-            })
-            .artifacts
-            .into_iter()
-            .collect();
+    let local_inventory: Inventory<Version, Sha512, Option<()>> = toml::from_str(
+        &fs::read_to_string(inventory_path.clone()).unwrap_or_else(|e| {
+            eprintln!("Error reading inventory file at '{inventory_path}': {e}");
+            process::exit(1);
+        }),
+    )
+    .unwrap_or_else(|e| {
+        eprintln!("Error parsing inventory file at '{inventory_path}': {e}");
+        process::exit(1);
+    });
 
-    let remote_artifacts = list_upstream_artifacts();
-
-    let inventory = Inventory {
-        artifacts: remote_artifacts,
+    let remote_inventory = Inventory::<Version, Sha512, Option<()>> {
+        artifacts: list_upstream_artifacts(),
     };
 
-    let toml = toml::to_string(&inventory).unwrap_or_else(|e| {
+    let toml = toml::to_string(&remote_inventory).unwrap_or_else(|e| {
         eprintln!("Error serializing inventory as toml: {e}");
         process::exit(1);
     });
 
-    fs::write(inventory_path, toml).unwrap_or_else(|e| {
+    fs::write(&inventory_path, toml).unwrap_or_else(|e| {
         eprintln!("Error writing inventory to file: {e}");
         process::exit(1);
     });
 
-    let remote_artifacts: HashSet<Artifact<Version, Sha512>> =
-        inventory.artifacts.into_iter().collect();
-
-    let changelog_contents = fs::read_to_string(changelog_path.clone()).unwrap_or_else(|e| {
+    let changelog_contents = fs::read_to_string(&changelog_path).unwrap_or_else(|e| {
         eprintln!("Error reading changelog at '{changelog_path}': {e}");
         process::exit(1);
     });
@@ -59,31 +57,42 @@ fn main() {
         process::exit(1);
     });
 
+    let added_artifacts: Vec<_> = remote_inventory
+        .artifacts
+        .iter()
+        .filter(|ra| !local_inventory.artifacts.contains(ra))
+        .collect();
+    let removed_artifacts: Vec<_> = local_inventory
+        .artifacts
+        .iter()
+        .filter(|ia| !remote_inventory.artifacts.contains(ia))
+        .collect();
+
     [
-        (ChangeGroup::Added, &remote_artifacts - &inventory_artifacts),
-        (
-            ChangeGroup::Removed,
-            &inventory_artifacts - &remote_artifacts,
-        ),
+        (ChangeGroup::Added, added_artifacts),
+        (ChangeGroup::Removed, removed_artifacts),
     ]
     .iter()
-    .filter(|(_, artifact_diff)| !artifact_diff.is_empty())
+    .filter(|(_, artifacts)| !artifacts.is_empty())
     .for_each(|(action, artifacts)| {
-        let mut list: Vec<&Artifact<Version, Sha512>> = artifacts.iter().collect();
+        let mut list: Vec<_> = artifacts.iter().collect();
         list.sort_by_key(|a| &a.version);
         changelog.unreleased.add(
             action.clone(),
             format!(
                 "Inventory .NET SDKs: {}",
                 list.iter()
-                    .map(ToString::to_string)
+                    .map(|artifact| format!(
+                        "{} ({}-{})",
+                        artifact.version, artifact.os, artifact.arch
+                    ))
                     .collect::<Vec<_>>()
                     .join(", "),
             ),
         );
     });
 
-    fs::write(changelog_path, changelog.to_string()).unwrap_or_else(|e| {
+    fs::write(&changelog_path, changelog.to_string()).unwrap_or_else(|e| {
         eprintln!("Failed to write to changelog: {e}");
         process::exit(1);
     });
@@ -119,7 +128,7 @@ struct SdkFile {
 const DOTNET_UPSTREAM_RELEASE_FEED: &str =
     "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/releases.json";
 
-fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512>> {
+fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, Option<()>>> {
     ureq::get(DOTNET_UPSTREAM_RELEASE_FEED)
         .call()
         .expect(".NET release feed should be available")
@@ -135,16 +144,18 @@ fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512>> {
                         "linux-arm64" => (Os::Linux, Arch::Arm64),
                         _ => return None,
                     };
-                    Some(Artifact::<_, _> {
+                    Some(Artifact::<_, _, _> {
                         version: sdk.version.clone(),
                         os,
                         arch,
                         url: file.url.clone(),
-                        checksum: Checksum::try_from(file.hash.clone())
+                        checksum: format!("sha512:{}", file.hash)
+                            .parse::<Checksum<Sha512>>()
                             .expect("checksum to be a valid hex-encoded SHA-512 string"),
+                        metadata: None,
                     })
                 })
             })
         })
-        .collect::<Vec<Artifact<_, _>>>()
+        .collect::<Vec<Artifact<_, _, _>>>()
 }
