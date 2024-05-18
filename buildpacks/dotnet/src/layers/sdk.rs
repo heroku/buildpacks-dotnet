@@ -147,7 +147,7 @@ where
     }
 }
 
-fn calculate_checksum<D: Digest>(data: impl Read) -> Result<Vec<u8>, std::io::Error> {
+fn calculate_checksum<D: Digest>(data: impl Read) -> std::io::Result<Vec<u8>> {
     data.bytes()
         .collect::<Result<Vec<_>, _>>()
         .map(|data| D::digest(data).to_vec())
