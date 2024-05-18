@@ -55,11 +55,16 @@ fn main() {
         process::exit(1);
     });
 
-    let added_artifacts = difference(&remote_inventory.artifacts, &local_inventory.artifacts);
-    let removed_artifacts = difference(&local_inventory.artifacts, &remote_inventory.artifacts);
-
-    add_artifacts_to_changelog(&mut changelog, ChangeGroup::Added, added_artifacts);
-    add_artifacts_to_changelog(&mut changelog, ChangeGroup::Removed, removed_artifacts);
+    update_changelog(
+        &mut changelog,
+        ChangeGroup::Added,
+        difference(&remote_inventory.artifacts, &local_inventory.artifacts),
+    );
+    update_changelog(
+        &mut changelog,
+        ChangeGroup::Removed,
+        difference(&local_inventory.artifacts, &remote_inventory.artifacts),
+    );
 
     fs::write(&changelog_path, changelog.to_string()).unwrap_or_else(|e| {
         eprintln!("Failed to write to changelog: {e}");
@@ -72,8 +77,8 @@ fn difference<'a, T: Eq>(a: &'a [T], b: &'a [T]) -> Vec<&'a T> {
     a.iter().filter(|&artifact| !b.contains(artifact)).collect()
 }
 
-/// Helper function to add changes to the changelog.
-fn add_artifacts_to_changelog(
+/// Helper function to update the changelog.
+fn update_changelog(
     changelog: &mut Changelog,
     change_group: ChangeGroup,
     artifacts: Vec<&Artifact<Version, Sha512, Option<()>>>,
