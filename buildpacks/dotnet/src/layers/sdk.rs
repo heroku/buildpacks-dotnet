@@ -1,4 +1,6 @@
-use crate::dotnet_project::DotnetProject;
+use crate::dotnet_project::{self, DotnetProject};
+use crate::global_json::GlobalJsonError;
+use crate::tfm::ParseTargetFrameworkError;
 use crate::{detect, global_json, tfm, DotnetBuildpack, DotnetBuildpackError};
 use inventory::artifact::{Arch, Artifact, Os};
 use inventory::checksum::Checksum;
@@ -16,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use std::env::{consts, temp_dir};
 use std::fs::{self, File};
+use std::io;
 use std::path::Path;
 
 #[derive(Serialize, Deserialize)]
@@ -41,14 +44,14 @@ pub(crate) fn handle(
         log_info("Detected global.json file in the root directory");
 
         fs::read_to_string(file.as_path())
-            .map_err(DotnetBuildpackError::ReadGlobalJsonFile)
+            .map_err(SdkLayerError::ReadGlobalJsonFile)
             .map(|content| global_json::parse_global_json(&content))?
-            .map_err(DotnetBuildpackError::ParseGlobalJson)?
+            .map_err(SdkLayerError::ParseGlobalJson)?
     } else {
         let dotnet_project = fs::read_to_string(dotnet_project_file)
-            .map_err(DotnetBuildpackError::ReadProjectFile)?
+            .map_err(SdkLayerError::ReadProjectFile)?
             .parse::<DotnetProject>()
-            .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
+            .map_err(SdkLayerError::ParseDotnetProjectFile)?;
 
         // TODO: Remove this (currently here for debugging, and making the linter happy)
         log_info(format!(
@@ -56,7 +59,7 @@ pub(crate) fn handle(
             dotnet_project.project_type, dotnet_project.sdk_id, dotnet_project.target_framework
         ));
         tfm::parse_target_framework(&dotnet_project.target_framework)
-            .map_err(DotnetBuildpackError::ParseTargetFramework)?
+            .map_err(SdkLayerError::ParseTargetFramework)?
     };
 
     log_info(format!(
@@ -206,6 +209,22 @@ pub(crate) enum SdkLayerError {
     OpenTempFile(std::io::Error),
     #[error("Couldn't read tempfile for .NET SDK: {0}")]
     ReadTempFile(std::io::Error),
+    #[error("Couldn't parse .NET SDK inventory: {0}")]
+    ParseInventory(toml::de::Error),
+    #[error("Couldn't parse .NET SDK version: {0}")]
+    ParseSdkVersion(#[from] semver::Error),
+    #[error("Couldn't resolve .NET SDK version: {0}")]
+    ResolveSdkVersion(semver::VersionReq),
+    #[error("Error reading project file")]
+    ReadProjectFile(io::Error),
+    #[error("Error parsing .NET project file")]
+    ParseDotnetProjectFile(dotnet_project::ParseError),
+    #[error("Error parsing target framework: {0}")]
+    ParseTargetFramework(ParseTargetFrameworkError),
+    #[error("Error reading global.json file")]
+    ReadGlobalJsonFile(io::Error),
+    #[error("Error parsing global.json file: {0}")]
+    ParseGlobalJson(GlobalJsonError),
 }
 
 impl From<SdkLayerError> for libcnb::Error<DotnetBuildpackError> {
@@ -220,13 +239,13 @@ fn resolve_sdk_artifact(
     requirement: &VersionReq,
 ) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
     let inv: Inventory<Version, Sha512, Option<()>> =
-        toml::from_str(INVENTORY).map_err(DotnetBuildpackError::ParseInventory)?;
+        toml::from_str(INVENTORY).map_err(SdkLayerError::ParseInventory)?;
 
     let artifact = match (consts::OS.parse::<Os>(), consts::ARCH.parse::<Arch>()) {
         (Ok(os), Ok(arch)) => inv.resolve(os, arch, requirement),
         (_, _) => None,
     }
-    .ok_or(DotnetBuildpackError::ResolveSdkVersion(requirement.clone()))?;
+    .ok_or(SdkLayerError::ResolveSdkVersion(requirement.clone()))?;
 
     Ok(artifact.clone())
 }

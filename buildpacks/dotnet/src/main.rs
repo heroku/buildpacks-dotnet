@@ -5,9 +5,7 @@ mod layers;
 mod tfm;
 mod utils;
 
-use crate::global_json::GlobalJsonError;
 use crate::layers::sdk::SdkLayerError;
-use crate::tfm::ParseTargetFrameworkError;
 use libcnb::build::BuildResultBuilder;
 use libcnb::detect::DetectResultBuilder;
 use libcnb::generic::{GenericMetadata, GenericPlatform};
@@ -54,22 +52,6 @@ enum DotnetBuildpackError {
     BuildpackDetection(io::Error),
     #[error(transparent)]
     SdkLayer(#[from] SdkLayerError),
-    #[error("Couldn't parse .NET SDK inventory: {0}")]
-    ParseInventory(toml::de::Error),
-    #[error("Couldn't parse .NET SDK version: {0}")]
-    ParseSdkVersion(#[from] semver::Error),
-    #[error("Couldn't resolve .NET SDK version: {0}")]
-    ResolveSdkVersion(semver::VersionReq),
-    #[error("Error reading project file")]
-    ReadProjectFile(io::Error),
-    #[error("Error parsing .NET project file")]
-    ParseDotnetProjectFile(dotnet_project::ParseError),
-    #[error("Error parsing target framework: {0}")]
-    ParseTargetFramework(ParseTargetFrameworkError),
-    #[error("Error reading global.json file")]
-    ReadGlobalJsonFile(io::Error),
-    #[error("Error parsing global.json file: {0}")]
-    ParseGlobalJson(GlobalJsonError),
 }
 
 impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
