@@ -1,6 +1,10 @@
-use crate::{DotnetBuildpack, DotnetBuildpackError};
-use inventory::artifact::Artifact;
+use crate::dotnet_project::{self, DotnetProject};
+use crate::global_json::GlobalJsonError;
+use crate::tfm::ParseTargetFrameworkError;
+use crate::{detect, global_json, tfm, DotnetBuildpack, DotnetBuildpackError};
+use inventory::artifact::{Arch, Artifact, Os};
 use inventory::checksum::Checksum;
+use inventory::inventory::Inventory;
 use libcnb::data::layer_name;
 use libcnb::layer::{
     CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction, LayerContents, LayerRef,
@@ -9,11 +13,12 @@ use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libherokubuildpack::download::download_file;
 use libherokubuildpack::log::log_info;
 use libherokubuildpack::tar::decompress_tarball;
-use semver::Version;
+use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
-use std::env::temp_dir;
+use std::env::{consts, temp_dir};
 use std::fs::{self, File};
+use std::io;
 use std::path::Path;
 
 #[derive(Serialize, Deserialize)]
@@ -22,9 +27,52 @@ pub(crate) struct SdkLayerMetadata {
 }
 
 pub(crate) fn handle(
-    artifact: &Artifact<Version, Sha512, Option<()>>,
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
 ) -> Result<LayerRef<DotnetBuildpack, (), ()>, libcnb::Error<DotnetBuildpackError>> {
+    // TODO: Implement and document the project/solution file selection logic
+    let project_files = detect::dotnet_project_files(context.app_dir.clone())
+        .expect("function to pass after detection");
+
+    let dotnet_project_file = project_files.first().expect("a project file to be present");
+
+    log_info(format!(
+        "Detected .NET project file: {}",
+        dotnet_project_file.to_string_lossy()
+    ));
+
+    let requirement = if let Some(file) = detect::find_global_json(context.app_dir.clone()) {
+        log_info("Detected global.json file in the root directory");
+
+        fs::read_to_string(file.as_path())
+            .map_err(SdkLayerError::ReadGlobalJsonFile)
+            .map(|content| global_json::parse_global_json(&content))?
+            .map_err(SdkLayerError::ParseGlobalJson)?
+    } else {
+        let dotnet_project = fs::read_to_string(dotnet_project_file)
+            .map_err(SdkLayerError::ReadProjectFile)?
+            .parse::<DotnetProject>()
+            .map_err(SdkLayerError::ParseDotnetProjectFile)?;
+
+        // TODO: Remove this (currently here for debugging, and making the linter happy)
+        log_info(format!(
+            "Project type is {:?} using SDK \"{}\" specifies TFM \"{}\"",
+            dotnet_project.project_type, dotnet_project.sdk_id, dotnet_project.target_framework
+        ));
+        tfm::parse_target_framework(&dotnet_project.target_framework)
+            .map_err(SdkLayerError::ParseTargetFramework)?
+    };
+
+    log_info(format!(
+        "Inferred SDK version requirement: {}",
+        &requirement.to_string()
+    ));
+    let artifact = resolve_sdk_artifact(&requirement)?;
+
+    log_info(format!(
+        "Resolved .NET SDK version {} ({}-{})",
+        artifact.version, artifact.os, artifact.arch
+    ));
+
     let sdk_layer = context.cached_layer(
         layer_name!("sdk"),
         CachedLayerDefinition {
@@ -32,7 +80,7 @@ pub(crate) fn handle(
             launch: true,
             invalid_metadata: &|_| InvalidMetadataAction::DeleteLayer,
             inspect_existing: &|metadata: &SdkLayerMetadata, _path| {
-                if &metadata.artifact == artifact {
+                if metadata.artifact == artifact {
                     InspectExistingAction::Keep
                 } else {
                     log_info(format!(
@@ -161,12 +209,45 @@ pub(crate) enum SdkLayerError {
     OpenTempFile(std::io::Error),
     #[error("Couldn't read tempfile for .NET SDK: {0}")]
     ReadTempFile(std::io::Error),
+    #[error("Couldn't parse .NET SDK inventory: {0}")]
+    ParseInventory(toml::de::Error),
+    #[error("Couldn't parse .NET SDK version: {0}")]
+    ParseSdkVersion(#[from] semver::Error),
+    #[error("Couldn't resolve .NET SDK version: {0}")]
+    ResolveSdkVersion(semver::VersionReq),
+    #[error("Error reading project file")]
+    ReadProjectFile(io::Error),
+    #[error("Error parsing .NET project file")]
+    ParseDotnetProjectFile(dotnet_project::ParseError),
+    #[error("Error parsing target framework: {0}")]
+    ParseTargetFramework(ParseTargetFrameworkError),
+    #[error("Error reading global.json file")]
+    ReadGlobalJsonFile(io::Error),
+    #[error("Error parsing global.json file: {0}")]
+    ParseGlobalJson(GlobalJsonError),
 }
 
 impl From<SdkLayerError> for libcnb::Error<DotnetBuildpackError> {
     fn from(value: SdkLayerError) -> Self {
         libcnb::Error::BuildpackError(DotnetBuildpackError::SdkLayer(value))
     }
+}
+
+const INVENTORY: &str = include_str!("../../inventory.toml");
+
+fn resolve_sdk_artifact(
+    requirement: &VersionReq,
+) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
+    let inv: Inventory<Version, Sha512, Option<()>> =
+        toml::from_str(INVENTORY).map_err(SdkLayerError::ParseInventory)?;
+
+    let artifact = match (consts::OS.parse::<Os>(), consts::ARCH.parse::<Arch>()) {
+        (Ok(os), Ok(arch)) => inv.resolve(os, arch, requirement),
+        (_, _) => None,
+    }
+    .ok_or(SdkLayerError::ResolveSdkVersion(requirement.clone()))?;
+
+    Ok(artifact.clone())
 }
 
 #[cfg(test)]

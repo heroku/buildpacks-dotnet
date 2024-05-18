@@ -5,21 +5,13 @@ mod layers;
 mod tfm;
 mod utils;
 
-use crate::dotnet_project::DotnetProject;
-use crate::global_json::GlobalJsonError;
 use crate::layers::sdk::SdkLayerError;
-use crate::tfm::ParseTargetFrameworkError;
-use inventory::artifact::{Arch, Artifact, Os};
-use inventory::inventory::Inventory;
 use libcnb::build::BuildResultBuilder;
 use libcnb::detect::DetectResultBuilder;
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::{buildpack_main, Buildpack};
 use libherokubuildpack::log::{log_header, log_info};
-use semver::{Version, VersionReq};
-use sha2::Sha512;
-use std::env::consts;
-use std::{fs, io};
+use std::io;
 
 struct DotnetBuildpack;
 
@@ -48,72 +40,10 @@ impl Buildpack for DotnetBuildpack {
         context: libcnb::build::BuildContext<Self>,
     ) -> libcnb::Result<libcnb::build::BuildResult, Self::Error> {
         log_header(".NET SDK");
-
-        // TODO: Implement and document the project/solution file selection logic
-        let project_files = detect::dotnet_project_files(context.app_dir.clone())
-            .expect("function to pass after detection");
-
-        let dotnet_project_file = project_files.first().expect("a project file to be present");
-
-        log_info(format!(
-            "Detected .NET project file: {}",
-            dotnet_project_file.to_string_lossy()
-        ));
-
-        let requirement = if let Some(file) = detect::find_global_json(context.app_dir.clone()) {
-            log_info("Detected global.json file in the root directory");
-
-            fs::read_to_string(file.as_path())
-                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)
-                .map(|content| global_json::parse_global_json(&content))?
-                .map_err(DotnetBuildpackError::ParseGlobalJson)?
-        } else {
-            let dotnet_project = fs::read_to_string(dotnet_project_file)
-                .map_err(DotnetBuildpackError::ReadProjectFile)?
-                .parse::<DotnetProject>()
-                .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
-
-            // TODO: Remove this (currently here for debugging, and making the linter happy)
-            log_info(format!(
-                "Project type is {:?} using SDK \"{}\" specifies TFM \"{}\"",
-                dotnet_project.project_type, dotnet_project.sdk_id, dotnet_project.target_framework
-            ));
-            tfm::parse_target_framework(&dotnet_project.target_framework)
-                .map_err(DotnetBuildpackError::ParseTargetFramework)?
-        };
-
-        log_info(format!(
-            "Inferred SDK version requirement: {}",
-            &requirement.to_string()
-        ));
-        let artifact = resolve_sdk_artifact(&requirement)?;
-
-        log_info(format!(
-            "Resolved .NET SDK version {} ({}-{})",
-            artifact.version, artifact.os, artifact.arch
-        ));
-
-        let _sdk_layer = layers::sdk::handle(&artifact, &context)?;
+        let _sdk_layer = layers::sdk::handle(&context)?;
 
         BuildResultBuilder::new().build()
     }
-}
-
-const INVENTORY: &str = include_str!("../inventory.toml");
-
-fn resolve_sdk_artifact(
-    requirement: &VersionReq,
-) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
-    let inv: Inventory<Version, Sha512, Option<()>> =
-        toml::from_str(INVENTORY).map_err(DotnetBuildpackError::ParseInventory)?;
-
-    let artifact = match (consts::OS.parse::<Os>(), consts::ARCH.parse::<Arch>()) {
-        (Ok(os), Ok(arch)) => inv.resolve(os, arch, requirement),
-        (_, _) => None,
-    }
-    .ok_or(DotnetBuildpackError::ResolveSdkVersion(requirement.clone()))?;
-
-    Ok(artifact.clone())
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -122,22 +52,6 @@ enum DotnetBuildpackError {
     BuildpackDetection(io::Error),
     #[error(transparent)]
     SdkLayer(#[from] SdkLayerError),
-    #[error("Couldn't parse .NET SDK inventory: {0}")]
-    ParseInventory(toml::de::Error),
-    #[error("Couldn't parse .NET SDK version: {0}")]
-    ParseSdkVersion(#[from] semver::Error),
-    #[error("Couldn't resolve .NET SDK version: {0}")]
-    ResolveSdkVersion(semver::VersionReq),
-    #[error("Error reading project file")]
-    ReadProjectFile(io::Error),
-    #[error("Error parsing .NET project file")]
-    ParseDotnetProjectFile(dotnet_project::ParseError),
-    #[error("Error parsing target framework: {0}")]
-    ParseTargetFramework(ParseTargetFrameworkError),
-    #[error("Error reading global.json file")]
-    ReadGlobalJsonFile(io::Error),
-    #[error("Error parsing global.json file: {0}")]
-    ParseGlobalJson(GlobalJsonError),
 }
 
 impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
