@@ -6,12 +6,18 @@ mod tfm;
 mod utils;
 
 use crate::layers::sdk::SdkLayerError;
+use crate::utils::StreamedCommandError;
 use libcnb::build::BuildResultBuilder;
+use libcnb::data::layer_name;
 use libcnb::detect::DetectResultBuilder;
 use libcnb::generic::{GenericMetadata, GenericPlatform};
-use libcnb::{buildpack_main, Buildpack};
+use libcnb::layer::{CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction};
+use libcnb::layer_env::{LayerEnv, Scope};
+use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::log::{log_header, log_info};
+use serde::{Deserialize, Serialize};
 use std::io;
+use std::process::Command;
 
 struct DotnetBuildpack;
 
@@ -40,10 +46,59 @@ impl Buildpack for DotnetBuildpack {
         context: libcnb::build::BuildContext<Self>,
     ) -> libcnb::Result<libcnb::build::BuildResult, Self::Error> {
         log_header(".NET SDK");
-        let _sdk_layer = layers::sdk::handle(&context)?;
+        let sdk_layer = layers::sdk::handle(&context)?;
+
+        let nuget_cache_layer = context.cached_layer(
+            layer_name!("nuget-cache"),
+            CachedLayerDefinition {
+                build: false,
+                launch: false,
+                invalid_metadata: &|_| {
+                    log_info("Invalid NuGet package cache");
+                    InvalidMetadataAction::DeleteLayer
+                },
+                inspect_existing: &|_metadata: &NugetCacheLayerMetadata, _path| {
+                    InspectExistingAction::Keep
+                },
+            },
+        )?;
+
+        match nuget_cache_layer.contents {
+            libcnb::layer::LayerContents::Cached(()) => log_info("Reusing NuGet package cache"),
+            libcnb::layer::LayerContents::Empty(_) => {
+                log_info("Empty NuGet package cache");
+                nuget_cache_layer.replace_metadata(NugetCacheLayerMetadata {
+                    // TODO: Implement cache expiration/purging logic
+                    version: String::from("foo"),
+                })?;
+            }
+        }
+
+        let command_env = LayerEnv::read_from_layer_dir(sdk_layer.path())
+            .map_err(DotnetBuildpackError::ReadSdkLayerEnvironment)?
+            .chainable_insert(
+                Scope::Build,
+                libcnb::layer_env::ModificationBehavior::Override,
+                "NUGET_PACKAGES",
+                nuget_cache_layer.path(),
+            );
+
+        log_header("Publish");
+        utils::run_command_and_stream_output(
+            Command::new("dotnet")
+                .args(["publish", "--verbosity", "normal"])
+                .current_dir(&context.app_dir)
+                .envs(&command_env.apply(Scope::Build, &Env::from_current())),
+        )
+        .map_err(DotnetBuildpackError::PublishCommand)?;
 
         BuildResultBuilder::new().build()
     }
+}
+
+#[derive(Serialize, Deserialize)]
+struct NugetCacheLayerMetadata {
+    version: String,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -52,6 +107,10 @@ enum DotnetBuildpackError {
     BuildpackDetection(io::Error),
     #[error(transparent)]
     SdkLayer(#[from] SdkLayerError),
+    #[error("Error reading SDK layer environment")]
+    ReadSdkLayerEnvironment(io::Error),
+    #[error("Error executing publish task")]
+    PublishCommand(#[from] StreamedCommandError),
 }
 
 impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {

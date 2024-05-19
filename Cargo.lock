@@ -99,6 +99,7 @@ dependencies = [
  "libcnb",
  "libcnb-test",
  "libherokubuildpack",
+ "regex",
  "roxmltree",
  "semver",
  "serde",
