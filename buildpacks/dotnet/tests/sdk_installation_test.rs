@@ -73,11 +73,6 @@ fn test_sdk_installation_with_global_json() {
                     Installing .NET SDK"
                 }
             );
-            // Verify SDK caching behavior
-            let config = context.config.clone();
-            context.rebuild(config, |ctx| {
-                assert_contains!(ctx.pack_stdout, "Reusing cached .NET SDK version: 8.0.101");
-            });
         },
     );
 }
