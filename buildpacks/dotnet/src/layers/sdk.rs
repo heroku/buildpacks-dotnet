@@ -4,7 +4,7 @@ use crate::tfm::ParseTargetFrameworkError;
 use crate::{detect, global_json, tfm, DotnetBuildpack, DotnetBuildpackError};
 use inventory::artifact::{Arch, Artifact, Os};
 use inventory::checksum::Checksum;
-use inventory::inventory::Inventory;
+use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::data::layer_name;
 use libcnb::layer::{
     CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction, LayerContents, LayerRef,
@@ -66,9 +66,9 @@ pub(crate) fn handle(
         "Inferred SDK version requirement: {}",
         &requirement.to_string()
     ));
-    let inventory: Inventory<Version, Sha512, Option<()>> =
-        toml::from_str(include_str!("../../inventory.toml"))
-            .map_err(SdkLayerError::ParseInventory)?;
+    let inventory = include_str!("../../inventory.toml")
+        .parse::<Inventory<Version, Sha512, Option<()>>>()
+        .map_err(SdkLayerError::ParseInventory)?;
 
     let artifact = inventory
         .resolve(
@@ -224,7 +224,7 @@ pub(crate) enum SdkLayerError {
     #[error("Couldn't read tempfile for .NET SDK: {0}")]
     ReadTempFile(std::io::Error),
     #[error("Couldn't parse .NET SDK inventory: {0}")]
-    ParseInventory(toml::de::Error),
+    ParseInventory(ParseInventoryError),
     #[error("Couldn't parse .NET SDK version: {0}")]
     ParseSdkVersion(#[from] semver::Error),
     #[error("Couldn't resolve .NET SDK version: {0}")]
