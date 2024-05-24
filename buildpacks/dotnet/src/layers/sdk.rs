@@ -4,7 +4,7 @@ use crate::tfm::ParseTargetFrameworkError;
 use crate::{detect, global_json, tfm, DotnetBuildpack, DotnetBuildpackError};
 use inventory::artifact::{Arch, Artifact, Os};
 use inventory::checksum::Checksum;
-use inventory::inventory::Inventory;
+use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::data::layer_name;
 use libcnb::layer::{
     CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction, LayerContents, LayerRef,
@@ -13,7 +13,7 @@ use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 use libherokubuildpack::download::download_file;
 use libherokubuildpack::log::log_info;
 use libherokubuildpack::tar::decompress_tarball;
-use semver::{Version, VersionReq};
+use semver::Version;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use std::env::{consts, temp_dir};
@@ -66,7 +66,21 @@ pub(crate) fn handle(
         "Inferred SDK version requirement: {}",
         &requirement.to_string()
     ));
-    let artifact = resolve_sdk_artifact(&requirement)?;
+    let inventory = include_str!("../../inventory.toml")
+        .parse::<Inventory<Version, Sha512, Option<()>>>()
+        .map_err(SdkLayerError::ParseInventory)?;
+
+    let artifact = inventory
+        .resolve(
+            consts::OS
+                .parse::<Os>()
+                .expect("OS should be always parseable, buildpack will not run on unsupported operating systems."),
+            consts::ARCH
+                .parse::<Arch>()
+                .expect("Arch should be always parseable, buildpack will not run on unsupported architectures."),
+            &requirement
+        )
+        .ok_or(SdkLayerError::ResolveSdkVersion(requirement))?;
 
     log_info(format!(
         "Resolved .NET SDK version {} ({}-{})",
@@ -80,7 +94,7 @@ pub(crate) fn handle(
             launch: true,
             invalid_metadata: &|_| InvalidMetadataAction::DeleteLayer,
             inspect_existing: &|metadata: &SdkLayerMetadata, _path| {
-                if metadata.artifact == artifact {
+                if metadata.artifact == *artifact {
                     InspectExistingAction::Keep
                 } else {
                     log_info(format!(
@@ -210,7 +224,7 @@ pub(crate) enum SdkLayerError {
     #[error("Couldn't read tempfile for .NET SDK: {0}")]
     ReadTempFile(std::io::Error),
     #[error("Couldn't parse .NET SDK inventory: {0}")]
-    ParseInventory(toml::de::Error),
+    ParseInventory(ParseInventoryError),
     #[error("Couldn't parse .NET SDK version: {0}")]
     ParseSdkVersion(#[from] semver::Error),
     #[error("Couldn't resolve .NET SDK version: {0}")]
@@ -231,23 +245,6 @@ impl From<SdkLayerError> for libcnb::Error<DotnetBuildpackError> {
     fn from(value: SdkLayerError) -> Self {
         libcnb::Error::BuildpackError(DotnetBuildpackError::SdkLayer(value))
     }
-}
-
-const INVENTORY: &str = include_str!("../../inventory.toml");
-
-fn resolve_sdk_artifact(
-    requirement: &VersionReq,
-) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
-    let inv: Inventory<Version, Sha512, Option<()>> =
-        toml::from_str(INVENTORY).map_err(SdkLayerError::ParseInventory)?;
-
-    let artifact = match (consts::OS.parse::<Os>(), consts::ARCH.parse::<Arch>()) {
-        (Ok(os), Ok(arch)) => inv.resolve(os, arch, requirement),
-        (_, _) => None,
-    }
-    .ok_or(SdkLayerError::ResolveSdkVersion(requirement.clone()))?;
-
-    Ok(artifact.clone())
 }
 
 #[cfg(test)]

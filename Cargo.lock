@@ -107,7 +107,6 @@ dependencies = [
  "sha2",
  "tempdir",
  "thiserror",
- "toml",
 ]
 
 [[package]]
