@@ -238,11 +238,11 @@ const INVENTORY: &str = include_str!("../../inventory.toml");
 fn resolve_sdk_artifact(
     requirement: &VersionReq,
 ) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
-    let inv: Inventory<Version, Sha512, Option<()>> =
+    let inventory: Inventory<Version, Sha512, Option<()>> =
         toml::from_str(INVENTORY).map_err(SdkLayerError::ParseInventory)?;
 
     let artifact = match (consts::OS.parse::<Os>(), consts::ARCH.parse::<Arch>()) {
-        (Ok(os), Ok(arch)) => inv.resolve(os, arch, requirement),
+        (Ok(os), Ok(arch)) => inventory.resolve(os, arch, requirement),
         (_, _) => None,
     }
     .ok_or(SdkLayerError::ResolveSdkVersion(requirement.clone()))?;
