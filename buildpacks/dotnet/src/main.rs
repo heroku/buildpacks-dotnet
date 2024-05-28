@@ -7,10 +7,12 @@ mod layers;
 mod tfm;
 mod utils;
 
+use crate::dotnet_project::DotnetProject;
 use crate::layers::sdk::SdkLayerError;
 use crate::utils::StreamedCommandError;
 use libcnb::build::BuildResultBuilder;
-use libcnb::data::layer_name;
+use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
+use libcnb::data::{layer_name, process_type};
 use libcnb::detect::DetectResultBuilder;
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer::{CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction};
@@ -18,8 +20,8 @@ use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::log::{log_header, log_info};
 use serde::{Deserialize, Serialize};
-use std::io;
 use std::process::Command;
+use std::{fs, io};
 
 struct DotnetBuildpack;
 
@@ -47,6 +49,29 @@ impl Buildpack for DotnetBuildpack {
         &self,
         context: libcnb::build::BuildContext<Self>,
     ) -> libcnb::Result<libcnb::build::BuildResult, Self::Error> {
+        // TODO: WIP
+        let project_files_result = detect::dotnet_project_files(context.app_dir.clone())
+            .expect("no issues finding project files after detect");
+
+        let project_file = project_files_result
+            .first()
+            .expect("at least one project file");
+
+        let dotnet_project = fs::read_to_string(project_file)
+            .map_err(SdkLayerError::ReadProjectFile)?
+            .parse::<DotnetProject>()
+            .map_err(SdkLayerError::ParseDotnetProjectFile)?;
+
+        let runtime_identifier = dotnet_rid::get_dotnet_rid();
+
+        let executable_process = dotnet_executable_finder::determine_executable_path(
+            &dotnet_project,
+            project_file,
+            "Release",
+            &runtime_identifier,
+        )
+        .expect("project to produce an executable");
+
         log_header(".NET SDK");
         let sdk_layer = layers::sdk::handle(&context)?;
 
@@ -88,13 +113,45 @@ impl Buildpack for DotnetBuildpack {
         log_header("Publish");
         utils::run_command_and_stream_output(
             Command::new("dotnet")
-                .args(["publish", "--verbosity", "normal"])
+                .args([
+                    "publish",
+                    "--verbosity",
+                    "normal",
+                    "--configuration",
+                    "Release",
+                    "--runtime",
+                    &runtime_identifier.to_string(),
+                ])
                 .current_dir(&context.app_dir)
                 .envs(&command_env.apply(Scope::Build, &Env::from_current())),
         )
         .map_err(DotnetBuildpackError::PublishCommand)?;
 
-        BuildResultBuilder::new().build()
+        BuildResultBuilder::new()
+            .launch(
+                LaunchBuilder::new()
+                    .process(
+                        ProcessBuilder::new(
+                            // TODO: Determine whether project is actually a web project.
+                            // Consider adding non-web executables to list of processes after
+                            // validating the executable name is valid (especially if build multi-process
+                            // solution)
+                            process_type!("web"),
+                            [
+                                "bash",
+                                "-c",
+                                &format!(
+                                    "{} --urls http://0.0.0.0:$PORT",
+                                    executable_process.to_string_lossy()
+                                ),
+                            ],
+                        )
+                        .default(true)
+                        .build(),
+                    )
+                    .build(),
+            )
+            .build()
     }
 }
 
