@@ -34,6 +34,7 @@ pub(crate) struct DotnetProject {
     pub(crate) sdk_id: String,
     pub(crate) target_framework: String,
     pub(crate) project_type: ProjectType,
+    pub(crate) assembly_name: Option<String>,
 }
 
 /// Enum representing possible errors that can occur during parsing.
@@ -68,6 +69,7 @@ impl FromStr for DotnetProject {
         let mut sdk_id = String::new();
         let mut target_framework = String::new();
         let mut project_type = ProjectType::Unknown;
+        let mut assembly_name = None;
 
         for node in doc.descendants() {
             match node.tag_name().name() {
@@ -97,6 +99,9 @@ impl FromStr for DotnetProject {
                         _ => ProjectType::Unknown,
                     };
                 }
+                "AssemblyName" => {
+                    assembly_name = Some(node.text().unwrap_or("").to_string());
+                }
                 _ => (),
             }
         }
@@ -117,6 +122,7 @@ impl FromStr for DotnetProject {
             sdk_id,
             target_framework,
             project_type,
+            assembly_name,
         })
     }
 }
@@ -140,6 +146,7 @@ mod tests {
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::ConsoleApplication);
+        assert_eq!(project.assembly_name, None);
     }
 
     #[test]
@@ -155,6 +162,7 @@ mod tests {
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.Web");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::WebApplication);
+        assert_eq!(project.assembly_name, None);
     }
 
     #[test]
@@ -171,6 +179,7 @@ mod tests {
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.Razor");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::RazorApplication);
+        assert_eq!(project.assembly_name, None);
     }
 
     #[test]
@@ -187,6 +196,7 @@ mod tests {
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.BlazorWebAssembly");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::BlazorWebAssembly);
+        assert_eq!(project.assembly_name, None);
     }
 
     #[test]
@@ -203,6 +213,7 @@ mod tests {
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.Worker");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::Worker);
+        assert_eq!(project.assembly_name, None);
     }
 
     #[test]
@@ -218,6 +229,24 @@ mod tests {
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::Library);
+        assert_eq!(project.assembly_name, None);
+    }
+
+    #[test]
+    fn test_parse_project_with_assembly_name() {
+        let project_xml = r#"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <AssemblyName>MyAssembly</AssemblyName>
+    </PropertyGroup>
+</Project>
+"#;
+        let project = project_xml.parse::<DotnetProject>().unwrap();
+        assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
+        assert_eq!(project.target_framework, "net6.0");
+        assert_eq!(project.project_type, ProjectType::Library);
+        assert_eq!(project.assembly_name, Some("MyAssembly".to_string()));
     }
 
     #[test]
@@ -266,5 +295,6 @@ mod tests {
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::Library);
+        assert_eq!(project.assembly_name, None);
     }
 }
