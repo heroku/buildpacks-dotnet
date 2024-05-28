@@ -1,4 +1,5 @@
 mod detect;
+mod dotnet_executable_finder;
 mod dotnet_project;
 mod dotnet_rid;
 mod global_json;
