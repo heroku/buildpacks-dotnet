@@ -1,4 +1,46 @@
 [[artifacts]]
+version = "8.0.301"
+os = "linux"
+arch = "arm64"
+url = "https://download.visualstudio.microsoft.com/download/pr/cd9decc0-f3ef-46d6-b7d1-348b757781ad/9ad92a8f4b805feb3d017731e78eca15/dotnet-sdk-8.0.301-linux-arm64.tar.gz"
+checksum = "sha512:cb904a625d5e4ef4db995225d6705b84201dc7d7d09a0b1669baccc86e05419472719025036dd78983b21850f7663d159ae41926364d1d3ca0eab62862f75d29"
+
+[[artifacts]]
+version = "8.0.301"
+os = "linux"
+arch = "amd64"
+url = "https://download.visualstudio.microsoft.com/download/pr/86497c4f-3dc8-4ee7-9f6a-9e0464059427/293d074c28bbfd9410f4db8e021fa290/dotnet-sdk-8.0.301-linux-x64.tar.gz"
+checksum = "sha512:6e2e1ad5fe3f00e6974ad3eac9c5b74cd09521f19e06eb9aff45a44d6c55e4a2c1cd489364735215d2ea53cec2a7d45892a5ede344a8421be9ad15872c3496a2"
+
+[[artifacts]]
+version = "8.0.206"
+os = "linux"
+arch = "arm64"
+url = "https://download.visualstudio.microsoft.com/download/pr/f25f9e53-deba-4c1c-b9d2-5e026e5a4d92/c291c78eb71c30b1c66745dec87936ce/dotnet-sdk-8.0.206-linux-arm64.tar.gz"
+checksum = "sha512:eb0489785dc5bf824bc3fc1014815ebd371fbc73eb02b63e5a1650bcadb158cab7e909904889f6e198a180a1742976351208a57796ef38a4205c52fb945b7d09"
+
+[[artifacts]]
+version = "8.0.206"
+os = "linux"
+arch = "amd64"
+url = "https://download.visualstudio.microsoft.com/download/pr/5fd599e9-4bf8-4603-8a14-87777293837d/1d5f0729055901dce471570bb82a441f/dotnet-sdk-8.0.206-linux-x64.tar.gz"
+checksum = "sha512:d03cbb5ea44a6f4957d7c1fa0f7c19e3df2efcbf569b071082e37ac86776af0729540c3bbddc44668ae2eedcfcb4b098883bb560d26418f1583a558d60c99ef5"
+
+[[artifacts]]
+version = "8.0.106"
+os = "linux"
+arch = "arm64"
+url = "https://download.visualstudio.microsoft.com/download/pr/34676827-2699-4f0d-81e3-347939a91b7e/6f2f3851e005f57f8b6c132ead1952e5/dotnet-sdk-8.0.106-linux-arm64.tar.gz"
+checksum = "sha512:e8f735d20d79b20d24ce5b2f7c25c60604cb6b694b6572488c654cbf14a4d99c269f64f4ca23ab78aefaedf14f35a0ae1f33adf6afac5556e2ebd22ec73e04eb"
+
+[[artifacts]]
+version = "8.0.106"
+os = "linux"
+arch = "amd64"
+url = "https://download.visualstudio.microsoft.com/download/pr/0fe59d31-bc28-4f57-8d1a-285f47b5a0ec/e4c5def191daf9f999efc5812b085924/dotnet-sdk-8.0.106-linux-x64.tar.gz"
+checksum = "sha512:06eecc146b16eef0654fb4fd17faec06c6dc1b7236acc7e4a33e4b13cbea1d725faeb9eda41a0c12e65ec4c89d6624971429ca223638387c66f1d3e4dcd1407b"
+
+[[artifacts]]
 version = "8.0.300"
 os = "linux"
 arch = "arm64"
