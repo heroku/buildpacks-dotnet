@@ -14,7 +14,7 @@ fn test_sdk_resolution_with_target_framework() {
                 &indoc! {r#"
                     [.NET SDK]
                     Detected .NET project file: /workspace/foo.csproj
-                    Project type is WebApplication using SDK "Microsoft.NET.Sdk.Web" specifies TFM "net8.0"
+                    Project type is WebApplication using SDK "Microsoft.NET.Sdk.Web" specifies TFM "net8.0" and assembly name ""
                     Inferred SDK version requirement: ^8.0
                     Resolved .NET SDK version 8.0."#}
             );
