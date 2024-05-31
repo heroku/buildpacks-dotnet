@@ -1,10 +1,6 @@
-use crate::dotnet_project::{self};
-use crate::global_json::GlobalJsonError;
-use crate::tfm::ParseTargetFrameworkError;
 use crate::{DotnetBuildpack, DotnetBuildpackError};
 use inventory::artifact::Artifact;
 use inventory::checksum::Checksum;
-use inventory::inventory::ParseInventoryError;
 use libcnb::data::layer_name;
 use libcnb::layer::{
     CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction, LayerContents, LayerRef,
@@ -18,7 +14,6 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use std::env::temp_dir;
 use std::fs::{self, File};
-use std::io;
 use std::path::Path;
 
 #[derive(Serialize, Deserialize)]
@@ -166,22 +161,6 @@ pub(crate) enum SdkLayerError {
     OpenTempFile(std::io::Error),
     #[error("Couldn't read tempfile for .NET SDK: {0}")]
     ReadTempFile(std::io::Error),
-    #[error("Couldn't parse .NET SDK inventory: {0}")]
-    ParseInventory(ParseInventoryError),
-    #[error("Couldn't parse .NET SDK version: {0}")]
-    ParseSdkVersion(#[from] semver::Error),
-    #[error("Couldn't resolve .NET SDK version: {0}")]
-    ResolveSdkVersion(semver::VersionReq),
-    #[error("Error reading project file")]
-    ReadProjectFile(io::Error),
-    #[error("Error parsing .NET project file")]
-    ParseDotnetProjectFile(dotnet_project::ParseError),
-    #[error("Error parsing target framework: {0}")]
-    ParseTargetFramework(ParseTargetFrameworkError),
-    #[error("Error reading global.json file")]
-    ReadGlobalJsonFile(io::Error),
-    #[error("Error parsing global.json file: {0}")]
-    ParseGlobalJson(GlobalJsonError),
 }
 
 impl From<SdkLayerError> for libcnb::Error<DotnetBuildpackError> {

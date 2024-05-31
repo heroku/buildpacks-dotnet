@@ -7,10 +7,12 @@ mod tfm;
 mod utils;
 
 use crate::dotnet_project::DotnetProject;
+use crate::global_json::GlobalJsonError;
 use crate::layers::sdk::SdkLayerError;
+use crate::tfm::ParseTargetFrameworkError;
 use crate::utils::StreamedCommandError;
 use inventory::artifact::{Arch, Os};
-use inventory::inventory::Inventory;
+use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::BuildResultBuilder;
 use libcnb::data::layer_name;
 use libcnb::detect::DetectResultBuilder;
@@ -69,14 +71,14 @@ impl Buildpack for DotnetBuildpack {
             log_info("Detected global.json file in the root directory");
 
             fs::read_to_string(file.as_path())
-                .map_err(SdkLayerError::ReadGlobalJsonFile)
+                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)
                 .map(|content| global_json::parse_global_json(&content))?
-                .map_err(SdkLayerError::ParseGlobalJson)?
+                .map_err(DotnetBuildpackError::ParseGlobalJson)?
         } else {
             let dotnet_project = fs::read_to_string(dotnet_project_file)
-                .map_err(SdkLayerError::ReadProjectFile)?
+                .map_err(DotnetBuildpackError::ReadProjectFile)?
                 .parse::<DotnetProject>()
-                .map_err(SdkLayerError::ParseDotnetProjectFile)?;
+                .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
 
             // TODO: Remove this (currently here for debugging, and making the linter happy)
             log_info(format!("Project type is {:?} using SDK \"{}\" specifies TFM \"{}\" and assembly name \"{}\"",
@@ -86,7 +88,7 @@ impl Buildpack for DotnetBuildpack {
                 dotnet_project.assembly_name.unwrap_or(String::new())
             ));
             tfm::parse_target_framework(&dotnet_project.target_framework)
-                .map_err(SdkLayerError::ParseTargetFramework)?
+                .map_err(DotnetBuildpackError::ParseTargetFramework)?
         };
 
         log_info(format!(
@@ -96,7 +98,7 @@ impl Buildpack for DotnetBuildpack {
 
         let inventory = include_str!("../inventory.toml")
             .parse::<Inventory<Version, Sha512, Option<()>>>()
-            .map_err(SdkLayerError::ParseInventory)?;
+            .map_err(DotnetBuildpackError::ParseInventory)?;
 
         let artifact = inventory
             .resolve(
@@ -108,7 +110,7 @@ impl Buildpack for DotnetBuildpack {
                     .expect("Arch should be always parseable, buildpack will not run on unsupported architectures."),
                 &requirement
             )
-            .ok_or(SdkLayerError::ResolveSdkVersion(requirement))?;
+            .ok_or(DotnetBuildpackError::ResolveSdkVersion(requirement))?;
 
         log_info(format!(
             "Resolved .NET SDK version {} ({}-{})",
@@ -182,6 +184,22 @@ struct NugetCacheLayerMetadata {
 enum DotnetBuildpackError {
     #[error("Error when performing buildpack detection")]
     BuildpackDetection(io::Error),
+    #[error("Couldn't parse .NET SDK inventory: {0}")]
+    ParseInventory(ParseInventoryError),
+    #[error("Couldn't parse .NET SDK version: {0}")]
+    ParseSdkVersion(#[from] semver::Error),
+    #[error("Couldn't resolve .NET SDK version: {0}")]
+    ResolveSdkVersion(semver::VersionReq),
+    #[error("Error reading project file")]
+    ReadProjectFile(io::Error),
+    #[error("Error parsing .NET project file")]
+    ParseDotnetProjectFile(dotnet_project::ParseError),
+    #[error("Error parsing target framework: {0}")]
+    ParseTargetFramework(ParseTargetFrameworkError),
+    #[error("Error reading global.json file")]
+    ReadGlobalJsonFile(io::Error),
+    #[error("Error parsing global.json file: {0}")]
+    ParseGlobalJson(GlobalJsonError),
     #[error(transparent)]
     SdkLayer(#[from] SdkLayerError),
     #[error("Error reading SDK layer environment")]
