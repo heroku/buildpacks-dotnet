@@ -54,7 +54,7 @@ impl Buildpack for DotnetBuildpack {
         &self,
         context: libcnb::build::BuildContext<Self>,
     ) -> libcnb::Result<libcnb::build::BuildResult, Self::Error> {
-        log_header(".NET SDK");
+        log_header("Determining .NET version");
 
         // TODO: Implement and document the project/solution file selection logic
         let project_files = detect::dotnet_project_files(context.app_dir.clone())

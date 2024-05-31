@@ -12,7 +12,7 @@ fn test_sdk_resolution_with_target_framework() {
             assert_contains!(
                 context.pack_stdout,
                 &indoc! {r#"
-                    [.NET SDK]
+                    [Determining .NET version]
                     Detected .NET project file: /workspace/foo.csproj
                     Project type is WebApplication using SDK "Microsoft.NET.Sdk.Web" specifies TFM "net8.0" and assembly name ""
                     Inferred SDK version requirement: ^8.0
@@ -33,7 +33,7 @@ fn test_sdk_installation_with_global_json() {
             assert_contains!(
                 context.pack_stdout,
                 &indoc! {r"
-                    [.NET SDK]
+                    [Determining .NET version]
                     Detected .NET project file: /workspace/foo.csproj
                     Detected global.json file in the root directory
                     Inferred SDK version requirement: =8.0.101
@@ -63,7 +63,7 @@ fn test_sdk_installation_with_global_json() {
             assert_contains!(
                 context.pack_stdout,
                 &indoc! {r"
-                    [.NET SDK]
+                    [Determining .NET version]
                     Detected .NET project file: /workspace/foo.csproj
                     Detected global.json file in the root directory
                     Inferred SDK version requirement: =8.0.101
