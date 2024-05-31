@@ -87,7 +87,13 @@ impl Buildpack for DotnetBuildpack {
         log_header("Publish");
         utils::run_command_and_stream_output(
             Command::new("dotnet")
-                .args(["publish", "--verbosity", "normal"])
+                .args([
+                    "publish",
+                    "--verbosity",
+                    "normal",
+                    "--runtime",
+                    &dotnet_rid::get_runtime_identifier().to_string(),
+                ])
                 .current_dir(&context.app_dir)
                 .envs(&command_env.apply(Scope::Build, &Env::from_current())),
         )
