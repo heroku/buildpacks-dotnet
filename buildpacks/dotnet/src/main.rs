@@ -91,6 +91,8 @@ impl Buildpack for DotnetBuildpack {
                     "publish",
                     "--verbosity",
                     "normal",
+                    "--configuration",
+                    "Release",
                     "--runtime",
                     &dotnet_rid::get_runtime_identifier().to_string(),
                 ])
