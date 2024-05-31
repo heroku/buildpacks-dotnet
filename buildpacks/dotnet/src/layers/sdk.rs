@@ -55,8 +55,11 @@ pub(crate) fn handle(
 
         // TODO: Remove this (currently here for debugging, and making the linter happy)
         log_info(format!(
-            "Project type is {:?} using SDK \"{}\" specifies TFM \"{}\"",
-            dotnet_project.project_type, dotnet_project.sdk_id, dotnet_project.target_framework
+            "Project type is {:?} using SDK \"{}\" specifies TFM \"{}\" and assembly name \"{}\"",
+            dotnet_project.project_type,
+            dotnet_project.sdk_id,
+            dotnet_project.target_framework,
+            dotnet_project.assembly_name.unwrap_or(String::new())
         ));
         tfm::parse_target_framework(&dotnet_project.target_framework)
             .map_err(SdkLayerError::ParseTargetFramework)?
