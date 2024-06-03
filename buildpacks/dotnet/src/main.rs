@@ -57,9 +57,8 @@ impl Buildpack for DotnetBuildpack {
         context: libcnb::build::BuildContext<Self>,
     ) -> libcnb::Result<libcnb::build::BuildResult, Self::Error> {
         log_header("Determining .NET version");
-
         // TODO: Implement and document the project/solution file selection logic
-        let project_files = detect::dotnet_project_files(context.app_dir.clone())
+        let project_files = detect::dotnet_project_files(&context.app_dir)
             .expect("function to pass after detection");
 
         let dotnet_project_file = project_files.first().expect("a project file to be present");
