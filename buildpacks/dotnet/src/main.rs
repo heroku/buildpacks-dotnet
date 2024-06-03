@@ -2,6 +2,7 @@ mod detect;
 mod dotnet_layer_env;
 mod dotnet_project;
 mod dotnet_rid;
+mod dotnet_sln_project_parser;
 mod global_json;
 mod layers;
 mod tfm;
