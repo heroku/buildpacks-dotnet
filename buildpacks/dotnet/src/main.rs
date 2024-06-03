@@ -159,6 +159,7 @@ impl Buildpack for DotnetBuildpack {
             Command::new("dotnet")
                 .args([
                     "publish",
+                    &dotnet_project_file.to_string_lossy(),
                     "--verbosity",
                     "normal",
                     "--configuration",
