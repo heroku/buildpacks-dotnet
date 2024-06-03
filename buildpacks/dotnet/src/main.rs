@@ -21,7 +21,7 @@ use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer::{CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction};
 use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{buildpack_main, Buildpack, Env};
-use libherokubuildpack::log::{log_header, log_info};
+use libherokubuildpack::log::{log_header, log_info, log_warning};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use sha2::Sha512;
@@ -62,6 +62,22 @@ impl Buildpack for DotnetBuildpack {
             .expect("function to pass after detection");
 
         let dotnet_project_file = project_files.first().expect("a project file to be present");
+
+        // TODO: We should handle multiple project files in the root directory as an error
+        if project_files.len() > 1 {
+            log_warning(
+                "Multiple .NET projects detected in root directory",
+                format!(
+                    "There shouldn't be more than one .NET project file in a folder. Found {}, and picked {} for this build",
+                    project_files
+                        .iter()
+                        .map(|f| f.to_string_lossy().to_string())
+                        .collect::<Vec<String>>()
+                        .join(", "),
+                    dotnet_project_file.to_string_lossy()
+                ),
+            );
+        }
 
         log_info(format!(
             "Detected .NET project file: {}",
