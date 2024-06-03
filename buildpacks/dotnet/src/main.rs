@@ -26,6 +26,7 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::env::consts;
+use std::path::PathBuf;
 use std::process::Command;
 use std::{fs, io};
 
@@ -63,31 +64,42 @@ impl Buildpack for DotnetBuildpack {
     ) -> libcnb::Result<libcnb::build::BuildResult, Self::Error> {
         log_header("Determining .NET version");
         // TODO: Implement and document the project/solution file selection logic
+        let solution_files = detect::dotnet_solution_files(&context.app_dir)
+            .expect("function to pass after detection");
         let project_files = detect::dotnet_project_files(&context.app_dir)
             .expect("function to pass after detection");
 
-        let dotnet_project_file = project_files.first().expect("a project file to be present");
-
-        // TODO: We should handle multiple project files in the root directory as an error
-        if project_files.len() > 1 {
-            log_warning(
-                "Multiple .NET projects detected in root directory",
-                format!(
-                    "There shouldn't be more than one .NET project file in a folder. Found {}, and picked {} for this build",
-                    project_files
-                        .iter()
-                        .map(|f| f.to_string_lossy().to_string())
-                        .collect::<Vec<String>>()
-                        .join(", "),
+        let (file_to_publish, requirement) = match (
+            solution_files.is_empty(),
+            project_files.is_empty(),
+        ) {
+            (false, _) => todo!(),
+            (true, false) => {
+                let dotnet_project_file =
+                    project_files.first().expect("a project file to be present");
+                log_info(format!(
+                    "Detected .NET project file: {}",
                     dotnet_project_file.to_string_lossy()
-                ),
-            );
-        }
-
-        log_info(format!(
-            "Detected .NET project file: {}",
-            dotnet_project_file.to_string_lossy()
-        ));
+                ));
+                // TODO: We should handle multiple project files in the root directory as an error
+                if project_files.len() > 1 {
+                    log_warning("Multiple .NET projects detected in root directory", format!("There shouldn't be more than one .NET project file in a folder. Found {}, and picked {} for this build",
+                        project_files
+                            .iter()
+                            .map(|f| f.to_string_lossy().to_string())
+                            .collect::<Vec<String>>()
+                            .join(", "),
+                            dotnet_project_file.to_string_lossy()
+                        ),
+                    );
+                }
+                (
+                    dotnet_project_file,
+                    get_requirement_from_project_file(dotnet_project_file)?,
+                )
+            }
+            (true, true) => todo!(),
+        };
 
         let requirement = if let Some(file) = detect::find_global_json(&context.app_dir) {
             log_info("Detected global.json file in the root directory");
@@ -97,20 +109,7 @@ impl Buildpack for DotnetBuildpack {
                 .map(|content| global_json::parse_global_json(&content))?
                 .map_err(DotnetBuildpackError::ParseGlobalJson)?
         } else {
-            let dotnet_project = fs::read_to_string(dotnet_project_file)
-                .map_err(DotnetBuildpackError::ReadProjectFile)?
-                .parse::<DotnetProject>()
-                .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
-
-            // TODO: Remove this (currently here for debugging, and making the linter happy)
-            log_info(format!("Project type is {:?} using SDK \"{}\" specifies TFM \"{}\" and assembly name \"{}\"",
-                dotnet_project.project_type,
-                dotnet_project.sdk_id,
-                dotnet_project.target_framework,
-                dotnet_project.assembly_name.unwrap_or(String::new())
-            ));
-            tfm::parse_target_framework(&dotnet_project.target_framework)
-                .map_err(DotnetBuildpackError::ParseTargetFramework)?
+            requirement
         };
 
         log_info(format!(
@@ -181,7 +180,7 @@ impl Buildpack for DotnetBuildpack {
             Command::new("dotnet")
                 .args([
                     "publish",
-                    &dotnet_project_file.to_string_lossy(),
+                    &file_to_publish.to_string_lossy(),
                     "--verbosity",
                     "normal",
                     "--configuration",
@@ -198,6 +197,26 @@ impl Buildpack for DotnetBuildpack {
 
         BuildResultBuilder::new().build()
     }
+}
+
+fn get_requirement_from_project_file(
+    dotnet_project_file: &PathBuf,
+) -> Result<semver::VersionReq, DotnetBuildpackError> {
+    let dotnet_project = fs::read_to_string(dotnet_project_file)
+        .map_err(DotnetBuildpackError::ReadProjectFile)?
+        .parse::<DotnetProject>()
+        .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
+
+    // TODO: Remove this (currently here for debugging, and making the linter happy)
+    log_info(format!(
+        "Project type is {:?} using SDK \"{}\" specifies TFM \"{}\" and assembly name \"{}\"",
+        dotnet_project.project_type,
+        dotnet_project.sdk_id,
+        dotnet_project.target_framework,
+        dotnet_project.assembly_name.unwrap_or(String::new())
+    ));
+    tfm::parse_target_framework(&dotnet_project.target_framework)
+        .map_err(DotnetBuildpackError::ParseTargetFramework)
 }
 
 #[derive(Serialize, Deserialize)]
