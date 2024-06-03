@@ -84,7 +84,7 @@ impl Buildpack for DotnetBuildpack {
             dotnet_project_file.to_string_lossy()
         ));
 
-        let requirement = if let Some(file) = detect::find_global_json(context.app_dir.clone()) {
+        let requirement = if let Some(file) = detect::find_global_json(&context.app_dir) {
             log_info("Detected global.json file in the root directory");
 
             fs::read_to_string(file.as_path())
