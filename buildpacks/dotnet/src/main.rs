@@ -6,8 +6,13 @@ mod layers;
 mod tfm;
 mod utils;
 
+use crate::dotnet_project::DotnetProject;
+use crate::global_json::GlobalJsonError;
 use crate::layers::sdk::SdkLayerError;
+use crate::tfm::ParseTargetFrameworkError;
 use crate::utils::StreamedCommandError;
+use inventory::artifact::{Arch, Os};
+use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::BuildResultBuilder;
 use libcnb::data::layer_name;
 use libcnb::detect::DetectResultBuilder;
@@ -16,9 +21,12 @@ use libcnb::layer::{CachedLayerDefinition, InspectExistingAction, InvalidMetadat
 use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::log::{log_header, log_info};
+use semver::Version;
 use serde::{Deserialize, Serialize};
-use std::io;
+use sha2::Sha512;
+use std::env::consts;
 use std::process::Command;
+use std::{fs, io};
 
 struct DotnetBuildpack;
 
@@ -46,8 +54,70 @@ impl Buildpack for DotnetBuildpack {
         &self,
         context: libcnb::build::BuildContext<Self>,
     ) -> libcnb::Result<libcnb::build::BuildResult, Self::Error> {
-        log_header(".NET SDK");
-        let sdk_layer = layers::sdk::handle(&context)?;
+        log_header("Determining .NET version");
+
+        // TODO: Implement and document the project/solution file selection logic
+        let project_files = detect::dotnet_project_files(context.app_dir.clone())
+            .expect("function to pass after detection");
+
+        let dotnet_project_file = project_files.first().expect("a project file to be present");
+
+        log_info(format!(
+            "Detected .NET project file: {}",
+            dotnet_project_file.to_string_lossy()
+        ));
+
+        let requirement = if let Some(file) = detect::find_global_json(context.app_dir.clone()) {
+            log_info("Detected global.json file in the root directory");
+
+            fs::read_to_string(file.as_path())
+                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)
+                .map(|content| global_json::parse_global_json(&content))?
+                .map_err(DotnetBuildpackError::ParseGlobalJson)?
+        } else {
+            let dotnet_project = fs::read_to_string(dotnet_project_file)
+                .map_err(DotnetBuildpackError::ReadProjectFile)?
+                .parse::<DotnetProject>()
+                .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
+
+            // TODO: Remove this (currently here for debugging, and making the linter happy)
+            log_info(format!("Project type is {:?} using SDK \"{}\" specifies TFM \"{}\" and assembly name \"{}\"",
+                dotnet_project.project_type,
+                dotnet_project.sdk_id,
+                dotnet_project.target_framework,
+                dotnet_project.assembly_name.unwrap_or(String::new())
+            ));
+            tfm::parse_target_framework(&dotnet_project.target_framework)
+                .map_err(DotnetBuildpackError::ParseTargetFramework)?
+        };
+
+        log_info(format!(
+            "Inferred SDK version requirement: {}",
+            &requirement.to_string()
+        ));
+
+        let inventory = include_str!("../inventory.toml")
+            .parse::<Inventory<Version, Sha512, Option<()>>>()
+            .map_err(DotnetBuildpackError::ParseInventory)?;
+
+        let artifact = inventory
+            .resolve(
+                consts::OS
+                    .parse::<Os>()
+                    .expect("OS should be always parseable, buildpack will not run on unsupported operating systems."),
+                consts::ARCH
+                    .parse::<Arch>()
+                    .expect("Arch should be always parseable, buildpack will not run on unsupported architectures."),
+                &requirement
+            )
+            .ok_or(DotnetBuildpackError::ResolveSdkVersion(requirement))?;
+
+        log_info(format!(
+            "Resolved .NET SDK version {} ({}-{})",
+            artifact.version, artifact.os, artifact.arch
+        ));
+
+        let sdk_layer = layers::sdk::handle(&context, artifact)?;
 
         let nuget_cache_layer = context.cached_layer(
             layer_name!("nuget-cache"),
@@ -114,6 +184,22 @@ struct NugetCacheLayerMetadata {
 enum DotnetBuildpackError {
     #[error("Error when performing buildpack detection")]
     BuildpackDetection(io::Error),
+    #[error("Couldn't parse .NET SDK inventory: {0}")]
+    ParseInventory(ParseInventoryError),
+    #[error("Couldn't parse .NET SDK version: {0}")]
+    ParseSdkVersion(#[from] semver::Error),
+    #[error("Couldn't resolve .NET SDK version: {0}")]
+    ResolveSdkVersion(semver::VersionReq),
+    #[error("Error reading project file")]
+    ReadProjectFile(io::Error),
+    #[error("Error parsing .NET project file")]
+    ParseDotnetProjectFile(dotnet_project::ParseError),
+    #[error("Error parsing target framework: {0}")]
+    ParseTargetFramework(ParseTargetFrameworkError),
+    #[error("Error reading global.json file")]
+    ReadGlobalJsonFile(io::Error),
+    #[error("Error parsing global.json file: {0}")]
+    ParseGlobalJson(GlobalJsonError),
     #[error(transparent)]
     SdkLayer(#[from] SdkLayerError),
     #[error("Error reading SDK layer environment")]
