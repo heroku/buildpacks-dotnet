@@ -2,7 +2,7 @@ mod detect;
 mod dotnet_layer_env;
 mod dotnet_project;
 mod dotnet_rid;
-mod dotnet_sln_project_parser;
+mod dotnet_solution;
 mod global_json;
 mod layers;
 mod tfm;
@@ -23,11 +23,11 @@ use libcnb::layer::{CachedLayerDefinition, InspectExistingAction, InvalidMetadat
 use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::log::{log_header, log_info, log_warning};
-use semver::Version;
+use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::env::consts;
-use std::path::PathBuf;
+use std::path::Path;
 use std::process::Command;
 use std::{fs, io};
 
@@ -42,13 +42,12 @@ impl Buildpack for DotnetBuildpack {
         &self,
         context: libcnb::detect::DetectContext<Self>,
     ) -> libcnb::Result<libcnb::detect::DetectResult, Self::Error> {
-        if detect::dotnet_solution_files(&context.app_dir)
-            .map_err(DotnetBuildpackError::BuildpackDetection)?
-            .is_empty()
-            && detect::dotnet_project_files(&context.app_dir)
-                .map_err(DotnetBuildpackError::BuildpackDetection)?
-                .is_empty()
-        {
+        let solution_files = detect::dotnet_solution_files(&context.app_dir)
+            .map_err(DotnetBuildpackError::BuildpackDetection)?;
+        let project_files = detect::dotnet_project_files(&context.app_dir)
+            .map_err(DotnetBuildpackError::BuildpackDetection)?;
+
+        if solution_files.is_empty() && project_files.is_empty() {
             log_info(
                 "No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.",
             );
@@ -64,42 +63,85 @@ impl Buildpack for DotnetBuildpack {
         context: libcnb::build::BuildContext<Self>,
     ) -> libcnb::Result<libcnb::build::BuildResult, Self::Error> {
         log_header("Determining .NET version");
-        // TODO: Implement and document the project/solution file selection logic
+
         let solution_files = detect::dotnet_solution_files(&context.app_dir)
             .expect("function to pass after detection");
         let project_files = detect::dotnet_project_files(&context.app_dir)
             .expect("function to pass after detection");
 
-        let (file_to_publish, requirement) = match (
-            solution_files.is_empty(),
-            project_files.is_empty(),
-        ) {
-            (false, _) => todo!(),
-            (true, false) => {
-                let dotnet_project_file =
-                    project_files.first().expect("a project file to be present");
-                log_info(format!(
-                    "Detected .NET project file: {}",
-                    dotnet_project_file.to_string_lossy()
-                ));
-                // TODO: We should handle multiple project files in the root directory as an error
-                if project_files.len() > 1 {
-                    log_warning("Multiple .NET projects detected in root directory", format!("There shouldn't be more than one .NET project file in a folder. Found {}, and picked {} for this build",
-                        project_files
+        let (file_to_publish, requirement) = if !solution_files.is_empty() {
+            let dotnet_solution_file = solution_files
+                .first()
+                .expect("a solution file to be present");
+
+            // TODO: Publish all solutions instead of just the first
+            if solution_files.len() > 1 {
+                log_warning(
+                    "Multiple .NET solution files detected",
+                    format!(
+                        "Found multiple .NET solution files: {}. Publishing the first one.",
+                        solution_files
                             .iter()
                             .map(|f| f.to_string_lossy().to_string())
                             .collect::<Vec<String>>()
-                            .join(", "),
-                            dotnet_project_file.to_string_lossy()
-                        ),
-                    );
-                }
-                (
-                    dotnet_project_file,
-                    get_requirement_from_project_file(dotnet_project_file)?,
-                )
+                            .join(", ")
+                    ),
+                );
             }
-            (true, true) => todo!(),
+
+            log_info(format!(
+                "Detected .NET solution file: {}",
+                dotnet_solution_file.to_string_lossy()
+            ));
+
+            let mut version_requirements = vec![];
+            for project_reference in dotnet_solution::project_file_paths(dotnet_solution_file)
+                .map_err(DotnetBuildpackError::ParseDotnetSolutionFile)?
+            {
+                log_info(format!(
+                    "Detecting .NET version requirement for project {project_reference}"
+                ));
+
+                version_requirements.push(get_requirement_from_project_file(
+                    &dotnet_solution_file
+                        .parent()
+                        .expect("solution file to have a parent directory")
+                        .join(project_reference),
+                )?);
+            }
+
+            (
+                dotnet_solution_file,
+                version_requirements
+                    // TODO: Add logic to prefer the most recent version requirement, and log if projects target different versions
+                    .first()
+                    // TODO: Handle solution files with no project references
+                    .expect("at least one project in solution")
+                    .clone(),
+            )
+        } else if !project_files.is_empty() {
+            if project_files.len() > 1 {
+                return Err(DotnetBuildpackError::MultipleProjectFiles(
+                    project_files
+                        .iter()
+                        .map(|f| f.to_string_lossy().to_string())
+                        .collect::<Vec<String>>()
+                        .join(", "),
+                )
+                .into());
+            }
+            let dotnet_project_file = project_files.first().expect("a project file to be present");
+            log_info(format!(
+                "Detected .NET project file: {}",
+                dotnet_project_file.to_string_lossy()
+            ));
+            (
+                dotnet_project_file,
+                get_requirement_from_project_file(dotnet_project_file)?,
+            )
+        } else {
+            // This error is not expected to occur (as one or more solution/project files should be present after detect())
+            return Err(DotnetBuildpackError::NoDotnetFiles)?;
         };
 
         let requirement = if let Some(file) = detect::find_global_json(&context.app_dir) {
@@ -115,7 +157,7 @@ impl Buildpack for DotnetBuildpack {
 
         log_info(format!(
             "Inferred SDK version requirement: {}",
-            &requirement.to_string()
+            &requirement
         ));
 
         let inventory = include_str!("../inventory.toml")
@@ -161,7 +203,6 @@ impl Buildpack for DotnetBuildpack {
             libcnb::layer::LayerContents::Empty(_) => {
                 log_info("Empty NuGet package cache");
                 nuget_cache_layer.replace_metadata(NugetCacheLayerMetadata {
-                    // TODO: Implement cache expiration/purging logic
                     version: String::from("foo"),
                 })?;
             }
@@ -201,20 +242,19 @@ impl Buildpack for DotnetBuildpack {
 }
 
 fn get_requirement_from_project_file(
-    dotnet_project_file: &PathBuf,
-) -> Result<semver::VersionReq, DotnetBuildpackError> {
+    dotnet_project_file: &Path,
+) -> Result<VersionReq, DotnetBuildpackError> {
     let dotnet_project = fs::read_to_string(dotnet_project_file)
         .map_err(DotnetBuildpackError::ReadProjectFile)?
         .parse::<DotnetProject>()
         .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
 
-    // TODO: Remove this (currently here for debugging, and making the linter happy)
     log_info(format!(
         "Project type is {:?} using SDK \"{}\" specifies TFM \"{}\" and assembly name \"{}\"",
         dotnet_project.project_type,
         dotnet_project.sdk_id,
         dotnet_project.target_framework,
-        dotnet_project.assembly_name.unwrap_or(String::new())
+        dotnet_project.assembly_name.unwrap_or_default()
     ));
     tfm::parse_target_framework(&dotnet_project.target_framework)
         .map_err(DotnetBuildpackError::ParseTargetFramework)
@@ -234,12 +274,14 @@ enum DotnetBuildpackError {
     #[error("Couldn't parse .NET SDK version: {0}")]
     ParseSdkVersion(#[from] semver::Error),
     #[error("Couldn't resolve .NET SDK version: {0}")]
-    ResolveSdkVersion(semver::VersionReq),
+    ResolveSdkVersion(VersionReq),
     #[error("Error reading project file")]
     ReadProjectFile(io::Error),
     #[error("Error parsing .NET project file")]
     ParseDotnetProjectFile(dotnet_project::ParseError),
     #[error("Error parsing target framework: {0}")]
+    ParseDotnetSolutionFile(io::Error),
+    #[error("Error parsing solution file: {0}")]
     ParseTargetFramework(ParseTargetFrameworkError),
     #[error("Error reading global.json file")]
     ReadGlobalJsonFile(io::Error),
@@ -251,6 +293,10 @@ enum DotnetBuildpackError {
     ReadSdkLayerEnvironment(io::Error),
     #[error("Error executing publish task")]
     PublishCommand(#[from] StreamedCommandError),
+    #[error("No .NET solution or project files found")]
+    NoDotnetFiles,
+    #[error("Multiple .NET project files found in root directory: {0}")]
+    MultipleProjectFiles(String),
     #[error("Error copying runtime files {0}")]
     CopyRuntimeFilesToRuntimeLayer(io::Error),
 }

@@ -13,7 +13,7 @@ use std::path::Path;
 ///
 /// * `Ok(Vec<String>)` - A vector of relative project file paths if parsing is successful.
 /// * `Err(io::Error)` - An I/O error if reading the file fails.
-pub(crate) fn parse_solution_file<P: AsRef<Path>>(path: P) -> io::Result<Vec<String>> {
+pub(crate) fn project_file_paths<P: AsRef<Path>>(path: P) -> io::Result<Vec<String>> {
     let file = File::open(path)?;
     let reader = io::BufReader::new(file);
     extract_project_paths(reader)
