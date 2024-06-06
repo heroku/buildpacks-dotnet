@@ -66,7 +66,7 @@ impl Buildpack for DotnetBuildpack {
             .expect("function to pass after detection");
 
         let file_to_publish = determine_file_to_publish(&solution_files, &project_files)?;
-        let mut requirement = extract_version_requirement(file_to_publish)?;
+        let mut requirement = extract_version_requirement(&file_to_publish)?;
 
         if let Some(global_json_req) = detect_global_json(&context.app_dir)? {
             requirement = global_json_req;
@@ -134,7 +134,7 @@ impl Buildpack for DotnetBuildpack {
                 nuget_cache_layer.path(),
             );
 
-        publish_file(&context.app_dir, file_to_publish, &command_env)?;
+        publish_file(&context.app_dir, &file_to_publish, &command_env)?;
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
@@ -142,10 +142,10 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
-fn determine_file_to_publish<'a>(
-    solution_files: &'a [PathBuf],
-    project_files: &'a [PathBuf],
-) -> Result<&'a Path, DotnetBuildpackError> {
+fn determine_file_to_publish(
+    solution_files: &[PathBuf],
+    project_files: &[PathBuf],
+) -> Result<PathBuf, DotnetBuildpackError> {
     if !solution_files.is_empty() {
         // TODO: Publish all solutions instead of just the first
         let dotnet_solution_file = solution_files
@@ -170,7 +170,7 @@ fn determine_file_to_publish<'a>(
             "Detected .NET solution file: {}",
             dotnet_solution_file.to_string_lossy()
         ));
-        Ok(dotnet_solution_file)
+        Ok(dotnet_solution_file.clone())
     } else if !project_files.is_empty() {
         if project_files.len() > 1 {
             return Err(DotnetBuildpackError::MultipleProjectFiles(
@@ -182,11 +182,12 @@ fn determine_file_to_publish<'a>(
             ));
         }
         let dotnet_project_file = project_files.first().expect("a project file to be present");
+
         log_info(format!(
             "Detected .NET project file: {}",
             dotnet_project_file.to_string_lossy()
         ));
-        Ok(dotnet_project_file)
+        Ok(dotnet_project_file.clone())
     } else {
         // This error is not expected to occur (as one or more solution/project files should be present after detect())
         Err(DotnetBuildpackError::NoDotnetFiles)
