@@ -11,13 +11,6 @@ keywords = ["dotnet", ".NET", "heroku"]
 [[buildpack.licenses]]
 type = "BSD-3-Clause"
 
-# [[stacks]] is deprecated in Buildpack API 0.10, but is (unintentionally?)
-# required by `pack buildpack package`. The [[stacks]] table should be
-# removed when the issue (https://github.com/buildpacks/pack/issues/2047) is
-# resolved.
-[[stacks]]
-id = "*"
-
 [[targets]]
 os = "linux"
 arch = "arm64"
