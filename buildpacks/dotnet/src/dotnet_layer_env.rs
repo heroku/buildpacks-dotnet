@@ -2,6 +2,7 @@ use std::path::Path;
 
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 
+/// Helper function to generate a base `LayerEnv` for .NET layers that include the .NET runtime (e.g. SDK and runtime layers).
 pub(crate) fn generate_layer_env(layer_path: &Path, scope: &Scope) -> LayerEnv {
     LayerEnv::new()
         .chainable_insert(scope.clone(), ModificationBehavior::Delimiter, "PATH", ":")
