@@ -29,7 +29,7 @@ pub(crate) fn handle(
         layer_name!("sdk"),
         CachedLayerDefinition {
             build: true,
-            launch: true,
+            launch: false,
             invalid_metadata: &|_| InvalidMetadataAction::DeleteLayer,
             inspect_existing: &|metadata: &SdkLayerMetadata, _path| {
                 if metadata.artifact == *artifact {
@@ -82,7 +82,7 @@ pub(crate) fn handle(
     Ok(sdk_layer)
 }
 
-fn generate_layer_env(layer_path: &Path) -> LayerEnv {
+pub(crate) fn generate_layer_env(layer_path: &Path) -> LayerEnv {
     LayerEnv::new()
         .chainable_insert(Scope::All, ModificationBehavior::Delimiter, "PATH", ":")
         .chainable_insert(
