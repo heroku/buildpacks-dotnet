@@ -5,6 +5,7 @@ use libcnb::data::layer_name;
 use libcnb::layer::{
     CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction, LayerContents, LayerRef,
 };
+use libcnb::layer_env::Scope;
 use libherokubuildpack::download::download_file;
 use libherokubuildpack::log::log_info;
 use libherokubuildpack::tar::decompress_tarball;
@@ -76,6 +77,7 @@ pub(crate) fn handle(
 
             sdk_layer.replace_env(&dotnet_layer_env::generate_layer_env(
                 sdk_layer.path().as_path(),
+                &Scope::Build,
             ))?;
         }
     }

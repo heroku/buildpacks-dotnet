@@ -2,18 +2,18 @@ use std::path::Path;
 
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
 
-pub(crate) fn generate_layer_env(layer_path: &Path) -> LayerEnv {
+pub(crate) fn generate_layer_env(layer_path: &Path, scope: &Scope) -> LayerEnv {
     LayerEnv::new()
-        .chainable_insert(Scope::All, ModificationBehavior::Delimiter, "PATH", ":")
+        .chainable_insert(scope.clone(), ModificationBehavior::Delimiter, "PATH", ":")
         .chainable_insert(
-            Scope::All,
+            scope.clone(),
             ModificationBehavior::Prepend,
             "PATH",
             layer_path,
         )
         // Disable .NET tools usage collection: https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_cli_telemetry_optout
         .chainable_insert(
-            Scope::All,
+            scope.clone(),
             ModificationBehavior::Override,
             "DOTNET_CLI_TELEMETRY_OPTOUT",
             "true",
@@ -24,21 +24,21 @@ pub(crate) fn generate_layer_env(layer_path: &Path) -> LayerEnv {
         // This environment variable disables W^X support.
         // TODO: Investigate performance implications on platforms where this feature is supported.
         .chainable_insert(
-            Scope::All,
+            scope.clone(),
             ModificationBehavior::Override,
             "DOTNET_EnableWriteXorExecute",
             "0",
         )
         // Mute .NET welcome and telemetry messages: https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_nologo
         .chainable_insert(
-            Scope::All,
+            scope.clone(),
             ModificationBehavior::Override,
             "DOTNET_NOLOGO",
             "true",
         )
         // Specify the location of .NET runtimes as they're not installed in the default location: https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86-dotnet_root_x86-dotnet_root_x64.
         .chainable_insert(
-            Scope::All,
+            scope.clone(),
             ModificationBehavior::Override,
             "DOTNET_ROOT",
             layer_path,
@@ -47,7 +47,7 @@ pub(crate) fn generate_layer_env(layer_path: &Path) -> LayerEnv {
         // This is used by a few ASP.NET Core workloads.
         // We don't need to set the (now deprecated) `DOTNET_RUNNING_IN_CONTAINER` environment variable as the framework will check for both: https://github.com/dotnet/aspnetcore/blob/8198eeb2b76305677cf94972746c2600d15ff58a/src/DataProtection/DataProtection/src/Internal/ContainerUtils.cs#L86
         .chainable_insert(
-            Scope::All,
+            scope.clone(),
             ModificationBehavior::Override,
             "DOTNET_RUNNING_IN_CONTAINER",
             "true",
@@ -60,19 +60,21 @@ mod tests {
     use crate::utils;
 
     #[test]
-    fn sdk_layer_env() {
-        let layer_env = generate_layer_env(Path::new("/layers/sdk"));
+    fn dotnet_layer_env() {
+        for scope in [Scope::All, Scope::Build, Scope::Launch] {
+            let layer_env = generate_layer_env(Path::new("/layers/sdk"), &scope);
 
-        assert_eq!(
-            utils::environment_as_sorted_vector(&layer_env.apply_to_empty(Scope::All)),
-            [
-                ("DOTNET_CLI_TELEMETRY_OPTOUT", "true"),
-                ("DOTNET_EnableWriteXorExecute", "0"),
-                ("DOTNET_NOLOGO", "true"),
-                ("DOTNET_ROOT", "/layers/sdk"),
-                ("DOTNET_RUNNING_IN_CONTAINER", "true"),
-                ("PATH", "/layers/sdk")
-            ]
-        );
+            assert_eq!(
+                utils::environment_as_sorted_vector(&layer_env.apply_to_empty(scope)),
+                [
+                    ("DOTNET_CLI_TELEMETRY_OPTOUT", "true"),
+                    ("DOTNET_EnableWriteXorExecute", "0"),
+                    ("DOTNET_NOLOGO", "true"),
+                    ("DOTNET_ROOT", "/layers/sdk"),
+                    ("DOTNET_RUNNING_IN_CONTAINER", "true"),
+                    ("PATH", "/layers/sdk")
+                ]
+            );
+        }
     }
 }
