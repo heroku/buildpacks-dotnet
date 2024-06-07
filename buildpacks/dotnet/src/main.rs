@@ -174,7 +174,7 @@ impl Buildpack for DotnetBuildpack {
         )
         .map_err(DotnetBuildpackError::PublishCommand)?;
 
-        layers::runtime::handle(&context, &sdk_layer)?;
+        layers::runtime::handle(&context, &sdk_layer.path())?;
 
         BuildResultBuilder::new().build()
     }

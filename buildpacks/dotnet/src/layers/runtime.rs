@@ -17,7 +17,7 @@ const RUNTIME_PATHS: &[&str] = &[
 
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
-    sdk_layer: &libcnb::layer::LayerRef<DotnetBuildpack, (), ()>,
+    sdk_layer_path: &Path,
 ) -> Result<(), libcnb::Error<DotnetBuildpackError>> {
     let runtime_layer = context.uncached_layer(
         layer_name!("runtime"),
@@ -32,7 +32,7 @@ pub(crate) fn handle(
     ))?;
 
     for path in RUNTIME_PATHS {
-        copy_recursively(sdk_layer.path().join(path), runtime_layer.path().join(path))
+        copy_recursively(sdk_layer_path.join(path), runtime_layer.path().join(path))
             .map_err(DotnetBuildpackError::CopyRuntimeFilesToRuntimeLayer)?;
     }
 
