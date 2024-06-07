@@ -60,7 +60,7 @@ mod tests {
     use crate::utils;
 
     #[test]
-    fn dotnet_layer_env() {
+    fn test_generate_dotnet_layer_env() {
         for scope in [Scope::All, Scope::Build, Scope::Launch] {
             let layer_env = generate_layer_env(Path::new("/layers/sdk"), &scope);
 
