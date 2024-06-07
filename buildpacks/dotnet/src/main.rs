@@ -1,4 +1,5 @@
 mod detect;
+mod dotnet_layer_env;
 mod dotnet_project;
 mod dotnet_rid;
 mod global_json;
@@ -50,6 +51,7 @@ impl Buildpack for DotnetBuildpack {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     fn build(
         &self,
         context: libcnb::build::BuildContext<Self>,
@@ -172,6 +174,8 @@ impl Buildpack for DotnetBuildpack {
         )
         .map_err(DotnetBuildpackError::PublishCommand)?;
 
+        layers::runtime::handle(&context, &sdk_layer.path())?;
+
         BuildResultBuilder::new().build()
     }
 }
@@ -207,6 +211,8 @@ enum DotnetBuildpackError {
     ReadSdkLayerEnvironment(io::Error),
     #[error("Error executing publish task")]
     PublishCommand(#[from] StreamedCommandError),
+    #[error("Error copying runtime files {0}")]
+    CopyRuntimeFilesToRuntimeLayer(io::Error),
 }
 
 impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
