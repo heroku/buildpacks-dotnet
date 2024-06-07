@@ -212,7 +212,7 @@ enum DotnetBuildpackError {
     #[error("Error executing publish task")]
     PublishCommand(#[from] StreamedCommandError),
     #[error("Error copying runtime files {0}")]
-    CopyRuntimeFilesToRuntimeLayer(fs_extra::error::Error),
+    CopyRuntimeFilesToRuntimeLayer(io::Error),
 }
 
 impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {

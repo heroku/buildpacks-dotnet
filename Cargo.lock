@@ -94,7 +94,6 @@ dependencies = [
 name = "buildpack-heroku-dotnet"
 version = "0.0.0"
 dependencies = [
- "fs_extra",
  "indoc",
  "inventory",
  "libcnb",

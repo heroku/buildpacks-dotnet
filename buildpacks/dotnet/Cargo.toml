@@ -9,7 +9,6 @@ autotests = false
 workspace = true
 
 [dependencies]
-fs_extra = "1.3"
 inventory = { git = "https://github.com/malax/inventory", features = ["sha2", "semver"]}
 libcnb = { git = "https://github.com/heroku/libcnb.rs", branch = "malax/layer-api"}
 libherokubuildpack = { git = "https://github.com/heroku/libcnb.rs", branch = "malax/layer-api"}
