@@ -12,16 +12,13 @@ use crate::global_json::GlobalJsonError;
 use crate::layers::sdk::SdkLayerError;
 use crate::tfm::ParseTargetFrameworkError;
 use crate::utils::StreamedCommandError;
-use fs_extra::{copy_items, dir};
 use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::BuildResultBuilder;
 use libcnb::data::layer_name;
 use libcnb::detect::DetectResultBuilder;
 use libcnb::generic::{GenericMetadata, GenericPlatform};
-use libcnb::layer::{
-    CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction, UncachedLayerDefinition,
-};
+use libcnb::layer::{CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction};
 use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::log::{log_header, log_info};
@@ -29,7 +26,6 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::env::consts;
-use std::path::PathBuf;
 use std::process::Command;
 use std::{fs, io};
 
@@ -178,41 +174,7 @@ impl Buildpack for DotnetBuildpack {
         )
         .map_err(DotnetBuildpackError::PublishCommand)?;
 
-        // Copy the runtime files to it's own layer to reduce final image size.
-        // TODO: Move this logic to it's own module or function, or combine with
-        // sdk layer module.
-        let runtime_layer = context.uncached_layer(
-            layer_name!("runtime"),
-            UncachedLayerDefinition {
-                build: false,
-                launch: true,
-            },
-        )?;
-        runtime_layer.replace_env(&dotnet_layer_env::generate_layer_env(
-            &runtime_layer.path(),
-            &Scope::Launch,
-        ))?;
-
-        let runtime_paths: Vec<PathBuf> = [
-            "dotnet",
-            "host",
-            "shared",
-            "ThirdPartyNotices.txt",
-            "LICENSE.txt",
-        ]
-        .iter()
-        .map(|path| sdk_layer.path().join(path))
-        .collect();
-
-        copy_items(
-            &runtime_paths,
-            runtime_layer.path(),
-            &dir::CopyOptions {
-                copy_inside: true,
-                ..Default::default()
-            },
-        )
-        .map_err(DotnetBuildpackError::CopyRuntimeFilesToRuntimeLayer)?;
+        layers::runtime::handle(&context, &sdk_layer)?;
 
         BuildResultBuilder::new().build()
     }
