@@ -1,4 +1,5 @@
 mod detect;
+mod dotnet_layer_env;
 mod dotnet_project;
 mod dotnet_rid;
 mod global_json;
@@ -187,7 +188,7 @@ impl Buildpack for DotnetBuildpack {
                 launch: true,
             },
         )?;
-        runtime_layer.replace_env(&layers::sdk::generate_layer_env(&runtime_layer.path()))?;
+        runtime_layer.replace_env(&dotnet_layer_env::generate_layer_env(&runtime_layer.path()))?;
 
         let runtime_paths: Vec<PathBuf> = [
             "dotnet",
