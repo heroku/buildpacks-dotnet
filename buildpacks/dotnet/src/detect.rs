@@ -3,23 +3,24 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 pub(crate) fn dotnet_project_files<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
-    let dir = dir.as_ref();
-    if !dir.is_dir() {
-        return Ok(Vec::new());
-    }
+    get_files_with_extensions(dir.as_ref(), &["csproj", "vbproj", "fsproj"])
+}
 
-    let project_extensions = ["csproj", "vbproj", "fsproj"];
+pub(crate) fn dotnet_solution_files<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
+    get_files_with_extensions(dir.as_ref(), &["sln"])
+}
+
+fn get_files_with_extensions(dir: &Path, extensions: &[&str]) -> Result<Vec<PathBuf>, io::Error> {
     let project_files = fs::read_dir(dir)?
-        .filter_map(std::result::Result::ok)
+        .filter_map(Result::ok)
         .map(|entry| entry.path())
         .filter(|path| path.is_file()) // TODO: This returns false if there's an error)
         .filter(|path| {
             path.extension()
                 .and_then(|ext| ext.to_str())
-                .is_some_and(|ext| project_extensions.contains(&ext))
+                .is_some_and(|ext| extensions.contains(&ext))
         })
         .collect();
-
     Ok(project_files)
 }
 
@@ -57,6 +58,20 @@ mod tests {
         let project_files = dotnet_project_files(&temp_dir).unwrap();
 
         assert_eq!(3, project_files.len());
+    }
+
+    #[test]
+    fn test_find_dotnet_solution_files() {
+        let temp_dir = TempDir::new("dotnet-test").unwrap();
+        let base_path = temp_dir.path();
+
+        File::create(base_path.join("test1.sln")).unwrap();
+        File::create(base_path.join("test2.sln")).unwrap();
+        File::create(base_path.join("README.md")).unwrap();
+
+        let solution_files = dotnet_solution_files(&temp_dir).unwrap();
+
+        assert_eq!(2, solution_files.len());
     }
 
     #[test]

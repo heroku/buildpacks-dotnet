@@ -12,6 +12,7 @@ workspace = true
 inventory = { git = "https://github.com/malax/inventory", features = ["sha2", "semver"]}
 libcnb = { git = "https://github.com/heroku/libcnb.rs", branch = "malax/layer-api"}
 libherokubuildpack = { git = "https://github.com/heroku/libcnb.rs", branch = "malax/layer-api"}
+regex = "1"
 roxmltree = "0.20"
 semver = "1.0"
 serde = "1"
