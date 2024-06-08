@@ -17,7 +17,7 @@ use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::layer_name;
-use libcnb::detect::DetectResultBuilder;
+use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer::{CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction};
 use libcnb::layer_env::{LayerEnv, Scope};
@@ -39,10 +39,7 @@ impl Buildpack for DotnetBuildpack {
     type Metadata = GenericMetadata;
     type Error = DotnetBuildpackError;
 
-    fn detect(
-        &self,
-        context: libcnb::detect::DetectContext<Self>,
-    ) -> libcnb::Result<libcnb::detect::DetectResult, Self::Error> {
+    fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
         let solution_files = detect::dotnet_solution_files(&context.app_dir)
             .map_err(DotnetBuildpackError::BuildpackDetection)?;
         let project_files = detect::dotnet_project_files(&context.app_dir)
@@ -61,16 +58,11 @@ impl Buildpack for DotnetBuildpack {
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         log_header("Determining .NET version");
 
-        let solution_files = detect::dotnet_solution_files(&context.app_dir)
-            .expect("function to pass after detection");
-        let project_files = detect::dotnet_project_files(&context.app_dir)
-            .expect("function to pass after detection");
-
-        let file_to_publish = determine_file_to_publish(&solution_files, &project_files)?;
+        let file_to_publish = determine_file_to_publish(&context.app_dir)?;
         let mut requirement = extract_version_requirement(&file_to_publish)?;
 
-        if let Some(global_json_req) = detect_global_json(&context.app_dir)? {
-            requirement = global_json_req;
+        if let Some(global_json_requirement) = global_json_requirement(&context.app_dir)? {
+            requirement = global_json_requirement;
         }
 
         log_info(format!(
@@ -126,6 +118,8 @@ impl Buildpack for DotnetBuildpack {
             }
         }
 
+        log_header("Publish");
+
         let command_env = LayerEnv::read_from_layer_dir(sdk_layer.path())
             .map_err(DotnetBuildpackError::ReadSdkLayerEnvironment)?
             .chainable_insert(
@@ -134,8 +128,22 @@ impl Buildpack for DotnetBuildpack {
                 "NUGET_PACKAGES",
                 nuget_cache_layer.path(),
             );
-
-        publish_file(&context.app_dir, &file_to_publish, &command_env)?;
+        utils::run_command_and_stream_output(
+            Command::new("dotnet")
+                .args([
+                    "publish",
+                    &file_to_publish.to_string_lossy(),
+                    "--verbosity",
+                    "normal",
+                    "--configuration",
+                    "Release",
+                    "--runtime",
+                    &dotnet_rid::get_runtime_identifier().to_string(),
+                ])
+                .current_dir(&context.app_dir)
+                .envs(&command_env.apply(Scope::Build, &Env::from_current())),
+        )
+        .map_err(DotnetBuildpackError::PublishCommand)?;
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
@@ -143,13 +151,15 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
-fn determine_file_to_publish(
-    solution_files: &[PathBuf],
-    project_files: &[PathBuf],
-) -> Result<PathBuf, DotnetBuildpackError> {
+fn determine_file_to_publish(app_dir: &Path) -> Result<PathBuf, DotnetBuildpackError> {
+    let solution_files =
+        detect::dotnet_solution_files(app_dir).expect("function to pass after detection");
+    let project_files =
+        detect::dotnet_project_files(app_dir).expect("function to pass after detection");
+
     if !solution_files.is_empty() {
         // TODO: Publish all solutions instead of just the first
-        let dotnet_solution_file = solution_files
+        let solution_file = solution_files
             .first()
             .expect("a solution file to be present");
 
@@ -169,9 +179,9 @@ fn determine_file_to_publish(
 
         log_info(format!(
             "Detected .NET solution file: {}",
-            dotnet_solution_file.to_string_lossy()
+            solution_file.to_string_lossy()
         ));
-        Ok(dotnet_solution_file.clone())
+        Ok(solution_file.clone())
     } else if !project_files.is_empty() {
         if project_files.len() > 1 {
             return Err(DotnetBuildpackError::MultipleProjectFiles(
@@ -182,101 +192,76 @@ fn determine_file_to_publish(
                     .join(", "),
             ));
         }
-        let dotnet_project_file = project_files.first().expect("a project file to be present");
+        let project_file = project_files.first().expect("a project file to be present");
 
         log_info(format!(
             "Detected .NET project file: {}",
-            dotnet_project_file.to_string_lossy()
+            project_file.to_string_lossy()
         ));
-        Ok(dotnet_project_file.clone())
+        Ok(project_file.clone())
     } else {
         // This error is not expected to occur (as one or more solution/project files should be present after detect())
         Err(DotnetBuildpackError::NoDotnetFiles)
     }
 }
 
-fn extract_version_requirement(file_to_publish: &Path) -> Result<VersionReq, DotnetBuildpackError> {
-    if file_to_publish.extension() == Some(OsStr::new("sln")) {
-        let mut version_requirements = vec![];
-        for project_reference in dotnet_solution::project_file_paths(file_to_publish)
+fn extract_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetBuildpackError> {
+    if dotnet_file.extension() == Some(OsStr::new("sln")) {
+        let mut requirements = vec![];
+        for project_paths in dotnet_solution::project_file_paths(dotnet_file)
             .map_err(DotnetBuildpackError::ParseDotnetSolutionFile)?
         {
             log_info(format!(
-                "Detecting .NET version requirement for project {project_reference}"
+                "Detecting .NET version requirement for project {project_paths}"
             ));
-            version_requirements.push(get_requirement_from_project_file(
-                &file_to_publish
+            requirements.push(project_requirement(
+                &dotnet_file
                     .parent()
                     .expect("solution file to have a parent directory")
-                    .join(project_reference),
+                    .join(project_paths),
             )?);
         }
 
-        version_requirements
+        requirements
             // TODO: Add logic to prefer the most recent version requirement, and log if projects target different versions
             .first()
             .ok_or_else(|| DotnetBuildpackError::NoDotnetFiles)
             .cloned()
     } else {
-        get_requirement_from_project_file(file_to_publish)
+        project_requirement(dotnet_file)
     }
 }
 
-fn detect_global_json(app_dir: &Path) -> Result<Option<VersionReq>, DotnetBuildpackError> {
-    if let Some(file) = detect::find_global_json(app_dir) {
-        log_info("Detected global.json file in the root directory");
-
-        let content =
-            fs::read_to_string(file.as_path()).map_err(DotnetBuildpackError::ReadGlobalJsonFile)?;
-        let version_req = global_json::parse_global_json(&content)
-            .map_err(DotnetBuildpackError::ParseGlobalJson)?;
-        Ok(Some(version_req))
-    } else {
-        Ok(None)
-    }
-}
-
-fn publish_file(
-    app_dir: &Path,
-    file_to_publish: &Path,
-    command_env: &LayerEnv,
-) -> Result<(), DotnetBuildpackError> {
-    log_header("Publish");
-    utils::run_command_and_stream_output(
-        Command::new("dotnet")
-            .args([
-                "publish",
-                &file_to_publish.to_string_lossy(),
-                "--verbosity",
-                "normal",
-                "--configuration",
-                "Release",
-                "--runtime",
-                &dotnet_rid::get_runtime_identifier().to_string(),
-            ])
-            .current_dir(app_dir)
-            .envs(&command_env.apply(Scope::Build, &Env::from_current())),
-    )
-    .map_err(DotnetBuildpackError::PublishCommand)
-}
-
-fn get_requirement_from_project_file(
-    dotnet_project_file: &Path,
-) -> Result<VersionReq, DotnetBuildpackError> {
-    let dotnet_project = fs::read_to_string(dotnet_project_file)
+fn project_requirement(path: &Path) -> Result<VersionReq, DotnetBuildpackError> {
+    let project = fs::read_to_string(path)
         .map_err(DotnetBuildpackError::ReadProjectFile)?
         .parse::<DotnetProject>()
         .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
 
     log_info(format!(
         "Project type is {:?} using SDK \"{}\" specifies TFM \"{}\" and assembly name \"{}\"",
-        dotnet_project.project_type,
-        dotnet_project.sdk_id,
-        dotnet_project.target_framework,
-        dotnet_project.assembly_name.unwrap_or_default()
+        project.project_type,
+        project.sdk_id,
+        project.target_framework,
+        project.assembly_name.unwrap_or_default()
     ));
-    tfm::parse_target_framework(&dotnet_project.target_framework)
+    tfm::parse_target_framework(&project.target_framework)
         .map_err(DotnetBuildpackError::ParseTargetFramework)
+}
+
+fn global_json_requirement(app_dir: &Path) -> Result<Option<VersionReq>, DotnetBuildpackError> {
+    if let Some(file) = detect::find_global_json(app_dir) {
+        log_info("Detected global.json file in the root directory");
+
+        let requirement = global_json::parse_global_json(
+            &fs::read_to_string(file.as_path())
+                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?,
+        )
+        .map_err(DotnetBuildpackError::ParseGlobalJson)?;
+        Ok(Some(requirement))
+    } else {
+        Ok(None)
+    }
 }
 
 #[derive(Serialize, Deserialize)]
