@@ -121,6 +121,8 @@ impl Buildpack for DotnetBuildpack {
             }
         }
 
+        log_header("Publish");
+
         let command_env = LayerEnv::read_from_layer_dir(sdk_layer.path())
             .map_err(DotnetBuildpackError::ReadSdkLayerEnvironment)?
             .chainable_insert(
@@ -129,8 +131,6 @@ impl Buildpack for DotnetBuildpack {
                 "NUGET_PACKAGES",
                 nuget_cache_layer.path(),
             );
-
-        log_header("Publish");
         utils::run_command_and_stream_output(
             Command::new("dotnet")
                 .args([
