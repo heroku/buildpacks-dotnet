@@ -61,12 +61,7 @@ impl Buildpack for DotnetBuildpack {
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         log_header("Determining .NET version");
 
-        let solution_files = detect::dotnet_solution_files(&context.app_dir)
-            .expect("function to pass after detection");
-        let project_files = detect::dotnet_project_files(&context.app_dir)
-            .expect("function to pass after detection");
-
-        let file_to_publish = determine_file_to_publish(&solution_files, &project_files)?;
+        let file_to_publish = determine_file_to_publish(&context.app_dir)?;
         let mut requirement = extract_version_requirement(&file_to_publish)?;
 
         if let Some(global_json_req) = detect_global_json(&context.app_dir)? {
@@ -143,10 +138,12 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
-fn determine_file_to_publish(
-    solution_files: &[PathBuf],
-    project_files: &[PathBuf],
-) -> Result<PathBuf, DotnetBuildpackError> {
+fn determine_file_to_publish(app_dir: &Path) -> Result<PathBuf, DotnetBuildpackError> {
+    let solution_files =
+        detect::dotnet_solution_files(app_dir).expect("function to pass after detection");
+    let project_files =
+        detect::dotnet_project_files(app_dir).expect("function to pass after detection");
+
     if !solution_files.is_empty() {
         // TODO: Publish all solutions instead of just the first
         let dotnet_solution_file = solution_files
