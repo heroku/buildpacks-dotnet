@@ -17,7 +17,7 @@ use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::layer_name;
-use libcnb::detect::DetectResultBuilder;
+use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer::{CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction};
 use libcnb::layer_env::{LayerEnv, Scope};
@@ -39,10 +39,7 @@ impl Buildpack for DotnetBuildpack {
     type Metadata = GenericMetadata;
     type Error = DotnetBuildpackError;
 
-    fn detect(
-        &self,
-        context: libcnb::detect::DetectContext<Self>,
-    ) -> libcnb::Result<libcnb::detect::DetectResult, Self::Error> {
+    fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
         let solution_files = detect::dotnet_solution_files(&context.app_dir)
             .map_err(DotnetBuildpackError::BuildpackDetection)?;
         let project_files = detect::dotnet_project_files(&context.app_dir)
