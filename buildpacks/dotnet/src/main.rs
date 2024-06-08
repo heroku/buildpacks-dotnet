@@ -273,12 +273,10 @@ struct NugetCacheLayerMetadata {
 enum DotnetBuildpackError {
     #[error("Error when performing buildpack detection")]
     BuildpackDetection(io::Error),
-    #[error("Couldn't parse .NET SDK inventory: {0}")]
-    ParseInventory(ParseInventoryError),
-    #[error("Couldn't parse .NET SDK version: {0}")]
-    ParseSdkVersion(#[from] semver::Error),
-    #[error("Couldn't resolve .NET SDK version: {0}")]
-    ResolveSdkVersion(VersionReq),
+    #[error("No .NET solution or project files found")]
+    NoDotnetFiles,
+    #[error("Multiple .NET project files found in root directory: {0}")]
+    MultipleProjectFiles(String),
     #[error("Error reading project file")]
     ReadProjectFile(io::Error),
     #[error("Error parsing .NET project file")]
@@ -291,16 +289,18 @@ enum DotnetBuildpackError {
     ReadGlobalJsonFile(io::Error),
     #[error("Error parsing global.json file: {0}")]
     ParseGlobalJson(GlobalJsonError),
+    #[error("Couldn't parse .NET SDK inventory: {0}")]
+    ParseInventory(ParseInventoryError),
+    #[error("Couldn't parse .NET SDK version: {0}")]
+    ParseSdkVersion(#[from] semver::Error),
+    #[error("Couldn't resolve .NET SDK version: {0}")]
+    ResolveSdkVersion(VersionReq),
     #[error(transparent)]
     SdkLayer(#[from] SdkLayerError),
     #[error("Error reading SDK layer environment")]
     ReadSdkLayerEnvironment(io::Error),
     #[error("Error executing publish task")]
     PublishCommand(#[from] StreamedCommandError),
-    #[error("No .NET solution or project files found")]
-    NoDotnetFiles,
-    #[error("Multiple .NET project files found in root directory: {0}")]
-    MultipleProjectFiles(String),
     #[error("Error copying runtime files {0}")]
     CopyRuntimeFilesToRuntimeLayer(io::Error),
 }
