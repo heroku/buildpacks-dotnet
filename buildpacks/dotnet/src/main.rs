@@ -64,8 +64,8 @@ impl Buildpack for DotnetBuildpack {
         let file_to_publish = determine_file_to_publish(&context.app_dir)?;
         let mut requirement = extract_version_requirement(&file_to_publish)?;
 
-        if let Some(global_json_req) = detect_global_json(&context.app_dir)? {
-            requirement = global_json_req;
+        if let Some(global_json_requirement) = detect_global_json_requirement(&context.app_dir)? {
+            requirement = global_json_requirement;
         }
 
         log_info(format!(
@@ -130,7 +130,7 @@ impl Buildpack for DotnetBuildpack {
                 nuget_cache_layer.path(),
             );
 
-        publish_file(&context.app_dir, &file_to_publish, &command_env)?;
+        publish_file(&file_to_publish, &context.app_dir, &command_env)?;
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
@@ -192,50 +192,53 @@ fn determine_file_to_publish(app_dir: &Path) -> Result<PathBuf, DotnetBuildpackE
     }
 }
 
-fn extract_version_requirement(file_to_publish: &Path) -> Result<VersionReq, DotnetBuildpackError> {
-    if file_to_publish.extension() == Some(OsStr::new("sln")) {
-        let mut version_requirements = vec![];
-        for project_reference in dotnet_solution::project_file_paths(file_to_publish)
+fn extract_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetBuildpackError> {
+    if dotnet_file.extension() == Some(OsStr::new("sln")) {
+        let mut requirements = vec![];
+        for project_paths in dotnet_solution::project_file_paths(dotnet_file)
             .map_err(DotnetBuildpackError::ParseDotnetSolutionFile)?
         {
             log_info(format!(
-                "Detecting .NET version requirement for project {project_reference}"
+                "Detecting .NET version requirement for project {project_paths}"
             ));
-            version_requirements.push(get_requirement_from_project_file(
-                &file_to_publish
+            requirements.push(get_requirement_from_project_file(
+                &dotnet_file
                     .parent()
                     .expect("solution file to have a parent directory")
-                    .join(project_reference),
+                    .join(project_paths),
             )?);
         }
 
-        version_requirements
+        requirements
             // TODO: Add logic to prefer the most recent version requirement, and log if projects target different versions
             .first()
             .ok_or_else(|| DotnetBuildpackError::NoDotnetFiles)
             .cloned()
     } else {
-        get_requirement_from_project_file(file_to_publish)
+        get_requirement_from_project_file(dotnet_file)
     }
 }
 
-fn detect_global_json(app_dir: &Path) -> Result<Option<VersionReq>, DotnetBuildpackError> {
+fn detect_global_json_requirement(
+    app_dir: &Path,
+) -> Result<Option<VersionReq>, DotnetBuildpackError> {
     if let Some(file) = detect::find_global_json(app_dir) {
         log_info("Detected global.json file in the root directory");
 
-        let content =
-            fs::read_to_string(file.as_path()).map_err(DotnetBuildpackError::ReadGlobalJsonFile)?;
-        let version_req = global_json::parse_global_json(&content)
-            .map_err(DotnetBuildpackError::ParseGlobalJson)?;
-        Ok(Some(version_req))
+        let requirement = global_json::parse_global_json(
+            &fs::read_to_string(file.as_path())
+                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?,
+        )
+        .map_err(DotnetBuildpackError::ParseGlobalJson)?;
+        Ok(Some(requirement))
     } else {
         Ok(None)
     }
 }
 
 fn publish_file(
+    path: &Path,
     app_dir: &Path,
-    file_to_publish: &Path,
     command_env: &LayerEnv,
 ) -> Result<(), DotnetBuildpackError> {
     log_header("Publish");
@@ -243,7 +246,7 @@ fn publish_file(
         Command::new("dotnet")
             .args([
                 "publish",
-                &file_to_publish.to_string_lossy(),
+                &path.to_string_lossy(),
                 "--verbosity",
                 "normal",
                 "--configuration",
@@ -257,22 +260,20 @@ fn publish_file(
     .map_err(DotnetBuildpackError::PublishCommand)
 }
 
-fn get_requirement_from_project_file(
-    dotnet_project_file: &Path,
-) -> Result<VersionReq, DotnetBuildpackError> {
-    let dotnet_project = fs::read_to_string(dotnet_project_file)
+fn get_requirement_from_project_file(path: &Path) -> Result<VersionReq, DotnetBuildpackError> {
+    let project = fs::read_to_string(path)
         .map_err(DotnetBuildpackError::ReadProjectFile)?
         .parse::<DotnetProject>()
         .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
 
     log_info(format!(
         "Project type is {:?} using SDK \"{}\" specifies TFM \"{}\" and assembly name \"{}\"",
-        dotnet_project.project_type,
-        dotnet_project.sdk_id,
-        dotnet_project.target_framework,
-        dotnet_project.assembly_name.unwrap_or_default()
+        project.project_type,
+        project.sdk_id,
+        project.target_framework,
+        project.assembly_name.unwrap_or_default()
     ));
-    tfm::parse_target_framework(&dotnet_project.target_framework)
+    tfm::parse_target_framework(&project.target_framework)
         .map_err(DotnetBuildpackError::ParseTargetFramework)
 }
 
