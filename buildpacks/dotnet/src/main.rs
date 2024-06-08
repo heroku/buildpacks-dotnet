@@ -130,7 +130,23 @@ impl Buildpack for DotnetBuildpack {
                 nuget_cache_layer.path(),
             );
 
-        publish_file(&file_to_publish, &context.app_dir, &command_env)?;
+        log_header("Publish");
+        utils::run_command_and_stream_output(
+            Command::new("dotnet")
+                .args([
+                    "publish",
+                    &file_to_publish.to_string_lossy(),
+                    "--verbosity",
+                    "normal",
+                    "--configuration",
+                    "Release",
+                    "--runtime",
+                    &dotnet_rid::get_runtime_identifier().to_string(),
+                ])
+                .current_dir(&context.app_dir)
+                .envs(&command_env.apply(Scope::Build, &Env::from_current())),
+        )
+        .map_err(DotnetBuildpackError::PublishCommand)?;
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
@@ -234,30 +250,6 @@ fn detect_global_json_requirement(
     } else {
         Ok(None)
     }
-}
-
-fn publish_file(
-    path: &Path,
-    app_dir: &Path,
-    command_env: &LayerEnv,
-) -> Result<(), DotnetBuildpackError> {
-    log_header("Publish");
-    utils::run_command_and_stream_output(
-        Command::new("dotnet")
-            .args([
-                "publish",
-                &path.to_string_lossy(),
-                "--verbosity",
-                "normal",
-                "--configuration",
-                "Release",
-                "--runtime",
-                &dotnet_rid::get_runtime_identifier().to_string(),
-            ])
-            .current_dir(app_dir)
-            .envs(&command_env.apply(Scope::Build, &Env::from_current())),
-    )
-    .map_err(DotnetBuildpackError::PublishCommand)
 }
 
 fn get_requirement_from_project_file(path: &Path) -> Result<VersionReq, DotnetBuildpackError> {
