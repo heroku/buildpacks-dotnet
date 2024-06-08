@@ -64,7 +64,7 @@ impl Buildpack for DotnetBuildpack {
         let file_to_publish = determine_file_to_publish(&context.app_dir)?;
         let mut requirement = extract_version_requirement(&file_to_publish)?;
 
-        if let Some(global_json_requirement) = detect_global_json_requirement(&context.app_dir)? {
+        if let Some(global_json_requirement) = global_json_requirement(&context.app_dir)? {
             requirement = global_json_requirement;
         }
 
@@ -235,9 +235,7 @@ fn extract_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetB
     }
 }
 
-fn detect_global_json_requirement(
-    app_dir: &Path,
-) -> Result<Option<VersionReq>, DotnetBuildpackError> {
+fn global_json_requirement(app_dir: &Path) -> Result<Option<VersionReq>, DotnetBuildpackError> {
     if let Some(file) = detect::find_global_json(app_dir) {
         log_info("Detected global.json file in the root directory");
 
