@@ -146,7 +146,7 @@ fn determine_file_to_publish(app_dir: &Path) -> Result<PathBuf, DotnetBuildpackE
 
     if !solution_files.is_empty() {
         // TODO: Publish all solutions instead of just the first
-        let dotnet_solution_file = solution_files
+        let solution_file = solution_files
             .first()
             .expect("a solution file to be present");
 
@@ -166,9 +166,9 @@ fn determine_file_to_publish(app_dir: &Path) -> Result<PathBuf, DotnetBuildpackE
 
         log_info(format!(
             "Detected .NET solution file: {}",
-            dotnet_solution_file.to_string_lossy()
+            solution_file.to_string_lossy()
         ));
-        Ok(dotnet_solution_file.clone())
+        Ok(solution_file.clone())
     } else if !project_files.is_empty() {
         if project_files.len() > 1 {
             return Err(DotnetBuildpackError::MultipleProjectFiles(
@@ -179,13 +179,13 @@ fn determine_file_to_publish(app_dir: &Path) -> Result<PathBuf, DotnetBuildpackE
                     .join(", "),
             ));
         }
-        let dotnet_project_file = project_files.first().expect("a project file to be present");
+        let project_file = project_files.first().expect("a project file to be present");
 
         log_info(format!(
             "Detected .NET project file: {}",
-            dotnet_project_file.to_string_lossy()
+            project_file.to_string_lossy()
         ));
-        Ok(dotnet_project_file.clone())
+        Ok(project_file.clone())
     } else {
         // This error is not expected to occur (as one or more solution/project files should be present after detect())
         Err(DotnetBuildpackError::NoDotnetFiles)
