@@ -217,7 +217,7 @@ fn extract_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetB
             log_info(format!(
                 "Detecting .NET version requirement for project {project_paths}"
             ));
-            requirements.push(get_requirement_from_project_file(
+            requirements.push(project_requirement(
                 &dotnet_file
                     .parent()
                     .expect("solution file to have a parent directory")
@@ -231,7 +231,7 @@ fn extract_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetB
             .ok_or_else(|| DotnetBuildpackError::NoDotnetFiles)
             .cloned()
     } else {
-        get_requirement_from_project_file(dotnet_file)
+        project_requirement(dotnet_file)
     }
 }
 
@@ -250,7 +250,7 @@ fn global_json_requirement(app_dir: &Path) -> Result<Option<VersionReq>, DotnetB
     }
 }
 
-fn get_requirement_from_project_file(path: &Path) -> Result<VersionReq, DotnetBuildpackError> {
+fn project_requirement(path: &Path) -> Result<VersionReq, DotnetBuildpackError> {
     let project = fs::read_to_string(path)
         .map_err(DotnetBuildpackError::ReadProjectFile)?
         .parse::<DotnetProject>()
