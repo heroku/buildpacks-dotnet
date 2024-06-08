@@ -27,6 +27,7 @@ use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::env::consts;
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{fs, io};
@@ -195,7 +196,7 @@ fn determine_file_to_publish(
 }
 
 fn extract_version_requirement(file_to_publish: &Path) -> Result<VersionReq, DotnetBuildpackError> {
-    if file_to_publish.extension() == Some("sln".as_ref()) {
+    if file_to_publish.extension() == Some(OsStr::new("sln")) {
         let mut version_requirements = vec![];
         for project_reference in dotnet_solution::project_file_paths(file_to_publish)
             .map_err(DotnetBuildpackError::ParseDotnetSolutionFile)?
