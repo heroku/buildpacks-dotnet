@@ -244,10 +244,8 @@ impl TryFrom<&Path> for DotnetProject {
 }
 
 fn project_requirement(path: &Path) -> Result<VersionReq, DotnetBuildpackError> {
-    let project = DotnetProject::try_from(path)?;
-
     VersionReq::try_from(
-        project
+        DotnetProject::try_from(path)?
             .target_framework
             .parse::<TargetFrameworkMoniker>()
             .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
