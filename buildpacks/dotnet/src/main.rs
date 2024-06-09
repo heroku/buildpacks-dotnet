@@ -246,14 +246,6 @@ impl TryFrom<&Path> for DotnetProject {
 fn project_requirement(path: &Path) -> Result<VersionReq, DotnetBuildpackError> {
     let project = DotnetProject::try_from(path)?;
 
-    log_info(format!(
-        "Project type is {:?} using SDK \"{}\" specifies TFM \"{}\" and assembly name \"{}\"",
-        project.project_type,
-        project.sdk_id,
-        project.target_framework,
-        project.assembly_name.unwrap_or_default()
-    ));
-
     VersionReq::try_from(
         project
             .target_framework
