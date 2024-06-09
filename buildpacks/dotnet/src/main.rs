@@ -59,19 +59,19 @@ impl Buildpack for DotnetBuildpack {
         log_header("Determining .NET version");
 
         let file_to_publish = determine_file_to_publish(&context.app_dir)?;
-        let mut requirement = extract_version_requirement(&file_to_publish)?;
 
-        if let Some(file) = detect::find_global_json(&context.app_dir) {
+        let requirement = if let Some(file) = detect::find_global_json(&context.app_dir) {
             log_info("Detected global.json file in the root directory");
-
-            requirement = VersionReq::try_from(
+            VersionReq::try_from(
                 fs::read_to_string(file.as_path())
                     .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
                     .parse::<GlobalJson>()
                     .map_err(DotnetBuildpackError::ParseGlobalJson)?,
             )
-            .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?;
-        }
+            .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?
+        } else {
+            extract_version_requirement(&file_to_publish)?
+        };
 
         log_info(format!(
             "Inferred SDK version requirement: {}",
