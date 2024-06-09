@@ -262,8 +262,8 @@ fn global_json_requirement(app_dir: &Path) -> Result<Option<VersionReq>, DotnetB
             .parse::<GlobalJson>()
             .map_err(DotnetBuildpackError::ParseGlobalJson)?;
 
-        let requirement =
-            VersionReq::try_from(global_json).map_err(DotnetBuildpackError::ParseGlobalJson)?;
+        let requirement = VersionReq::try_from(global_json)
+            .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?;
         Ok(Some(requirement))
     } else {
         Ok(None)
@@ -295,6 +295,8 @@ enum DotnetBuildpackError {
     ReadGlobalJsonFile(io::Error),
     #[error("Error parsing global.json file: {0}")]
     ParseGlobalJson(GlobalJsonError),
+    #[error("Error parsing global.json version requirement: {0}")]
+    ParseGlobalJsonVersionRequirement(semver::Error),
     #[error("Couldn't parse .NET SDK inventory: {0}")]
     ParseInventory(ParseInventoryError),
     #[error("Invalid target framework version: {0}")]

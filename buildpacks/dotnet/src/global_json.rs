@@ -8,8 +8,6 @@ use thiserror::Error;
 pub(crate) enum GlobalJsonError {
     #[error("failed to parse JSON: {0}")]
     JsonParseError(#[from] serde_json::Error),
-    #[error("failed to parse version requirement: {0}")]
-    VersionReqParseError(#[from] semver::Error),
 }
 
 /// Represents the root structure of a global.json file.
@@ -36,7 +34,7 @@ impl FromStr for GlobalJson {
 }
 
 impl TryFrom<GlobalJson> for VersionReq {
-    type Error = GlobalJsonError;
+    type Error = semver::Error;
 
     // TODO: Factor in pre-release logic
     fn try_from(global_json: GlobalJson) -> Result<Self, Self::Error> {
@@ -65,7 +63,7 @@ impl TryFrom<GlobalJson> for VersionReq {
             Some("disable") => format!("={version}"),
             _ => version.clone(),
         };
-        VersionReq::parse(&version_req_str).map_err(GlobalJsonError::VersionReqParseError)
+        VersionReq::parse(&version_req_str)
     }
 }
 
