@@ -232,11 +232,19 @@ fn extract_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetB
     }
 }
 
+impl TryFrom<&Path> for DotnetProject {
+    type Error = DotnetBuildpackError;
+
+    fn try_from(path: &Path) -> Result<Self, Self::Error> {
+        fs::read_to_string(path)
+            .map_err(DotnetBuildpackError::ReadProjectFile)?
+            .parse::<DotnetProject>()
+            .map_err(DotnetBuildpackError::ParseDotnetProjectFile)
+    }
+}
+
 fn project_requirement(path: &Path) -> Result<VersionReq, DotnetBuildpackError> {
-    let project = fs::read_to_string(path)
-        .map_err(DotnetBuildpackError::ReadProjectFile)?
-        .parse::<DotnetProject>()
-        .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
+    let project = DotnetProject::try_from(path)?;
 
     log_info(format!(
         "Project type is {:?} using SDK \"{}\" specifies TFM \"{}\" and assembly name \"{}\"",
