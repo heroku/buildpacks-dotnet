@@ -11,7 +11,7 @@ mod utils;
 use crate::dotnet_project::DotnetProject;
 use crate::global_json::GlobalJsonError;
 use crate::layers::sdk::SdkLayerError;
-use crate::tfm::ParseTargetFrameworkError;
+use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::utils::StreamedCommandError;
 use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
@@ -245,7 +245,10 @@ fn project_requirement(path: &Path) -> Result<VersionReq, DotnetBuildpackError> 
         project.target_framework,
         project.assembly_name.unwrap_or_default()
     ));
-    tfm::parse_target_framework(&project.target_framework)
+    let target_framework_moniker =
+        TargetFrameworkMoniker::try_from(project.target_framework.as_str())
+            .map_err(DotnetBuildpackError::ParseTargetFramework)?;
+    VersionReq::try_from(target_framework_moniker)
         .map_err(DotnetBuildpackError::ParseTargetFramework)
 }
 
