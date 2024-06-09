@@ -9,9 +9,9 @@ mod tfm;
 mod utils;
 
 use crate::dotnet_project::DotnetProject;
-use crate::global_json::GlobalJsonError;
+use crate::global_json::GlobalJson;
 use crate::layers::sdk::SdkLayerError;
-use crate::tfm::ParseTargetFrameworkError;
+use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::utils::StreamedCommandError;
 use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
@@ -59,15 +59,22 @@ impl Buildpack for DotnetBuildpack {
         log_header("Determining .NET version");
 
         let file_to_publish = determine_file_to_publish(&context.app_dir)?;
-        let mut requirement = extract_version_requirement(&file_to_publish)?;
-
-        if let Some(global_json_requirement) = global_json_requirement(&context.app_dir)? {
-            requirement = global_json_requirement;
-        }
+        let sdk_version_req = if let Some(file) = detect::find_global_json(&context.app_dir) {
+            log_info("Detected global.json file in the root directory");
+            VersionReq::try_from(
+                fs::read_to_string(file.as_path())
+                    .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
+                    .parse::<GlobalJson>()
+                    .map_err(DotnetBuildpackError::ParseGlobalJson)?,
+            )
+            .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?
+        } else {
+            parse_version_requirement(&file_to_publish)?
+        };
 
         log_info(format!(
             "Inferred SDK version requirement: {}",
-            &requirement
+            &sdk_version_req
         ));
 
         let inventory = include_str!("../inventory.toml")
@@ -82,9 +89,9 @@ impl Buildpack for DotnetBuildpack {
                 consts::ARCH
                     .parse::<Arch>()
                     .expect("Arch should be always parseable, buildpack will not run on unsupported architectures."),
-                &requirement
+                &sdk_version_req
             )
-            .ok_or(DotnetBuildpackError::ResolveSdkVersion(requirement))?;
+            .ok_or(DotnetBuildpackError::ResolveSdkVersion(sdk_version_req))?;
 
         log_info(format!(
             "Resolved .NET SDK version {} ({}-{})",
@@ -193,11 +200,11 @@ fn determine_file_to_publish(app_dir: &Path) -> Result<PathBuf, DotnetBuildpackE
             ));
         }
         let project_file = project_files.first().expect("a project file to be present");
-
         log_info(format!(
             "Detected .NET project file: {}",
             project_file.to_string_lossy()
         ));
+
         Ok(project_file.clone())
     } else {
         // This error is not expected to occur (as one or more solution/project files should be present after detect())
@@ -205,7 +212,7 @@ fn determine_file_to_publish(app_dir: &Path) -> Result<PathBuf, DotnetBuildpackE
     }
 }
 
-fn extract_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetBuildpackError> {
+fn parse_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetBuildpackError> {
     if dotnet_file.extension() == Some(OsStr::new("sln")) {
         let mut requirements = vec![];
         for project_paths in dotnet_solution::project_file_paths(dotnet_file)
@@ -214,7 +221,7 @@ fn extract_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetB
             log_info(format!(
                 "Detecting .NET version requirement for project {project_paths}"
             ));
-            requirements.push(project_requirement(
+            requirements.push(parse_project_version_requirement(
                 &dotnet_file
                     .parent()
                     .expect("solution file to have a parent directory")
@@ -228,39 +235,28 @@ fn extract_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetB
             .ok_or_else(|| DotnetBuildpackError::NoDotnetFiles)
             .cloned()
     } else {
-        project_requirement(dotnet_file)
+        parse_project_version_requirement(dotnet_file)
     }
 }
 
-fn project_requirement(path: &Path) -> Result<VersionReq, DotnetBuildpackError> {
-    let project = fs::read_to_string(path)
-        .map_err(DotnetBuildpackError::ReadProjectFile)?
-        .parse::<DotnetProject>()
-        .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
-
-    log_info(format!(
-        "Project type is {:?} using SDK \"{}\" specifies TFM \"{}\" and assembly name \"{}\"",
-        project.project_type,
-        project.sdk_id,
-        project.target_framework,
-        project.assembly_name.unwrap_or_default()
-    ));
-    tfm::parse_target_framework(&project.target_framework)
-        .map_err(DotnetBuildpackError::ParseTargetFramework)
+fn parse_project_version_requirement(path: &Path) -> Result<VersionReq, DotnetBuildpackError> {
+    VersionReq::try_from(
+        DotnetProject::try_from(path)?
+            .target_framework
+            .parse::<TargetFrameworkMoniker>()
+            .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
+    )
+    .map_err(DotnetBuildpackError::ParseVersionRequirement)
 }
 
-fn global_json_requirement(app_dir: &Path) -> Result<Option<VersionReq>, DotnetBuildpackError> {
-    if let Some(file) = detect::find_global_json(app_dir) {
-        log_info("Detected global.json file in the root directory");
+impl TryFrom<&Path> for DotnetProject {
+    type Error = DotnetBuildpackError;
 
-        let requirement = global_json::parse_global_json(
-            &fs::read_to_string(file.as_path())
-                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?,
-        )
-        .map_err(DotnetBuildpackError::ParseGlobalJson)?;
-        Ok(Some(requirement))
-    } else {
-        Ok(None)
+    fn try_from(path: &Path) -> Result<Self, Self::Error> {
+        fs::read_to_string(path)
+            .map_err(DotnetBuildpackError::ReadProjectFile)?
+            .parse::<DotnetProject>()
+            .map_err(DotnetBuildpackError::ParseDotnetProjectFile)
     }
 }
 
@@ -284,13 +280,17 @@ enum DotnetBuildpackError {
     #[error("Error parsing target framework: {0}")]
     ParseDotnetSolutionFile(io::Error),
     #[error("Error parsing solution file: {0}")]
-    ParseTargetFramework(ParseTargetFrameworkError),
+    ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     #[error("Error reading global.json file")]
     ReadGlobalJsonFile(io::Error),
-    #[error("Error parsing global.json file: {0}")]
-    ParseGlobalJson(GlobalJsonError),
+    #[error("Error parsing global.json: {0}")]
+    ParseGlobalJson(serde_json::Error),
+    #[error("Error parsing global.json version requirement: {0}")]
+    ParseGlobalJsonVersionRequirement(semver::Error),
     #[error("Couldn't parse .NET SDK inventory: {0}")]
     ParseInventory(ParseInventoryError),
+    #[error("Invalid target framework version: {0}")]
+    ParseVersionRequirement(semver::Error),
     #[error("Couldn't parse .NET SDK version: {0}")]
     ParseSdkVersion(#[from] semver::Error),
     #[error("Couldn't resolve .NET SDK version: {0}")]

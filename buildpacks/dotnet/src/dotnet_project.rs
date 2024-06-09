@@ -31,9 +31,12 @@ impl FromStr for ProjectType {
 
 #[derive(Debug)]
 pub(crate) struct DotnetProject {
+    #[allow(dead_code)]
     pub(crate) sdk_id: String,
     pub(crate) target_framework: String,
+    #[allow(dead_code)]
     pub(crate) project_type: ProjectType,
+    #[allow(dead_code)]
     pub(crate) assembly_name: Option<String>,
 }
 

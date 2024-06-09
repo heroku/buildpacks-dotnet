@@ -1,18 +1,11 @@
 use semver::VersionReq;
 use serde::Deserialize;
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub(crate) enum GlobalJsonError {
-    #[error("failed to parse JSON: {0}")]
-    JsonParseError(#[from] serde_json::Error),
-    #[error("failed to parse version requirement: {0}")]
-    VersionReqParseError(#[from] semver::Error),
-}
+use std::convert::TryFrom;
+use std::str::FromStr;
 
 /// Represents the root structure of a global.json file.
 #[derive(Deserialize)]
-struct GlobalJsonRoot {
+pub(crate) struct GlobalJson {
     sdk: SdkConfig,
 }
 
@@ -24,63 +17,53 @@ struct SdkConfig {
     roll_forward: Option<String>,
 }
 
-/// Constructs a `VersionReq` based on an `SdkConfig`.
-///
-/// # Arguments
-///
-/// * `sdk_config` - The SDK configuration from global.json.
-///
-/// # Returns
-///
-/// A `VersionReq` constructed based on the provided version and rollForward value.
-///
-/// TODO: Factor in pre-release logic
-fn construct_version_req(sdk_config: &SdkConfig) -> Result<VersionReq, semver::Error> {
-    let version = &sdk_config.version;
-    let roll_forward = sdk_config.roll_forward.as_deref();
-    match roll_forward {
-        Some("patch" | "latestPatch") => VersionReq::parse(&format!("~{version}")),
-        Some("feature" | "latestFeature") => {
-            let parts: Vec<&str> = version.split('.').collect();
-            if parts.len() > 2 {
-                VersionReq::parse(&format!("~{}.{}", parts[0], parts[1]))
-            } else {
-                VersionReq::parse(&format!("~{version}"))
-            }
-        }
-        Some("minor" | "latestMinor") => {
-            let parts: Vec<&str> = version.split('.').collect();
-            if parts.len() > 1 {
-                VersionReq::parse(&format!("^{}.{}", parts[0], parts[1]))
-            } else {
-                VersionReq::parse(&format!("^{version}"))
-            }
-        }
-        Some("major" | "latestMajor") => VersionReq::parse("*"),
-        Some("disable") => VersionReq::parse(&format!("={version}")),
-        _ => VersionReq::parse(version),
+impl FromStr for GlobalJson {
+    type Err = serde_json::Error;
+
+    fn from_str(contents: &str) -> Result<Self, Self::Err> {
+        serde_json::from_str::<GlobalJson>(contents)
     }
 }
 
-/// Parses global.json contents and returns a `VersionReq`.
-///
-/// # Arguments
-///
-/// * `contents` - The contents of the global.json file as a `&str`.
-///
-/// # Returns
-///
-/// A `VersionReq` constructed based on the provided version and rollForward value.
-///
-/// TODO: Parse pre-release information
-pub(crate) fn parse_global_json(contents: &str) -> Result<VersionReq, GlobalJsonError> {
-    let root: GlobalJsonRoot = serde_json::from_str(contents)?;
-    construct_version_req(&root.sdk).map_err(GlobalJsonError::from)
+impl TryFrom<GlobalJson> for VersionReq {
+    type Error = semver::Error;
+
+    // TODO: Factor in pre-release logic
+    fn try_from(global_json: GlobalJson) -> Result<Self, Self::Error> {
+        let sdk_config = global_json.sdk;
+        let version = &sdk_config.version;
+        let roll_forward = sdk_config.roll_forward.as_deref();
+        let version_req_str = match roll_forward {
+            Some("patch" | "latestPatch") => format!("~{version}"),
+            Some("feature" | "latestFeature") => {
+                let parts: Vec<&str> = version.split('.').collect();
+                if parts.len() > 2 {
+                    format!("~{}.{}", parts[0], parts[1])
+                } else {
+                    format!("~{version}")
+                }
+            }
+            Some("minor" | "latestMinor") => {
+                let parts: Vec<&str> = version.split('.').collect();
+                if parts.len() > 1 {
+                    format!("^{}.{}", parts[0], parts[1])
+                } else {
+                    format!("^{version}")
+                }
+            }
+            Some("major" | "latestMajor") => "*".to_string(),
+            Some("disable") => format!("={version}"),
+            _ => version.clone(),
+        };
+        VersionReq::parse(&version_req_str)
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use semver::VersionReq;
+    use std::str::FromStr;
 
     #[test]
     fn test_construct_version_req() {
@@ -149,7 +132,8 @@ mod tests {
                 version: case.version.to_string(),
                 roll_forward: case.roll_forward.map(ToString::to_string),
             };
-            let result = construct_version_req(&sdk_config).unwrap();
+            let global_json = GlobalJson { sdk: sdk_config };
+            let result = VersionReq::try_from(global_json).unwrap();
             let expected = VersionReq::parse(case.expected).unwrap();
             assert_eq!(result, expected, "Failed for case: {case:?}");
         }
@@ -166,10 +150,8 @@ mod tests {
         }
         "#;
 
-        let result = parse_global_json(json_content);
-        assert!(result.is_ok());
-
-        let version_req = result.unwrap();
+        let global_json = GlobalJson::from_str(json_content).unwrap();
+        let version_req = VersionReq::try_from(global_json).unwrap();
         assert_eq!(version_req, VersionReq::parse("^6.0").unwrap());
     }
 
@@ -183,10 +165,8 @@ mod tests {
         }
         "#;
 
-        let result = parse_global_json(json_content);
-        assert!(result.is_ok());
-
-        let version_req = result.unwrap();
+        let global_json = GlobalJson::from_str(json_content).unwrap();
+        let version_req = VersionReq::try_from(global_json).unwrap();
         assert_eq!(version_req, VersionReq::parse("6.0.100").unwrap());
     }
 }
