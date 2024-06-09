@@ -64,13 +64,13 @@ impl Buildpack for DotnetBuildpack {
         if let Some(file) = detect::find_global_json(&context.app_dir) {
             log_info("Detected global.json file in the root directory");
 
-            let global_json = fs::read_to_string(file.as_path())
-                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
-                .parse::<GlobalJson>()
-                .map_err(DotnetBuildpackError::ParseGlobalJson)?;
-
-            requirement = VersionReq::try_from(global_json)
-                .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?;
+            requirement = VersionReq::try_from(
+                fs::read_to_string(file.as_path())
+                    .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
+                    .parse::<GlobalJson>()
+                    .map_err(DotnetBuildpackError::ParseGlobalJson)?,
+            )
+            .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?;
         }
 
         log_info(format!(
