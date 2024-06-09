@@ -61,8 +61,16 @@ impl Buildpack for DotnetBuildpack {
         let file_to_publish = determine_file_to_publish(&context.app_dir)?;
         let mut requirement = extract_version_requirement(&file_to_publish)?;
 
-        if let Some(global_json_requirement) = global_json_requirement(&context.app_dir)? {
-            requirement = global_json_requirement;
+        if let Some(file) = detect::find_global_json(&context.app_dir) {
+            log_info("Detected global.json file in the root directory");
+
+            let global_json = fs::read_to_string(file.as_path())
+                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
+                .parse::<GlobalJson>()
+                .map_err(DotnetBuildpackError::ParseGlobalJson)?;
+
+            requirement = VersionReq::try_from(global_json)
+                .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?;
         }
 
         log_info(format!(
@@ -251,23 +259,6 @@ fn project_requirement(path: &Path) -> Result<VersionReq, DotnetBuildpackError> 
             .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
     )
     .map_err(DotnetBuildpackError::ParseVersionRequirement)
-}
-
-fn global_json_requirement(app_dir: &Path) -> Result<Option<VersionReq>, DotnetBuildpackError> {
-    if let Some(file) = detect::find_global_json(app_dir) {
-        log_info("Detected global.json file in the root directory");
-
-        let global_json = fs::read_to_string(file.as_path())
-            .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
-            .parse::<GlobalJson>()
-            .map_err(DotnetBuildpackError::ParseGlobalJson)?;
-
-        let requirement = VersionReq::try_from(global_json)
-            .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?;
-        Ok(Some(requirement))
-    } else {
-        Ok(None)
-    }
 }
 
 #[derive(Serialize, Deserialize)]
