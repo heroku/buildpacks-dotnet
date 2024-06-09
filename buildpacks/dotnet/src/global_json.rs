@@ -2,13 +2,6 @@ use semver::VersionReq;
 use serde::Deserialize;
 use std::convert::TryFrom;
 use std::str::FromStr;
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub(crate) enum GlobalJsonError {
-    #[error("failed to parse JSON: {0}")]
-    JsonParseError(#[from] serde_json::Error),
-}
 
 /// Represents the root structure of a global.json file.
 #[derive(Deserialize)]
@@ -25,11 +18,10 @@ struct SdkConfig {
 }
 
 impl FromStr for GlobalJson {
-    type Err = GlobalJsonError;
+    type Err = serde_json::Error;
 
     fn from_str(contents: &str) -> Result<Self, Self::Err> {
-        let root: GlobalJson = serde_json::from_str(contents)?;
-        Ok(root)
+        serde_json::from_str::<GlobalJson>(contents)
     }
 }
 

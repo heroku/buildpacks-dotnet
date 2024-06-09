@@ -9,7 +9,7 @@ mod tfm;
 mod utils;
 
 use crate::dotnet_project::DotnetProject;
-use crate::global_json::{GlobalJson, GlobalJsonError};
+use crate::global_json::GlobalJson;
 use crate::layers::sdk::SdkLayerError;
 use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::utils::StreamedCommandError;
@@ -293,8 +293,8 @@ enum DotnetBuildpackError {
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     #[error("Error reading global.json file")]
     ReadGlobalJsonFile(io::Error),
-    #[error("Error parsing global.json file: {0}")]
-    ParseGlobalJson(GlobalJsonError),
+    #[error("Error parsing global.json: {0}")]
+    ParseGlobalJson(serde_json::Error),
     #[error("Error parsing global.json version requirement: {0}")]
     ParseGlobalJsonVersionRequirement(semver::Error),
     #[error("Couldn't parse .NET SDK inventory: {0}")]
