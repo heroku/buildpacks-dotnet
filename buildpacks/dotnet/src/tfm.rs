@@ -17,10 +17,10 @@ pub(crate) struct TargetFrameworkMoniker {
     version_part: String,
 }
 
-impl TryFrom<&str> for TargetFrameworkMoniker {
-    type Error = ParseTargetFrameworkError;
+impl FromStr for TargetFrameworkMoniker {
+    type Err = ParseTargetFrameworkError;
 
-    fn try_from(tfm: &str) -> Result<Self, Self::Error> {
+    fn from_str(tfm: &str) -> Result<Self, Self::Err> {
         let valid_prefixes = ["net"];
 
         if tfm.len() < 4 {
@@ -71,7 +71,7 @@ mod tests {
     #[test]
     fn test_parse_valid_tfm_net6_0() {
         let tfm = "net6.0";
-        let target_framework = TargetFrameworkMoniker::try_from(tfm).unwrap();
+        let target_framework = tfm.parse::<TargetFrameworkMoniker>().unwrap();
         let expected = VersionReq::from_str("^6.0").unwrap();
         assert_eq!(VersionReq::try_from(target_framework).unwrap(), expected);
     }
@@ -79,7 +79,7 @@ mod tests {
     #[test]
     fn test_parse_valid_tfm_net7_0() {
         let tfm = "net7.0";
-        let target_framework = TargetFrameworkMoniker::try_from(tfm).unwrap();
+        let target_framework = tfm.parse::<TargetFrameworkMoniker>().unwrap();
         let expected = VersionReq::from_str("^7.0").unwrap();
         assert_eq!(VersionReq::try_from(target_framework).unwrap(), expected);
     }
@@ -87,7 +87,7 @@ mod tests {
     #[test]
     fn test_parse_valid_tfm_net8_0() {
         let tfm = "net8.0";
-        let target_framework = TargetFrameworkMoniker::try_from(tfm).unwrap();
+        let target_framework = tfm.parse::<TargetFrameworkMoniker>().unwrap();
         let expected = VersionReq::from_str("^8.0").unwrap();
         assert_eq!(VersionReq::try_from(target_framework).unwrap(), expected);
     }
@@ -96,7 +96,7 @@ mod tests {
     fn test_parse_invalid_tfm_empty() {
         let tfm = "";
         assert!(matches!(
-            TargetFrameworkMoniker::try_from(tfm),
+            tfm.parse::<TargetFrameworkMoniker>(),
             Err(ParseTargetFrameworkError::InvalidFormat)
         ));
     }
@@ -105,7 +105,7 @@ mod tests {
     fn test_parse_invalid_tfm_non_numeric() {
         let tfm = "netcoreapp";
         assert!(matches!(
-            TargetFrameworkMoniker::try_from(tfm),
+            tfm.parse::<TargetFrameworkMoniker>(),
             Err(ParseTargetFrameworkError::InvalidFormat)
         ));
     }
@@ -114,7 +114,7 @@ mod tests {
     fn test_parse_invalid_tfm_malformed_version() {
         let tfm = "net6.x";
         assert!(matches!(
-            TargetFrameworkMoniker::try_from(tfm),
+            tfm.parse::<TargetFrameworkMoniker>(),
             Err(ParseTargetFrameworkError::InvalidFormat)
         ));
     }
@@ -123,7 +123,7 @@ mod tests {
     fn test_parse_unsupported_os_tfm() {
         let tfm = "net6.0-ios15.0";
         assert!(matches!(
-            TargetFrameworkMoniker::try_from(tfm),
+            tfm.parse::<TargetFrameworkMoniker>(),
             Err(ParseTargetFrameworkError::UnsupportedOSTfm)
         ));
     }

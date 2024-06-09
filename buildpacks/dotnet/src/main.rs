@@ -245,11 +245,14 @@ fn project_requirement(path: &Path) -> Result<VersionReq, DotnetBuildpackError> 
         project.target_framework,
         project.assembly_name.unwrap_or_default()
     ));
-    let target_framework_moniker =
-        TargetFrameworkMoniker::try_from(project.target_framework.as_str())
-            .map_err(DotnetBuildpackError::ParseTargetFramework)?;
-    VersionReq::try_from(target_framework_moniker)
-        .map_err(DotnetBuildpackError::ParseTargetFramework)
+
+    VersionReq::try_from(
+        project
+            .target_framework
+            .parse::<TargetFrameworkMoniker>()
+            .map_err(DotnetBuildpackError::ParseTargetFramework)?,
+    )
+    .map_err(DotnetBuildpackError::ParseTargetFramework)
 }
 
 fn global_json_requirement(app_dir: &Path) -> Result<Option<VersionReq>, DotnetBuildpackError> {
