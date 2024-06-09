@@ -6,8 +6,6 @@ use std::str::FromStr;
 pub(crate) enum ParseTargetFrameworkError {
     #[error("Invalid target framework format")]
     InvalidFormat,
-    #[error("Invalid target framework version: {0}")]
-    InvalidVersion(semver::Error),
     #[error("Unsupported OS-specific target framework")]
     UnsupportedOSTfm,
 }
@@ -54,11 +52,10 @@ impl FromStr for TargetFrameworkMoniker {
 }
 
 impl TryFrom<TargetFrameworkMoniker> for VersionReq {
-    type Error = ParseTargetFrameworkError;
+    type Error = semver::Error;
 
     fn try_from(tf: TargetFrameworkMoniker) -> Result<Self, Self::Error> {
         VersionReq::from_str(&format!("^{}", tf.version_part))
-            .map_err(ParseTargetFrameworkError::InvalidVersion)
     }
 }
 

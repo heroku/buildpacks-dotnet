@@ -250,9 +250,9 @@ fn project_requirement(path: &Path) -> Result<VersionReq, DotnetBuildpackError> 
         project
             .target_framework
             .parse::<TargetFrameworkMoniker>()
-            .map_err(DotnetBuildpackError::ParseTargetFramework)?,
+            .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
     )
-    .map_err(DotnetBuildpackError::ParseTargetFramework)
+    .map_err(DotnetBuildpackError::ParseVersionRequirement)
 }
 
 fn global_json_requirement(app_dir: &Path) -> Result<Option<VersionReq>, DotnetBuildpackError> {
@@ -290,13 +290,15 @@ enum DotnetBuildpackError {
     #[error("Error parsing target framework: {0}")]
     ParseDotnetSolutionFile(io::Error),
     #[error("Error parsing solution file: {0}")]
-    ParseTargetFramework(ParseTargetFrameworkError),
+    ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     #[error("Error reading global.json file")]
     ReadGlobalJsonFile(io::Error),
     #[error("Error parsing global.json file: {0}")]
     ParseGlobalJson(GlobalJsonError),
     #[error("Couldn't parse .NET SDK inventory: {0}")]
     ParseInventory(ParseInventoryError),
+    #[error("Invalid target framework version: {0}")]
+    ParseVersionRequirement(semver::Error),
     #[error("Couldn't parse .NET SDK version: {0}")]
     ParseSdkVersion(#[from] semver::Error),
     #[error("Couldn't resolve .NET SDK version: {0}")]
