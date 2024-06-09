@@ -69,7 +69,7 @@ impl Buildpack for DotnetBuildpack {
             )
             .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?
         } else {
-            extract_version_requirement(&file_to_publish)?
+            parse_version_requirement(&file_to_publish)?
         };
 
         log_info(format!(
@@ -200,11 +200,11 @@ fn determine_file_to_publish(app_dir: &Path) -> Result<PathBuf, DotnetBuildpackE
             ));
         }
         let project_file = project_files.first().expect("a project file to be present");
-
         log_info(format!(
             "Detected .NET project file: {}",
             project_file.to_string_lossy()
         ));
+
         Ok(project_file.clone())
     } else {
         // This error is not expected to occur (as one or more solution/project files should be present after detect())
@@ -212,7 +212,7 @@ fn determine_file_to_publish(app_dir: &Path) -> Result<PathBuf, DotnetBuildpackE
     }
 }
 
-fn extract_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetBuildpackError> {
+fn parse_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetBuildpackError> {
     if dotnet_file.extension() == Some(OsStr::new("sln")) {
         let mut requirements = vec![];
         for project_paths in dotnet_solution::project_file_paths(dotnet_file)
@@ -221,7 +221,7 @@ fn extract_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetB
             log_info(format!(
                 "Detecting .NET version requirement for project {project_paths}"
             ));
-            requirements.push(project_requirement(
+            requirements.push(parse_project_version_requirement(
                 &dotnet_file
                     .parent()
                     .expect("solution file to have a parent directory")
@@ -235,8 +235,18 @@ fn extract_version_requirement(dotnet_file: &Path) -> Result<VersionReq, DotnetB
             .ok_or_else(|| DotnetBuildpackError::NoDotnetFiles)
             .cloned()
     } else {
-        project_requirement(dotnet_file)
+        parse_project_version_requirement(dotnet_file)
     }
+}
+
+fn parse_project_version_requirement(path: &Path) -> Result<VersionReq, DotnetBuildpackError> {
+    VersionReq::try_from(
+        DotnetProject::try_from(path)?
+            .target_framework
+            .parse::<TargetFrameworkMoniker>()
+            .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
+    )
+    .map_err(DotnetBuildpackError::ParseVersionRequirement)
 }
 
 impl TryFrom<&Path> for DotnetProject {
@@ -248,16 +258,6 @@ impl TryFrom<&Path> for DotnetProject {
             .parse::<DotnetProject>()
             .map_err(DotnetBuildpackError::ParseDotnetProjectFile)
     }
-}
-
-fn project_requirement(path: &Path) -> Result<VersionReq, DotnetBuildpackError> {
-    VersionReq::try_from(
-        DotnetProject::try_from(path)?
-            .target_framework
-            .parse::<TargetFrameworkMoniker>()
-            .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
-    )
-    .map_err(DotnetBuildpackError::ParseVersionRequirement)
 }
 
 #[derive(Serialize, Deserialize)]
