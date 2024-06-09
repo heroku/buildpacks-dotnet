@@ -9,7 +9,7 @@ mod tfm;
 mod utils;
 
 use crate::dotnet_project::DotnetProject;
-use crate::global_json::GlobalJsonError;
+use crate::global_json::{GlobalJson, GlobalJsonError};
 use crate::layers::sdk::SdkLayerError;
 use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::utils::StreamedCommandError;
@@ -257,11 +257,13 @@ fn global_json_requirement(app_dir: &Path) -> Result<Option<VersionReq>, DotnetB
     if let Some(file) = detect::find_global_json(app_dir) {
         log_info("Detected global.json file in the root directory");
 
-        let requirement = global_json::parse_global_json(
-            &fs::read_to_string(file.as_path())
-                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?,
-        )
-        .map_err(DotnetBuildpackError::ParseGlobalJson)?;
+        let global_json = fs::read_to_string(file.as_path())
+            .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
+            .parse::<GlobalJson>()
+            .map_err(DotnetBuildpackError::ParseGlobalJson)?;
+
+        let requirement =
+            VersionReq::try_from(global_json).map_err(DotnetBuildpackError::ParseGlobalJson)?;
         Ok(Some(requirement))
     } else {
         Ok(None)
