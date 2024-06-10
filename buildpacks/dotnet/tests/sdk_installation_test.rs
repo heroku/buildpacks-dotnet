@@ -13,7 +13,7 @@ fn test_sdk_resolution_with_target_framework() {
                 context.pack_stdout,
                 &indoc! {r"
                     [Determining .NET version]
-                    Detected .NET project file: /workspace/foo.csproj
+                    Detected .NET file to publish: /workspace/foo.csproj
                     Inferred SDK version requirement: ^8.0
                     Resolved .NET SDK version 8.0."}
             );
@@ -32,7 +32,7 @@ fn test_sdk_resolution_with_solution_file() {
                 context.pack_stdout,
                 &indoc! {r"
                     [Determining .NET version]
-                    Detected .NET solution file: /workspace/foo.sln
+                    Detected .NET file to publish: /workspace/foo.sln
                     Detecting .NET version requirement for project web/web.csproj
                     Detecting .NET version requirement for project worker/worker.csproj
                     Inferred SDK version requirement: ^8.0"}
@@ -53,7 +53,7 @@ fn test_sdk_installation_with_global_json() {
                 context.pack_stdout,
                 &indoc! {r"
                     [Determining .NET version]
-                    Detected .NET project file: /workspace/foo.csproj
+                    Detected .NET file to publish: /workspace/foo.csproj
                     Detected global.json file in the root directory
                     Inferred SDK version requirement: =8.0.101
                     Resolved .NET SDK version 8.0.101 (linux-amd64)
@@ -83,7 +83,7 @@ fn test_sdk_installation_with_global_json() {
                 context.pack_stdout,
                 &indoc! {r"
                     [Determining .NET version]
-                    Detected .NET project file: /workspace/foo.csproj
+                    Detected .NET file to publish: /workspace/foo.csproj
                     Detected global.json file in the root directory
                     Inferred SDK version requirement: =8.0.101
                     Resolved .NET SDK version 8.0.101 (linux-arm64)
