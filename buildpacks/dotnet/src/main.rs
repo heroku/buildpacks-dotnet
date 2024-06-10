@@ -226,14 +226,11 @@ impl TryFrom<&DotnetFile> for VersionReq {
                     .map_err(DotnetBuildpackError::ParseDotnetSolutionFile)?
                 {
                     log_info(format!(
-                        "Detecting .NET version requirement for project {project_path}"
+                        "Detecting .NET version requirement for project {0}",
+                        project_path.to_string_lossy()
                     ));
 
-                    requirements.push(Self::try_from(&DotnetFile::Project(
-                        path.parent()
-                            .expect("solution file to have a parent directory")
-                            .join(project_path),
-                    ))?);
+                    requirements.push(Self::try_from(&DotnetFile::Project(project_path))?);
                 }
 
                 requirements

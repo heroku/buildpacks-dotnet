@@ -33,8 +33,8 @@ fn test_sdk_resolution_with_solution_file() {
                 &indoc! {r"
                     [Determining .NET version]
                     Detected .NET file to publish: /workspace/foo.sln
-                    Detecting .NET version requirement for project web/web.csproj
-                    Detecting .NET version requirement for project worker/worker.csproj
+                    Detecting .NET version requirement for project /workspace/web/web.csproj
+                    Detecting .NET version requirement for project /workspace/worker/worker.csproj
                     Inferred SDK version requirement: ^8.0"}
             );
         },
