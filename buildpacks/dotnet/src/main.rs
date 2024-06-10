@@ -4,6 +4,7 @@ mod dotnet_project;
 mod dotnet_rid;
 mod dotnet_solution;
 mod global_json;
+mod launch_process;
 mod layers;
 mod tfm;
 mod utils;
@@ -141,6 +142,7 @@ impl Buildpack for DotnetBuildpack {
                 "NUGET_PACKAGES",
                 nuget_cache_layer.path(),
             );
+
         utils::run_command_and_stream_output(
             Command::new("dotnet")
                 .args([
