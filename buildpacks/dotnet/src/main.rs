@@ -11,12 +11,14 @@ mod utils;
 
 use crate::dotnet_project::DotnetProject;
 use crate::global_json::GlobalJson;
+use crate::launch_process::LaunchProcessError;
 use crate::layers::sdk::SdkLayerError;
 use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::utils::StreamedCommandError;
 use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
+use libcnb::data::launch::{LaunchBuilder, Process};
 use libcnb::data::layer_name;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
@@ -162,7 +164,12 @@ impl Buildpack for DotnetBuildpack {
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
-        BuildResultBuilder::new().build()
+        let launch_processes =
+            Vec::<Process>::try_from(&dotnet_file).map_err(DotnetBuildpackError::LaunchProcess)?;
+
+        BuildResultBuilder::new()
+            .launch(LaunchBuilder::new().processes(launch_processes).build())
+            .build()
     }
 }
 
@@ -306,6 +313,8 @@ enum DotnetBuildpackError {
     PublishCommand(#[from] StreamedCommandError),
     #[error("Error copying runtime files {0}")]
     CopyRuntimeFilesToRuntimeLayer(io::Error),
+    #[error("Launch process error: {0}")]
+    LaunchProcess(LaunchProcessError),
 }
 
 impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
