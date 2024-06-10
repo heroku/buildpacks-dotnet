@@ -8,7 +8,10 @@ pub(crate) enum LaunchProcessError {}
 impl TryFrom<&DotnetFile> for Vec<Process> {
     type Error = LaunchProcessError;
 
-    fn try_from(_value: &DotnetFile) -> Result<Self, Self::Error> {
-        todo!()
+    fn try_from(value: &DotnetFile) -> Result<Self, Self::Error> {
+        match value {
+            DotnetFile::Solution(_) => todo!(),
+            DotnetFile::Project(_) => todo!(),
+        }
     }
 }
