@@ -60,11 +60,20 @@ impl TryFrom<&DotnetFile> for Vec<Process> {
                         .join("publish")
                         .join(&executable_name);
 
+                    // TODO: We have to cd to the working directory (as libcnb.rs doesn't currently do it for us <https://github.com/heroku/libcnb.rs/pull/831>).
+                    // Refactor this when libcnb.rs correctly sets the configured working directory.
                     let executable_working_dir = executable_path
                         .parent()
                         .expect("Executable to have a parent directory")
                         .to_path_buf();
-                    let mut process_builder = match dotnet_project.project_type {
+
+                    let mut command = format!(
+                        "cd {}; {}",
+                        executable_working_dir.to_string_lossy(),
+                        executable_path.to_string_lossy()
+                    );
+
+                    match dotnet_project.project_type {
                         ProjectType::WebApplication
                         | ProjectType::RazorApplication
                         | ProjectType::BlazorWebAssembly => {
@@ -73,19 +82,7 @@ impl TryFrom<&DotnetFile> for Vec<Process> {
                                 executable_name,
                                 executable_path.to_string_lossy()
                             ));
-                            ProcessBuilder::new(
-                                executable_name.parse::<ProcessType>()?,
-                                [
-                                    "bash",
-                                    "-c",
-                                    // The cd here is a hack. See comment below regarding working directory setting.
-                                    &format!(
-                                        "cd {}; {} --urls http://0.0.0.0:$PORT",
-                                        executable_working_dir.to_string_lossy(),
-                                        executable_path.to_string_lossy()
-                                    ),
-                                ],
-                            )
+                            command.push_str(" --urls http://0.0.0.0:$PORT");
                         }
                         _ => {
                             log_info(format!(
@@ -93,25 +90,17 @@ impl TryFrom<&DotnetFile> for Vec<Process> {
                                 executable_name,
                                 executable_path.to_string_lossy()
                             ));
-                            ProcessBuilder::new(
-                                executable_name.parse::<ProcessType>()?,
-                                [
-                                    "bash",
-                                    "-c",
-                                    &format!(
-                                        "cd {}; {}",
-                                        executable_working_dir.to_string_lossy(),
-                                        executable_path.to_string_lossy()
-                                    ),
-                                ],
-                            )
                         }
                     };
 
-                    Ok(vec![process_builder
-                        // TODO: Investigate why setting the working directory has no effect on the launch config
-                        .working_directory(WorkingDirectory::Directory(executable_working_dir))
-                        .build()])
+                    Ok(vec![ProcessBuilder::new(
+                        executable_name.parse::<ProcessType>()?,
+                        ["bash", "-c", &command],
+                    )
+                    // TODO: libcnb.rs doesn't honor this setting, and `working-dir` will always be the default `/workspace`.
+                    // Remove this comment when libcnb.rs correctly sets the configured working directory.
+                    .working_directory(WorkingDirectory::Directory(executable_working_dir))
+                    .build()])
                 } else {
                     log_info(format!(
                         "Project \"{}\" is not executable (project type is {:?})",
