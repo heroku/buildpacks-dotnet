@@ -38,7 +38,6 @@ impl TryFrom<&DotnetFile> for Vec<Process> {
                     dotnet_project.project_type,
                     |ProjectType::ConsoleApplication| ProjectType::WebApplication
                         | ProjectType::RazorApplication
-                        | ProjectType::BlazorWebAssembly
                         | ProjectType::Worker
                 ) {
                     let executable_name = match &dotnet_project.assembly_name {
