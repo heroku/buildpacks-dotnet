@@ -164,6 +164,7 @@ impl Buildpack for DotnetBuildpack {
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
+        log_header("Detecting launch processes");
         let launch_processes =
             Vec::<Process>::try_from(&dotnet_file).map_err(DotnetBuildpackError::LaunchProcess)?;
 
