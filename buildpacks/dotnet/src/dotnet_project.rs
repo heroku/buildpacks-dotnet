@@ -1,5 +1,7 @@
 use roxmltree::Document;
+use std::path::Path;
 use std::str::FromStr;
+use std::{fs, io};
 use thiserror::Error;
 
 /// Enum representing different types of .NET projects.
@@ -49,6 +51,18 @@ pub(crate) enum ParseError {
     MissingSdkError,
     #[error("Missing TargetFramework")]
     MissingTargetFrameworkError,
+    #[error("Error reading project file")]
+    ReadProjectFile(io::Error),
+}
+
+impl TryFrom<&Path> for DotnetProject {
+    type Error = ParseError;
+
+    fn try_from(path: &Path) -> Result<Self, Self::Error> {
+        fs::read_to_string(path)
+            .map_err(ParseError::ReadProjectFile)?
+            .parse::<DotnetProject>()
+    }
 }
 
 /// Parses .NET project file content from a string and returns a `DotNetProject` with relevant data.

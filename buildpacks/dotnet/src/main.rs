@@ -251,24 +251,14 @@ impl TryFrom<&DotnetFile> for VersionReq {
                     .ok_or(DotnetBuildpackError::NoDotnetFiles)
             }
             DotnetFile::Project(path) => Self::try_from(
-                DotnetProject::try_from(path.as_path())?
+                DotnetProject::try_from(path.as_path())
+                    .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?
                     .target_framework
                     .parse::<TargetFrameworkMoniker>()
                     .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
             )
             .map_err(DotnetBuildpackError::ParseVersionRequirement),
         }
-    }
-}
-
-impl TryFrom<&Path> for DotnetProject {
-    type Error = DotnetBuildpackError;
-
-    fn try_from(path: &Path) -> Result<Self, Self::Error> {
-        fs::read_to_string(path)
-            .map_err(DotnetBuildpackError::ReadProjectFile)?
-            .parse::<DotnetProject>()
-            .map_err(DotnetBuildpackError::ParseDotnetProjectFile)
     }
 }
 
@@ -285,8 +275,6 @@ enum DotnetBuildpackError {
     NoDotnetFiles,
     #[error("Multiple .NET project files found in root directory: {0}")]
     MultipleProjectFiles(String),
-    #[error("Error reading project file")]
-    ReadProjectFile(io::Error),
     #[error("Error parsing .NET project file")]
     ParseDotnetProjectFile(dotnet_project::ParseError),
     #[error("Error parsing target framework: {0}")]
