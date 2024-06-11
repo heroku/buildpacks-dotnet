@@ -2,7 +2,9 @@ use std::io;
 
 use crate::dotnet_project::{self, DotnetProject, ProjectType};
 use crate::{dotnet_rid, dotnet_solution, DotnetFile};
-use libcnb::data::launch::{Process, ProcessBuilder, ProcessType, ProcessTypeError};
+use libcnb::data::launch::{
+    Process, ProcessBuilder, ProcessType, ProcessTypeError, WorkingDirectory,
+};
 use libherokubuildpack::log::log_info;
 
 #[derive(Debug, thiserror::Error)]
@@ -58,7 +60,11 @@ impl TryFrom<&DotnetFile> for Vec<Process> {
                         .join("publish")
                         .join(&executable_name);
 
-                    let process_builder = match dotnet_project.project_type {
+                    let executable_working_dir = executable_path
+                        .parent()
+                        .expect("Executable to have a parent directory")
+                        .to_path_buf();
+                    let mut process_builder = match dotnet_project.project_type {
                         ProjectType::WebApplication
                         | ProjectType::RazorApplication
                         | ProjectType::BlazorWebAssembly => {
@@ -72,8 +78,10 @@ impl TryFrom<&DotnetFile> for Vec<Process> {
                                 [
                                     "bash",
                                     "-c",
+                                    // The cd here is a hack. See comment below regarding working directory setting.
                                     &format!(
-                                        "{} --urls http://0.0.0.0:$PORT",
+                                        "cd {}; {} --urls http://0.0.0.0:$PORT",
+                                        executable_working_dir.to_string_lossy(),
                                         executable_path.to_string_lossy()
                                     ),
                                 ],
@@ -87,12 +95,23 @@ impl TryFrom<&DotnetFile> for Vec<Process> {
                             ));
                             ProcessBuilder::new(
                                 executable_name.parse::<ProcessType>()?,
-                                ["bash", "-c", &executable_path.to_string_lossy()],
+                                [
+                                    "bash",
+                                    "-c",
+                                    &format!(
+                                        "cd {}; {}",
+                                        executable_working_dir.to_string_lossy(),
+                                        executable_path.to_string_lossy()
+                                    ),
+                                ],
                             )
                         }
                     };
 
-                    Ok(vec![process_builder.build()])
+                    Ok(vec![process_builder
+                        // TODO: Investigate why setting the working directory has no effect on the launch config
+                        .working_directory(WorkingDirectory::Directory(executable_working_dir))
+                        .build()])
                 } else {
                     log_info(format!(
                         "Project type \"({:?})\" is not executable",
