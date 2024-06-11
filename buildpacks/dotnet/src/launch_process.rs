@@ -114,7 +114,8 @@ impl TryFrom<&DotnetFile> for Vec<Process> {
                         .build()])
                 } else {
                     log_info(format!(
-                        "Project type \"({:?})\" is not executable",
+                        "Project \"{}\" is not executable (project type is {:?})",
+                        project_path.to_string_lossy(),
                         dotnet_project.project_type
                     ));
                     Ok(vec![])
