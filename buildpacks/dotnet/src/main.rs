@@ -145,18 +145,13 @@ impl Buildpack for DotnetBuildpack {
                 nuget_cache_layer.path(),
             );
 
+        let dotnet_build_context = DotnetPublishContext {
+            dotnet_file,
+            configuration: String::from("Release"),
+        };
+
         utils::run_command_and_stream_output(
-            Command::new("dotnet")
-                .args([
-                    "publish",
-                    &dotnet_file.path().to_string_lossy(),
-                    "--verbosity",
-                    "normal",
-                    "--configuration",
-                    "Release",
-                    "--runtime",
-                    &dotnet_rid::get_runtime_identifier().to_string(),
-                ])
+            Command::from(&dotnet_build_context)
                 .current_dir(&context.app_dir)
                 .envs(&command_env.apply(Scope::Build, &Env::from_current())),
         )
@@ -165,8 +160,8 @@ impl Buildpack for DotnetBuildpack {
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
         log_header("Detecting launch processes");
-        let launch_processes =
-            Vec::<Process>::try_from(&dotnet_file).map_err(DotnetBuildpackError::LaunchProcess)?;
+        let launch_processes = Vec::<Process>::try_from(&dotnet_build_context)
+            .map_err(DotnetBuildpackError::LaunchProcess)?;
 
         BuildResultBuilder::new()
             .launch(LaunchBuilder::new().processes(launch_processes).build())
@@ -260,6 +255,29 @@ impl TryFrom<&DotnetFile> for VersionReq {
             )
             .map_err(DotnetBuildpackError::ParseVersionRequirement),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct DotnetPublishContext {
+    dotnet_file: DotnetFile,
+    configuration: String,
+}
+
+impl From<&DotnetPublishContext> for Command {
+    fn from(context: &DotnetPublishContext) -> Self {
+        let mut command = Command::new("dotnet");
+        command.args([
+            "publish",
+            &context.dotnet_file.path().to_string_lossy(),
+            "--verbosity",
+            "normal",
+            "--configuration",
+            &context.configuration,
+            "--runtime",
+            &dotnet_rid::get_runtime_identifier().to_string(),
+        ]);
+        command
     }
 }
 

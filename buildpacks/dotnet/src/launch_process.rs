@@ -1,10 +1,11 @@
 use crate::dotnet_project::{self, DotnetProject, ProjectType};
-use crate::{dotnet_rid, dotnet_solution, DotnetFile};
+use crate::{dotnet_rid, dotnet_solution, DotnetFile, DotnetPublishContext};
 use libcnb::data::launch::{
     Process, ProcessBuilder, ProcessType, ProcessTypeError, WorkingDirectory,
 };
 use libherokubuildpack::log::log_info;
 use std::io;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum LaunchProcessError {
@@ -16,98 +17,229 @@ pub(crate) enum LaunchProcessError {
     ProcessName(#[from] ProcessTypeError),
 }
 
-impl TryFrom<&DotnetFile> for Vec<Process> {
+impl TryFrom<&DotnetPublishContext> for Vec<Process> {
     type Error = LaunchProcessError;
 
-    fn try_from(value: &DotnetFile) -> Result<Self, Self::Error> {
-        match value {
+    fn try_from(context: &DotnetPublishContext) -> Result<Self, Self::Error> {
+        match &context.dotnet_file {
             DotnetFile::Solution(path) => {
                 log_info("Detecting solution executables");
-                let mut project_processes = vec![];
-                for project_path in dotnet_solution::project_file_paths(path)
+
+                dotnet_solution::project_file_paths(path)
                     .map_err(LaunchProcessError::ParseSolutionFile)?
-                {
-                    project_processes.push(Self::try_from(&DotnetFile::Project(project_path))?);
-                }
-                Ok(project_processes.into_iter().flatten().collect())
+                    .into_iter()
+                    .map(|project_path| handle_project_file(&project_path, &context.configuration))
+                    .collect::<Result<Vec<_>, _>>()
+                    .map(|vecs| vecs.into_iter().flatten().collect())
             }
             DotnetFile::Project(project_path) => {
-                let dotnet_project = DotnetProject::try_from(project_path.as_path())?;
-                if matches!(
-                    dotnet_project.project_type,
-                    |ProjectType::ConsoleApplication| ProjectType::WebApplication
-                        | ProjectType::RazorApplication
-                        | ProjectType::Worker
-                ) {
-                    let executable_name = match &dotnet_project.assembly_name {
-                        Some(name) if !name.is_empty() => name.clone(),
-                        _ => project_path
-                            .file_stem()
-                            .expect("project file path to have a file name")
-                            .to_string_lossy()
-                            .to_string(),
-                    };
-
-                    let executable_path = project_path
-                        .parent()
-                        .expect("Project file will always have a parent directory")
-                        .join("bin")
-                        .join("Release")
-                        .join(dotnet_project.target_framework)
-                        .join(dotnet_rid::get_runtime_identifier().to_string())
-                        .join("publish")
-                        .join(&executable_name);
-
-                    // TODO: We have to cd to the working directory (as libcnb.rs doesn't currently do it for us <https://github.com/heroku/libcnb.rs/pull/831>).
-                    // Refactor this when libcnb.rs correctly sets the configured working directory.
-                    let executable_working_dir = executable_path
-                        .parent()
-                        .expect("Executable to have a parent directory")
-                        .to_path_buf();
-
-                    let mut command = format!(
-                        "cd {}; {}",
-                        executable_working_dir.to_string_lossy(),
-                        executable_path.to_string_lossy()
-                    );
-
-                    match dotnet_project.project_type {
-                        ProjectType::WebApplication
-                        | ProjectType::RazorApplication
-                        | ProjectType::BlazorWebAssembly => {
-                            log_info(format!(
-                                "Detected web process type \"{}\" ({})",
-                                executable_name,
-                                executable_path.to_string_lossy()
-                            ));
-                            command.push_str(" --urls http://0.0.0.0:$PORT");
-                        }
-                        _ => {
-                            log_info(format!(
-                                "Detected console process type \"{}\" ({:?})",
-                                executable_name,
-                                executable_path.to_string_lossy()
-                            ));
-                        }
-                    };
-
-                    Ok(vec![ProcessBuilder::new(
-                        executable_name.parse::<ProcessType>()?,
-                        ["bash", "-c", &command],
-                    )
-                    // TODO: libcnb.rs doesn't honor this setting, and `working-dir` will always be the default `/workspace`.
-                    // Remove this comment when libcnb.rs correctly sets the configured working directory.
-                    .working_directory(WorkingDirectory::Directory(executable_working_dir))
-                    .build()])
-                } else {
-                    log_info(format!(
-                        "Project \"{}\" is not executable (project type is {:?})",
-                        project_path.to_string_lossy(),
-                        dotnet_project.project_type
-                    ));
-                    Ok(vec![])
-                }
+                handle_project_file(project_path, &context.configuration)
             }
         }
+    }
+}
+
+fn handle_project_file(
+    project_path: &Path,
+    configuration: &str,
+) -> Result<Vec<Process>, LaunchProcessError> {
+    let dotnet_project = DotnetProject::try_from(project_path)?;
+    if is_executable_project(&dotnet_project.project_type) {
+        let executable_path = get_executable_path(configuration, &dotnet_project, project_path);
+        let command = build_launch_command(&dotnet_project, &executable_path);
+
+        Ok(vec![ProcessBuilder::new(
+            get_executable_name(&dotnet_project, project_path).parse::<ProcessType>()?,
+            ["bash", "-c", &command],
+        )
+        .working_directory(WorkingDirectory::Directory(
+            executable_path
+                .parent()
+                .expect("Executable to have a parent directory")
+                .to_path_buf(),
+        ))
+        .build()])
+    } else {
+        log_info(format!(
+            "Project \"{}\" is not executable (project type is {:?})",
+            project_path.to_string_lossy(),
+            dotnet_project.project_type
+        ));
+        Ok(vec![])
+    }
+}
+
+fn is_executable_project(project_type: &ProjectType) -> bool {
+    matches!(
+        project_type,
+        ProjectType::ConsoleApplication
+            | ProjectType::WebApplication
+            | ProjectType::RazorApplication
+            | ProjectType::Worker
+    )
+}
+
+fn get_executable_name(dotnet_project: &DotnetProject, project_path: &Path) -> String {
+    dotnet_project
+        .assembly_name
+        .clone()
+        .filter(|name| !name.is_empty())
+        .unwrap_or_else(|| {
+            project_path
+                .file_stem()
+                .expect("Project file path to have a file name")
+                .to_string_lossy()
+                .to_string()
+        })
+}
+
+fn get_executable_path(
+    configuration: &str,
+    dotnet_project: &DotnetProject,
+    project_path: &Path,
+) -> PathBuf {
+    project_path
+        .parent()
+        .expect("Project file will always have a parent directory")
+        .join("bin")
+        .join(configuration)
+        .join(&dotnet_project.target_framework)
+        .join(dotnet_rid::get_runtime_identifier().to_string())
+        .join("publish")
+        .join(get_executable_name(dotnet_project, project_path))
+}
+
+fn build_launch_command(dotnet_project: &DotnetProject, executable_path: &Path) -> String {
+    let base_command = format!(
+        // TODO: We have to cd to the working directory (as libcnb.rs doesn't currently do it for us <https://github.com/heroku/libcnb.rs/pull/831>).
+        // Refactor this when libcnb.rs correctly sets the configured working directory.
+        "cd {}; {}",
+        executable_path
+            .parent()
+            .expect("Executable to have a parent directory")
+            .to_string_lossy(),
+        executable_path.to_string_lossy()
+    );
+
+    let executable_name = executable_path
+        .file_name()
+        .expect("Executable path to have a file name")
+        .to_string_lossy();
+
+    match dotnet_project.project_type {
+        ProjectType::WebApplication | ProjectType::RazorApplication => {
+            log_info(format!(
+                "Detected web process type \"{}\" ({})",
+                executable_name,
+                executable_path.to_string_lossy()
+            ));
+            format!("{base_command} --urls http://0.0.0.0:$PORT")
+        }
+        _ => {
+            log_info(format!(
+                "Detected console process type \"{}\" ({})",
+                executable_name,
+                executable_path.to_string_lossy()
+            ));
+            base_command
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_get_executable_name_with_assembly_name() {
+        let dotnet_project = DotnetProject {
+            assembly_name: Some("TestAssembly".to_string()),
+            target_framework: "net6.0".to_string(),
+            project_type: ProjectType::ConsoleApplication,
+            sdk_id: "Microsoft.NET.Sdk".to_string(),
+        };
+        let project_path = Path::new("/path/to/project.csproj");
+        assert_eq!(
+            get_executable_name(&dotnet_project, project_path),
+            "TestAssembly"
+        );
+    }
+
+    #[test]
+    fn test_get_executable_name_without_assembly_name() {
+        let dotnet_project = DotnetProject {
+            assembly_name: None,
+            target_framework: "net6.0".to_string(),
+            project_type: ProjectType::ConsoleApplication,
+            sdk_id: "Microsoft.NET.Sdk".to_string(),
+        };
+        let project_path = Path::new("/path/to/project.csproj");
+        assert_eq!(
+            get_executable_name(&dotnet_project, project_path),
+            "project"
+        );
+    }
+
+    #[test]
+    fn test_get_executable_path() {
+        let dotnet_project = DotnetProject {
+            assembly_name: Some("TestAssembly".to_string()),
+            target_framework: "net6.0".to_string(),
+            project_type: ProjectType::ConsoleApplication,
+            sdk_id: "Microsoft.NET.Sdk".to_string(),
+        };
+        let project_path = Path::new("/path/to/project.csproj");
+        let rid = dotnet_rid::get_runtime_identifier().to_string();
+        assert_eq!(
+            get_executable_path("Release", &dotnet_project, project_path),
+            PathBuf::from(format!(
+                "/path/to/bin/Release/net6.0/{rid}/publish/TestAssembly"
+            ))
+        );
+    }
+
+    #[test]
+    fn test_is_executable_project() {
+        assert!(is_executable_project(&ProjectType::ConsoleApplication));
+        assert!(is_executable_project(&ProjectType::WebApplication));
+        assert!(is_executable_project(&ProjectType::RazorApplication));
+        assert!(is_executable_project(&ProjectType::Worker));
+        assert!(!is_executable_project(&ProjectType::Library));
+        assert!(!is_executable_project(&ProjectType::BlazorWebAssembly));
+    }
+
+    #[test]
+    fn test_build_launch_command_for_web_application() {
+        let dotnet_project = DotnetProject {
+            assembly_name: Some("TestAssembly".to_string()),
+            target_framework: "net6.0".to_string(),
+            project_type: ProjectType::WebApplication,
+            sdk_id: "Microsoft.NET.Sdk.Web".to_string(),
+        };
+        let executable_path =
+            Path::new("/path/to/bin/Release/net6.0/linux-x64/publish/TestAssembly");
+        let command = build_launch_command(&dotnet_project, executable_path);
+        assert_eq!(
+            command,
+            "cd /path/to/bin/Release/net6.0/linux-x64/publish; /path/to/bin/Release/net6.0/linux-x64/publish/TestAssembly --urls http://0.0.0.0:$PORT"
+        );
+    }
+
+    #[test]
+    fn test_build_launch_command_for_console_application() {
+        let dotnet_project = DotnetProject {
+            assembly_name: Some("TestAssembly".to_string()),
+            target_framework: "net6.0".to_string(),
+            project_type: ProjectType::ConsoleApplication,
+            sdk_id: "Microsoft.NET.Sdk".to_string(),
+        };
+        let executable_path =
+            Path::new("/path/to/bin/Release/net6.0/linux-x64/publish/TestAssembly");
+        let command = build_launch_command(&dotnet_project, executable_path);
+        assert_eq!(
+            command,
+            "cd /path/to/bin/Release/net6.0/linux-x64/publish; /path/to/bin/Release/net6.0/linux-x64/publish/TestAssembly"
+        );
     }
 }
