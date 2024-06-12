@@ -161,6 +161,9 @@ impl Buildpack for DotnetBuildpack {
 
         log_header("Detecting launch processes");
         let launch_processes = Vec::<Process>::try_from(&dotnet_build_context)
+            // TODO: Failing to detect processes probably shouldn't cause a buildpack error.
+            // Handle errors in a way that provides helpful information to correct the issue
+            // and/or writing a Procfile.
             .map_err(DotnetBuildpackError::LaunchProcess)?;
 
         BuildResultBuilder::new()
