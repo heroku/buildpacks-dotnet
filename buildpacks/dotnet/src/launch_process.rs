@@ -207,6 +207,7 @@ mod tests {
         assert!(is_executable_project(&ProjectType::Worker));
         assert!(!is_executable_project(&ProjectType::Library));
         assert!(!is_executable_project(&ProjectType::BlazorWebAssembly));
+        assert!(!is_executable_project(&ProjectType::Unknown));
     }
 
     #[test]
