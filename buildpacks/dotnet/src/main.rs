@@ -164,7 +164,7 @@ impl Buildpack for DotnetBuildpack {
             // TODO: Failing to detect processes probably shouldn't cause a buildpack error.
             // Handle errors in a way that provides helpful information to correct the issue
             // and/or writing a Procfile.
-            .map_err(DotnetBuildpackError::LaunchProcess)?;
+            .map_err(DotnetBuildpackError::LaunchProcessDetection)?;
 
         BuildResultBuilder::new()
             .launch(LaunchBuilder::new().processes(launch_processes).build())
@@ -323,8 +323,8 @@ enum DotnetBuildpackError {
     PublishCommand(#[from] StreamedCommandError),
     #[error("Error copying runtime files {0}")]
     CopyRuntimeFilesToRuntimeLayer(io::Error),
-    #[error("Launch process error: {0}")]
-    LaunchProcess(LaunchProcessError),
+    #[error("Launch process detection error: {0}")]
+    LaunchProcessDetection(LaunchProcessError),
 }
 
 impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
