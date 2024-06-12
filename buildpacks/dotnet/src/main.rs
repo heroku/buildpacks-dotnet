@@ -292,8 +292,6 @@ enum DotnetBuildpackError {
     ParseInventory(ParseInventoryError),
     #[error("Invalid target framework version: {0}")]
     ParseVersionRequirement(semver::Error),
-    #[error("Couldn't parse .NET SDK version: {0}")]
-    ParseSdkVersion(#[from] semver::Error),
     #[error("Couldn't resolve .NET SDK version: {0}")]
     ResolveSdkVersion(VersionReq),
     #[error(transparent)]
