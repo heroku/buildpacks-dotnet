@@ -1,11 +1,10 @@
-use std::io;
-
 use crate::dotnet_project::{self, DotnetProject, ProjectType};
 use crate::{dotnet_rid, dotnet_solution, DotnetFile};
 use libcnb::data::launch::{
     Process, ProcessBuilder, ProcessType, ProcessTypeError, WorkingDirectory,
 };
 use libherokubuildpack::log::log_info;
+use std::io;
 
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum LaunchProcessError {
