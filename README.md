@@ -51,6 +51,10 @@ To install a different version, add a [`global.json` file][global-json] in the r
 
 A complete inventory of supported SDK versions and platforms [is available here][inventory-toml].
 
+## Contributing
+
+Issues and pull requests are welcome. See our [contributing guidelines](./CONTRIBUTING.md) if you would like to help.
+
 [ci-badge]: https://github.com/heroku/buildpacks-dotnet/actions/workflows/ci.yml/badge.svg
 [ci-url]: https://github.com/heroku/buildpacks-dotnet/actions/workflows/ci.yml
 [cnb]: https://buildpacks.io
