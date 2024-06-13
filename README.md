@@ -28,7 +28,9 @@ docker run --rm -it -e "PORT=8080" -p 8080:8080 sample-app
 
 ## Application Requirements
 
-A solution file (e.g. `MySolution.sln`) or .NET project file (e.g. `*.csproj`, `.*.vbproj` or `*.fsproj`) must be present at the root of your application's repository.
+A solution file (e.g. `MySolution.sln`) or .NET project file (e.g. `*.csproj`, `*.vbproj` or `*.fsproj`) must be present at the root of your application's repository.
+
+If the root directory contains both solution and project files, the solution file will be preferred for the build and publish process.
 
 ## Configuration
 
