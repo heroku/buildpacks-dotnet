@@ -57,6 +57,12 @@ or testing this buildpack.
 1. Build the buildpack with `cargo libcnb package`.
 1. Use the buildpack to build an app: `pack build sample-app --buildpack packaged/x86_64-unknown-linux-musl/debug/heroku_dotnet --path /path/to/sample-app`
 
+> [!NOTE]
+> To build an app for a specific architecture (when using a multi-arch builder such as `heroku/builder:24`), you may need or want to explicitly set a couple relevant parameters.
+
+* To build the buildpack for ARM64: `cargo libcnb package --target aarch64-unknown-linux-musl`.
+* To build an app for a different architecture: `pack build sample-app --buildpack packaged/x86_64-unknown-linux-musl/debug/heroku_dotnet --platform linux/amd64`
+
 ### Testing
 
 - `cargo test` performs Rust unit tests.
