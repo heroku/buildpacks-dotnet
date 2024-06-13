@@ -28,17 +28,17 @@ docker run --rm -it -e "PORT=8080" -p 8080:8080 sample-app
 
 ## Application Requirements
 
-A solution file (e.g. `MySolution.sln`) or .NET project file (e.g. `*.csproj`, `*.vbproj` or `*.fsproj`) must be present at the root of your application's repository.
+A solution file (e.g. `MySolution.sln`) or .NET project file (e.g. `*.csproj`, `*.vbproj` or `*.fsproj`) must be present in the application's root directory. If the root directory contains both solution and project files, the solution file will be preferred for the build and publish process.
 
-If the root directory contains both solution and project files, the solution file will be preferred for the build and publish process.
+The buildpack support C#, Visual Basic and F# projects using the .NET and ASP.NET Core frameworks (version 8.0 and up).
 
 ## Configuration
 
 ### .NET Version
 
-By default, the buildpack will install the latest available .NET SDK based on the value of the [`TargetFramework` property][target-framework] in project files. The runtime version included in the SDK will also be added (along with the app itself and any published artifacts) in the final application image.
+By default, the buildpack will install the latest available .NET SDK based on the value of the [`TargetFramework` property][target-framework] in project files. The .NET and ASP.NET Core runtimes included in the SDK will also be included in the final application image.
 
-To install a different version, add a [`global.json` file][global-json] in the root directory define which .NET SDK version to install. The buildpack supports specifying both the `version` and `rollForward` policy. For instance, to install a specific version the `global.json` may look like this:
+To install a different .NET SDK version, add a [`global.json` file][global-json] to the root directory. The buildpack supports specifying both the `version` and `rollForward` policy to define which .NET SDK version to install. For instance, to install a specific version a `global.json` file may look like this:
 
 ```json
 {
