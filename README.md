@@ -49,7 +49,7 @@ To install a different version, add a [`global.json` file][global-json] in the r
 }
 ```
 
-A complete inventory of supported SDK versions and platforms [is available here][inventory-toml].
+A complete inventory of supported .NET SDK versions and platforms [is available here](./buildpacks/dotnet/inventory.toml).
 
 ## Contributing
 
@@ -62,4 +62,3 @@ Issues and pull requests are welcome. See our [contributing guidelines](./CONTRI
 [pack-install]: https://buildpacks.io/docs/for-platform-operators/how-to/integrate-ci/pack/
 [target-framework]: https://learn.microsoft.com/en-us/dotnet/core/project-sdk/msbuild-props#targetframework
 [global-json]: https://learn.microsoft.com/en-us/dotnet/core/tools/global-json
-[inventory-toml]: /buildpacks/dotnet/inventory.toml
