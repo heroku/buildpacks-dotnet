@@ -26,6 +26,12 @@ Then run the image:
 docker run --rm -it -e "PORT=8080" -p 8080:8080 sample-app
 ```
 
+## Application Requirements
+
+A solution file (e.g. `MySolution.sln`) or .NET project file (e.g. `*.csproj`, `.*.vbproj` or `*.fsproj`) must be present at the root of your application's repository.
+
+## Configuration
+
 [ci-badge]: https://github.com/heroku/buildpacks-dotnet/actions/workflows/ci.yml/badge.svg
 [ci-url]: https://github.com/heroku/buildpacks-dotnet/actions/workflows/ci.yml
 [cnb]: https://buildpacks.io
