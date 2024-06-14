@@ -30,7 +30,7 @@ use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::env::consts;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 use std::{fs, io};
 
@@ -63,7 +63,7 @@ impl Buildpack for DotnetBuildpack {
         let dotnet_file = determine_file_to_publish(&context.app_dir)?;
         log_info(format!(
             "Detected .NET file to publish: {}",
-            dotnet_file.path().to_string_lossy()
+            dotnet_file.path.to_string_lossy()
         ));
 
         let sdk_version_req = if let Some(file) = detect::find_global_json(&context.app_dir) {
@@ -146,7 +146,7 @@ impl Buildpack for DotnetBuildpack {
             Command::new("dotnet")
                 .args([
                     "publish",
-                    &dotnet_file.path().to_string_lossy(),
+                    &dotnet_file.path.to_string_lossy(),
                     "--verbosity",
                     "normal",
                     "--configuration",
@@ -165,7 +165,7 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
-fn determine_file_to_publish(app_dir: &Path) -> Result<DotnetFile, DotnetBuildpackError> {
+fn determine_file_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuildpackError> {
     let solution_files =
         detect::dotnet_solution_files(app_dir).expect("function to pass after detection");
     let project_files =
@@ -186,7 +186,7 @@ fn determine_file_to_publish(app_dir: &Path) -> Result<DotnetFile, DotnetBuildpa
                     ),
                 );
             }
-            Ok(DotnetFile::Solution(solution_file.clone()))
+            DotnetSolution::load_from_path(solution_file)
         }
         (None, Some(project_file)) => {
             if project_files.len() > 1 {
@@ -198,23 +198,11 @@ fn determine_file_to_publish(app_dir: &Path) -> Result<DotnetFile, DotnetBuildpa
                         .join(", "),
                 ));
             }
-            Ok(DotnetFile::Project(project_file.clone()))
+            Ok(DotnetSolution::ephemeral(DotnetProject::load_from_path(
+                project_file,
+            )?))
         }
         (None, None) => Err(DotnetBuildpackError::NoDotnetFiles),
-    }
-}
-
-#[derive(Debug, Clone)]
-enum DotnetFile {
-    Solution(PathBuf),
-    Project(PathBuf),
-}
-
-impl DotnetFile {
-    fn path(&self) -> &Path {
-        match self {
-            DotnetFile::Project(path) | DotnetFile::Solution(path) => path,
-        }
     }
 }
 
@@ -236,26 +224,19 @@ fn parse_project_sdk_version_requirement(
 }
 
 fn get_version_requirement_from_dotnet_file(
-    dotnet_file: &DotnetFile,
+    dotnet_file: &DotnetSolution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
-    match dotnet_file {
-        DotnetFile::Solution(path) => {
-            let requirements = DotnetSolution::load_from_path(path)?
-                .projects
-                .iter()
-                .map(parse_project_sdk_version_requirement)
-                .collect::<Result<Vec<_>, _>>()?;
+    let requirements = dotnet_file
+        .projects
+        .iter()
+        .map(parse_project_sdk_version_requirement)
+        .collect::<Result<Vec<_>, _>>()?;
 
-            requirements
-                // TODO: Add logic to prefer the most recent version requirement, and log if projects target different versions
-                .first()
-                .cloned()
-                .ok_or(DotnetBuildpackError::NoDotnetFiles)
-        }
-        DotnetFile::Project(path) => {
-            parse_project_sdk_version_requirement(&DotnetProject::load_from_path(path.as_path())?)
-        }
-    }
+    requirements
+        // TODO: Add logic to prefer the most recent version requirement, and log if projects target different versions
+        .first()
+        .cloned()
+        .ok_or(DotnetBuildpackError::NoDotnetFiles)
 }
 
 #[derive(Serialize, Deserialize)]

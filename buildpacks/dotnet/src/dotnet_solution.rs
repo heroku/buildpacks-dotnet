@@ -7,7 +7,7 @@ use crate::dotnet_project::DotnetProject;
 use crate::DotnetBuildpackError;
 
 pub(crate) struct DotnetSolution {
-    path: PathBuf,
+    pub(crate) path: PathBuf,
     pub(crate) projects: Vec<DotnetProject>,
 }
 
@@ -21,6 +21,13 @@ impl DotnetSolution {
                 .map(|project_path| DotnetProject::load_from_path(&project_path))
                 .collect::<Result<Vec<_>, _>>()?,
         })
+    }
+
+    pub(crate) fn ephemeral(project: DotnetProject) -> Self {
+        Self {
+            path: project.path.clone(),
+            projects: vec![project],
+        }
     }
 }
 /// Parses a .NET solution file and extracts a list of project file paths.
