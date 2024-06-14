@@ -659,7 +659,7 @@ checksum = "97b3888a4aecf77e811145cadf6eef5901f4782c53886191b2f693f24761847c"
 [[package]]
 name = "libcnb"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#d4a8d6773de43ea2a9365e717a5cb376a17c0259"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
 dependencies = [
  "libcnb-common",
  "libcnb-data",
@@ -672,7 +672,7 @@ dependencies = [
 [[package]]
 name = "libcnb-common"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#d4a8d6773de43ea2a9365e717a5cb376a17c0259"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
 dependencies = [
  "serde",
  "thiserror",
@@ -682,7 +682,7 @@ dependencies = [
 [[package]]
 name = "libcnb-data"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#d4a8d6773de43ea2a9365e717a5cb376a17c0259"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
 dependencies = [
  "fancy-regex",
  "libcnb-proc-macros",
@@ -695,7 +695,7 @@ dependencies = [
 [[package]]
 name = "libcnb-package"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#d4a8d6773de43ea2a9365e717a5cb376a17c0259"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
 dependencies = [
  "cargo_metadata",
  "ignore",
@@ -711,7 +711,7 @@ dependencies = [
 [[package]]
 name = "libcnb-proc-macros"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#d4a8d6773de43ea2a9365e717a5cb376a17c0259"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
 dependencies = [
  "cargo_metadata",
  "fancy-regex",
@@ -722,7 +722,7 @@ dependencies = [
 [[package]]
 name = "libcnb-test"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#d4a8d6773de43ea2a9365e717a5cb376a17c0259"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
 dependencies = [
  "fastrand",
  "fs_extra",
@@ -737,7 +737,7 @@ dependencies = [
 [[package]]
 name = "libherokubuildpack"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#d4a8d6773de43ea2a9365e717a5cb376a17c0259"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
 dependencies = [
  "crossbeam-utils",
  "flate2",
@@ -791,9 +791,9 @@ dependencies = [
 
 [[package]]
 name = "memchr"
-version = "2.7.2"
+version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c8640c5d730cb13ebd907d8d04b52f55ac9a2eec55b440c8892f40d56c76c1d"
+checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
 name = "miniz_oxide"

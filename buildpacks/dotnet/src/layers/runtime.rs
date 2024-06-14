@@ -25,7 +25,7 @@ pub(crate) fn handle(
             launch: true,
         },
     )?;
-    runtime_layer.replace_env(&dotnet_layer_env::generate_layer_env(
+    runtime_layer.replace_env(dotnet_layer_env::generate_layer_env(
         &runtime_layer.path(),
         &Scope::Launch,
     ))?;

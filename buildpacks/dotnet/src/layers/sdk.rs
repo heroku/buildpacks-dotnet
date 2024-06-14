@@ -3,7 +3,7 @@ use inventory::artifact::Artifact;
 use inventory::checksum::Checksum;
 use libcnb::data::layer_name;
 use libcnb::layer::{
-    CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction, LayerContents, LayerRef,
+    CachedLayerDefinition, InspectRestoredAction, InvalidMetadataAction, LayerRef, LayerState,
 };
 use libcnb::layer_env::Scope;
 use libherokubuildpack::download::download_file;
@@ -31,28 +31,28 @@ pub(crate) fn handle(
             build: true,
             launch: false,
             invalid_metadata: &|_| InvalidMetadataAction::DeleteLayer,
-            inspect_existing: &|metadata: &SdkLayerMetadata, _path| {
+            inspect_restored: &|metadata: &SdkLayerMetadata, _path| {
                 if metadata.artifact == *artifact {
-                    InspectExistingAction::Keep
+                    InspectRestoredAction::KeepLayer
                 } else {
                     log_info(format!(
                         "Deleting cached .NET SDK version: {}",
                         metadata.artifact.version
                     ));
-                    InspectExistingAction::Delete
+                    InspectRestoredAction::DeleteLayer
                 }
             },
         },
     )?;
 
-    match sdk_layer.contents {
-        LayerContents::Cached(()) => {
+    match sdk_layer.state {
+        LayerState::Restored { .. } => {
             log_info(format!(
                 "Reusing cached .NET SDK version: {}",
                 artifact.version
             ));
         }
-        LayerContents::Empty(_) => {
+        LayerState::Empty { .. } => {
             sdk_layer.replace_metadata(SdkLayerMetadata {
                 artifact: artifact.clone(),
             })?;
@@ -75,7 +75,7 @@ pub(crate) fn handle(
             )
             .map_err(SdkLayerError::UntarSdk)?;
 
-            sdk_layer.replace_env(&dotnet_layer_env::generate_layer_env(
+            sdk_layer.replace_env(dotnet_layer_env::generate_layer_env(
                 sdk_layer.path().as_path(),
                 &Scope::Build,
             ))?;
