@@ -60,10 +60,11 @@ impl Buildpack for DotnetBuildpack {
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         log_header("Determining .NET version");
 
-        let dotnet_file = determine_file_to_publish(&context.app_dir)?;
+        // Solution may be an "ephemeral" solution when only a project file is found in the root directory.
+        let solution = get_solution_to_publish(&context.app_dir)?;
         log_info(format!(
             "Detected .NET file to publish: {}",
-            dotnet_file.path.to_string_lossy()
+            solution.path.to_string_lossy()
         ));
 
         let sdk_version_req = if let Some(file) = detect::find_global_json(&context.app_dir) {
@@ -76,7 +77,7 @@ impl Buildpack for DotnetBuildpack {
             )
             .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?
         } else {
-            get_version_requirement_from_dotnet_file(&dotnet_file)?
+            parse_sdk_version_req_for(&solution)?
         };
 
         log_info(format!(
@@ -146,7 +147,7 @@ impl Buildpack for DotnetBuildpack {
             Command::new("dotnet")
                 .args([
                     "publish",
-                    &dotnet_file.path.to_string_lossy(),
+                    &solution.path.to_string_lossy(),
                     "--verbosity",
                     "normal",
                     "--configuration",
@@ -165,7 +166,7 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
-fn determine_file_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuildpackError> {
+fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuildpackError> {
     let solution_files =
         detect::dotnet_solution_files(app_dir).expect("function to pass after detection");
     let project_files =
@@ -223,10 +224,10 @@ fn parse_project_sdk_version_requirement(
     .map_err(DotnetBuildpackError::ParseVersionRequirement)
 }
 
-fn get_version_requirement_from_dotnet_file(
-    dotnet_file: &DotnetSolution,
+fn parse_sdk_version_req_for(
+    solution: &DotnetSolution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
-    let requirements = dotnet_file
+    let requirements = solution
         .projects
         .iter()
         .map(parse_project_sdk_version_requirement)
