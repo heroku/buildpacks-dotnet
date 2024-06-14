@@ -42,7 +42,6 @@ struct ProjectFileContent {
     pub(crate) assembly_name: Option<String>,
 }
 
-/// Enum representing different types of .NET projects.
 #[derive(Debug, PartialEq)]
 pub(crate) enum ProjectType {
     ConsoleApplication,
@@ -59,7 +58,7 @@ impl FromStr for ProjectType {
 
     fn from_str(s: &str) -> Result<ProjectType, ()> {
         match s {
-            "Microsoft.NET.Sdk" => Ok(ProjectType::Library), // Default to Library if no OutputType
+            "Microsoft.NET.Sdk" => Ok(ProjectType::Library),
             "Microsoft.NET.Sdk.Web" => Ok(ProjectType::WebApplication),
             "Microsoft.NET.Sdk.Razor" => Ok(ProjectType::RazorApplication),
             "Microsoft.NET.Sdk.BlazorWebAssembly" => Ok(ProjectType::BlazorWebAssembly),
@@ -69,7 +68,6 @@ impl FromStr for ProjectType {
     }
 }
 
-/// Enum representing possible errors that can occur during parsing.
 #[derive(Error, Debug)]
 pub(crate) enum ParseError {
     #[error("Error parsing XML")]
@@ -80,18 +78,6 @@ pub(crate) enum ParseError {
     MissingTargetFrameworkError,
 }
 
-/// Parses .NET project file content from a string and returns a `ProjectFileContent` with relevant data.
-///
-/// # Arguments
-///
-/// * `xml_content` - String containing the XML content of the .NET project file.
-///
-/// # Errors
-///
-/// Returns an error if the XML cannot be parsed or if the `Sdk` or `TargetFramework` is missing.
-///
-/// TODO: A missing `Sdk` is not technically an error. Document this, or implement logic to
-/// infer project type by other means.
 fn parse_project_file_content_from_xml(
     xml_content: &str,
 ) -> Result<ProjectFileContent, ParseError> {
