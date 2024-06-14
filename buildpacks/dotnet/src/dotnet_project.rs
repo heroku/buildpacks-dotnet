@@ -6,33 +6,6 @@ use thiserror::Error;
 
 use crate::DotnetBuildpackError;
 
-/// Enum representing different types of .NET projects.
-#[derive(Debug, PartialEq)]
-pub(crate) enum ProjectType {
-    ConsoleApplication,
-    WebApplication,
-    RazorApplication,
-    BlazorWebAssembly,
-    Worker,
-    Library,
-    Unknown,
-}
-
-impl FromStr for ProjectType {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<ProjectType, ()> {
-        match s {
-            "Microsoft.NET.Sdk" => Ok(ProjectType::Library), // Default to Library if no OutputType
-            "Microsoft.NET.Sdk.Web" => Ok(ProjectType::WebApplication),
-            "Microsoft.NET.Sdk.Razor" => Ok(ProjectType::RazorApplication),
-            "Microsoft.NET.Sdk.BlazorWebAssembly" => Ok(ProjectType::BlazorWebAssembly),
-            "Microsoft.NET.Sdk.Worker" => Ok(ProjectType::Worker),
-            _ => Ok(ProjectType::Unknown),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub(crate) struct DotnetProject {
     pub(crate) path: PathBuf,
@@ -67,6 +40,33 @@ struct ProjectFileContent {
     pub(crate) target_framework: String,
     pub(crate) project_type: ProjectType,
     pub(crate) assembly_name: Option<String>,
+}
+
+/// Enum representing different types of .NET projects.
+#[derive(Debug, PartialEq)]
+pub(crate) enum ProjectType {
+    ConsoleApplication,
+    WebApplication,
+    RazorApplication,
+    BlazorWebAssembly,
+    Worker,
+    Library,
+    Unknown,
+}
+
+impl FromStr for ProjectType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<ProjectType, ()> {
+        match s {
+            "Microsoft.NET.Sdk" => Ok(ProjectType::Library), // Default to Library if no OutputType
+            "Microsoft.NET.Sdk.Web" => Ok(ProjectType::WebApplication),
+            "Microsoft.NET.Sdk.Razor" => Ok(ProjectType::RazorApplication),
+            "Microsoft.NET.Sdk.BlazorWebAssembly" => Ok(ProjectType::BlazorWebAssembly),
+            "Microsoft.NET.Sdk.Worker" => Ok(ProjectType::Worker),
+            _ => Ok(ProjectType::Unknown),
+        }
+    }
 }
 
 /// Enum representing possible errors that can occur during parsing.
