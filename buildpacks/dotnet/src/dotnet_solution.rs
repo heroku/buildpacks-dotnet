@@ -3,6 +3,26 @@ use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::{Path, PathBuf};
 
+use crate::dotnet_project::DotnetProject;
+use crate::DotnetBuildpackError;
+
+pub(crate) struct DotnetSolution {
+    path: PathBuf,
+    pub(crate) projects: Vec<DotnetProject>,
+}
+
+impl DotnetSolution {
+    pub(crate) fn load_from_path(path: &Path) -> Result<Self, DotnetBuildpackError> {
+        Ok(Self {
+            path: path.to_path_buf(),
+            projects: project_file_paths(path)
+                .map_err(DotnetBuildpackError::ReadDotnetFile)?
+                .into_iter()
+                .map(|project_path| DotnetProject::load_from_path(&project_path))
+                .collect::<Result<Vec<_>, _>>()?,
+        })
+    }
+}
 /// Parses a .NET solution file and extracts a list of project file paths.
 ///
 /// # Arguments

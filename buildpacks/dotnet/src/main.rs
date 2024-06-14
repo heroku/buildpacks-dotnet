@@ -9,6 +9,7 @@ mod tfm;
 mod utils;
 
 use crate::dotnet_project::DotnetProject;
+use crate::dotnet_solution::DotnetSolution;
 use crate::global_json::GlobalJson;
 use crate::layers::sdk::SdkLayerError;
 use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
@@ -29,6 +30,7 @@ use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::env::consts;
+use std::os::unix::process;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{fs, io};
@@ -217,23 +219,34 @@ impl DotnetFile {
     }
 }
 
+fn parse_project_sdk_version_requirement(
+    project: &DotnetProject,
+) -> Result<VersionReq, DotnetBuildpackError> {
+    log_info(format!(
+        "Detecting .NET version requirement for project {0}",
+        project.path.to_string_lossy()
+    ));
+
+    VersionReq::try_from(
+        project
+            .target_framework
+            .parse::<TargetFrameworkMoniker>()
+            .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
+    )
+    .map_err(DotnetBuildpackError::ParseVersionRequirement)
+}
+
 impl TryFrom<&DotnetFile> for VersionReq {
     type Error = DotnetBuildpackError;
 
     fn try_from(dotnet_file: &DotnetFile) -> Result<Self, Self::Error> {
         match dotnet_file {
             DotnetFile::Solution(path) => {
-                let mut requirements = vec![];
-                for project_path in dotnet_solution::project_file_paths(path)
-                    .map_err(DotnetBuildpackError::ParseDotnetSolutionFile)?
-                {
-                    log_info(format!(
-                        "Detecting .NET version requirement for project {0}",
-                        project_path.to_string_lossy()
-                    ));
-
-                    requirements.push(Self::try_from(&DotnetFile::Project(project_path))?);
-                }
+                let requirements = DotnetSolution::load_from_path(path)?
+                    .projects
+                    .iter()
+                    .map(parse_project_sdk_version_requirement)
+                    .collect::<Result<Vec<_>, _>>()?;
 
                 requirements
                     // TODO: Add logic to prefer the most recent version requirement, and log if projects target different versions
@@ -241,25 +254,10 @@ impl TryFrom<&DotnetFile> for VersionReq {
                     .cloned()
                     .ok_or(DotnetBuildpackError::NoDotnetFiles)
             }
-            DotnetFile::Project(path) => Self::try_from(
-                DotnetProject::try_from(path.as_path())?
-                    .target_framework
-                    .parse::<TargetFrameworkMoniker>()
-                    .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
-            )
-            .map_err(DotnetBuildpackError::ParseVersionRequirement),
+            DotnetFile::Project(path) => parse_project_sdk_version_requirement(
+                &DotnetProject::load_from_path(path.as_path())?,
+            ),
         }
-    }
-}
-
-impl TryFrom<&Path> for DotnetProject {
-    type Error = DotnetBuildpackError;
-
-    fn try_from(path: &Path) -> Result<Self, Self::Error> {
-        fs::read_to_string(path)
-            .map_err(DotnetBuildpackError::ReadProjectFile)?
-            .parse::<DotnetProject>()
-            .map_err(DotnetBuildpackError::ParseDotnetProjectFile)
     }
 }
 
@@ -276,8 +274,8 @@ enum DotnetBuildpackError {
     NoDotnetFiles,
     #[error("Multiple .NET project files found in root directory: {0}")]
     MultipleProjectFiles(String),
-    #[error("Error reading project file")]
-    ReadProjectFile(io::Error),
+    #[error("Error reading .NET file")]
+    ReadDotnetFile(io::Error),
     #[error("Error parsing .NET project file")]
     ParseDotnetProjectFile(dotnet_project::ParseError),
     #[error("Error parsing target framework: {0}")]

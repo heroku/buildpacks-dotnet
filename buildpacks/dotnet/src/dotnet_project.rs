@@ -1,6 +1,10 @@
 use roxmltree::Document;
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use thiserror::Error;
+
+use crate::DotnetBuildpackError;
 
 /// Enum representing different types of .NET projects.
 #[derive(Debug, PartialEq)]
@@ -31,6 +35,7 @@ impl FromStr for ProjectType {
 
 #[derive(Debug)]
 pub(crate) struct DotnetProject {
+    pub(crate) path: PathBuf,
     #[allow(dead_code)]
     pub(crate) sdk_id: String,
     pub(crate) target_framework: String,
@@ -38,6 +43,15 @@ pub(crate) struct DotnetProject {
     pub(crate) project_type: ProjectType,
     #[allow(dead_code)]
     pub(crate) assembly_name: Option<String>,
+}
+
+impl DotnetProject {
+    pub(crate) fn load_from_path(path: &Path) -> Result<Self, DotnetBuildpackError> {
+        fs::read_to_string(path)
+            .map_err(DotnetBuildpackError::ReadDotnetFile)?
+            .parse::<DotnetProject>()
+            .map_err(DotnetBuildpackError::ParseDotnetProjectFile)
+    }
 }
 
 /// Enum representing possible errors that can occur during parsing.
@@ -126,6 +140,7 @@ impl FromStr for DotnetProject {
         }
 
         Ok(DotnetProject {
+            path: Path::new("/workspace/foo.csproj").to_path_buf(),
             sdk_id,
             target_framework,
             project_type,
