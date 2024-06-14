@@ -1,7 +1,6 @@
 use roxmltree::Document;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use thiserror::Error;
 
 use crate::DotnetBuildpackError;
@@ -9,8 +8,6 @@ use crate::DotnetBuildpackError;
 #[derive(Debug)]
 pub(crate) struct DotnetProject {
     pub(crate) path: PathBuf,
-    #[allow(dead_code)]
-    pub(crate) sdk_id: String,
     pub(crate) target_framework: String,
     #[allow(dead_code)]
     pub(crate) project_type: ProjectType,
@@ -20,72 +17,50 @@ pub(crate) struct DotnetProject {
 
 impl DotnetProject {
     pub(crate) fn load_from_path(path: &Path) -> Result<Self, DotnetBuildpackError> {
-        parse_project_file_content_from_xml(
-            &fs::read_to_string(path).map_err(DotnetBuildpackError::ReadDotnetFile)?,
-        )
-        .map_err(DotnetBuildpackError::ParseDotnetProjectFile)
-        .map(|project_file_contents| Self {
+        let content = fs::read_to_string(path).map_err(DotnetBuildpackError::ReadDotnetFile)?;
+        let metadata = parse_dotnet_project_metadata(&content)
+            .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
+
+        let project_type = infer_project_type(&metadata);
+
+        Ok(Self {
             path: path.to_path_buf(),
-            sdk_id: project_file_contents.sdk_id,
-            target_framework: project_file_contents.target_framework,
-            project_type: project_file_contents.project_type,
-            assembly_name: project_file_contents.assembly_name,
+            target_framework: metadata.target_framework,
+            project_type,
+            assembly_name: metadata.assembly_name,
         })
     }
 }
 
 #[derive(Debug)]
-struct ProjectFileContent {
-    pub(crate) sdk_id: String,
-    pub(crate) target_framework: String,
-    pub(crate) project_type: ProjectType,
-    pub(crate) assembly_name: Option<String>,
+struct DotnetProjectMetadata {
+    sdk_id: String,
+    target_framework: String,
+    output_type: Option<String>,
+    assembly_name: Option<String>,
 }
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum ProjectType {
     ConsoleApplication,
     WebApplication,
-    RazorApplication,
-    BlazorWebAssembly,
-    Worker,
-    Library,
     Unknown,
-}
-
-impl FromStr for ProjectType {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<ProjectType, ()> {
-        match s {
-            "Microsoft.NET.Sdk" => Ok(ProjectType::Library),
-            "Microsoft.NET.Sdk.Web" => Ok(ProjectType::WebApplication),
-            "Microsoft.NET.Sdk.Razor" => Ok(ProjectType::RazorApplication),
-            "Microsoft.NET.Sdk.BlazorWebAssembly" => Ok(ProjectType::BlazorWebAssembly),
-            "Microsoft.NET.Sdk.Worker" => Ok(ProjectType::Worker),
-            _ => Ok(ProjectType::Unknown),
-        }
-    }
 }
 
 #[derive(Error, Debug)]
 pub(crate) enum ParseError {
     #[error("Error parsing XML")]
     XmlParseError(#[from] roxmltree::Error),
-    #[error("No SDK specified")]
-    MissingSdkError,
     #[error("Missing TargetFramework")]
-    MissingTargetFrameworkError,
+    MissingTargetFramework,
 }
 
-fn parse_project_file_content_from_xml(
-    xml_content: &str,
-) -> Result<ProjectFileContent, ParseError> {
+fn parse_dotnet_project_metadata(xml_content: &str) -> Result<DotnetProjectMetadata, ParseError> {
     let doc = Document::parse(xml_content)?;
 
     let mut sdk_id = String::new();
     let mut target_framework = String::new();
-    let mut project_type = ProjectType::Unknown;
+    let mut output_type = None;
     let mut assembly_name = None;
 
     for node in doc.descendants() {
@@ -93,28 +68,20 @@ fn parse_project_file_content_from_xml(
             "Project" => {
                 if let Some(sdk) = node.attribute("Sdk") {
                     sdk_id = sdk.to_string();
-                    project_type = sdk_id.parse().unwrap_or(ProjectType::Unknown);
                 }
             }
             "Sdk" => {
                 if let Some(name) = node.attribute("Name") {
                     sdk_id = name.to_string();
-                    project_type = sdk_id.parse().unwrap_or(ProjectType::Unknown);
                 } else {
                     sdk_id = node.text().unwrap_or("").to_string();
-                    project_type = sdk_id.parse().unwrap_or(ProjectType::Unknown);
                 }
             }
             "TargetFramework" => {
                 target_framework = node.text().unwrap_or("").to_string();
             }
             "OutputType" => {
-                let output_type = node.text().unwrap_or("");
-                project_type = match output_type {
-                    "Exe" => ProjectType::ConsoleApplication,
-                    "Library" => ProjectType::Library,
-                    _ => ProjectType::Unknown,
-                };
+                output_type = node.text().map(ToString::to_string);
             }
             "AssemblyName" => {
                 if let Some(text) = node.text() {
@@ -126,30 +93,49 @@ fn parse_project_file_content_from_xml(
             _ => (),
         }
     }
-
-    if sdk_id.is_empty() {
-        return Err(ParseError::MissingSdkError);
-    }
-
     if target_framework.is_empty() {
-        return Err(ParseError::MissingTargetFrameworkError);
+        return Err(ParseError::MissingTargetFramework);
     }
 
-    if sdk_id == "Microsoft.NET.Sdk" && project_type == ProjectType::Unknown {
-        project_type = ProjectType::Library;
-    }
-
-    Ok(ProjectFileContent {
+    Ok(DotnetProjectMetadata {
         sdk_id,
         target_framework,
-        project_type,
+        output_type,
         assembly_name,
     })
+}
+
+fn infer_project_type(metadata: &DotnetProjectMetadata) -> ProjectType {
+    match metadata.sdk_id.as_str() {
+        "Microsoft.NET.Sdk" => match metadata.output_type.as_deref() {
+            Some("Exe") => ProjectType::ConsoleApplication,
+            _ => ProjectType::Unknown,
+        },
+        "Microsoft.NET.Sdk.Web" | "Microsoft.NET.Sdk.Razor" => ProjectType::WebApplication,
+        _ => ProjectType::Unknown,
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn assert_dotnet_project_metadata(
+        project_xml: &str,
+        expected_sdk_id: &str,
+        expected_target_framework: &str,
+        expected_output_type: Option<&str>,
+        expected_assembly_name: Option<&str>,
+    ) {
+        let metadata = parse_dotnet_project_metadata(project_xml).unwrap();
+        assert_eq!(metadata.sdk_id, expected_sdk_id);
+        assert_eq!(metadata.target_framework, expected_target_framework);
+        assert_eq!(metadata.output_type, expected_output_type.map(String::from));
+        assert_eq!(
+            metadata.assembly_name,
+            expected_assembly_name.map(String::from)
+        );
+    }
 
     #[test]
     fn test_parse_console_application_with_sdk_element() {
@@ -162,11 +148,13 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        let project = parse_project_file_content_from_xml(project_xml).unwrap();
-        assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
-        assert_eq!(project.target_framework, "net6.0");
-        assert_eq!(project.project_type, ProjectType::ConsoleApplication);
-        assert_eq!(project.assembly_name, None);
+        assert_dotnet_project_metadata(
+            project_xml,
+            "Microsoft.NET.Sdk",
+            "net6.0",
+            Some("Exe"),
+            None,
+        );
     }
 
     #[test]
@@ -178,11 +166,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = parse_project_file_content_from_xml(project_xml).unwrap();
-        assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.Web");
-        assert_eq!(project.target_framework, "net6.0");
-        assert_eq!(project.project_type, ProjectType::WebApplication);
-        assert_eq!(project.assembly_name, None);
+        assert_dotnet_project_metadata(project_xml, "Microsoft.NET.Sdk.Web", "net6.0", None, None);
     }
 
     #[test]
@@ -195,11 +179,13 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = parse_project_file_content_from_xml(project_xml).unwrap();
-        assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.Razor");
-        assert_eq!(project.target_framework, "net6.0");
-        assert_eq!(project.project_type, ProjectType::RazorApplication);
-        assert_eq!(project.assembly_name, None);
+        assert_dotnet_project_metadata(
+            project_xml,
+            "Microsoft.NET.Sdk.Razor",
+            "net6.0",
+            None,
+            None,
+        );
     }
 
     #[test]
@@ -212,11 +198,13 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = parse_project_file_content_from_xml(project_xml).unwrap();
-        assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.BlazorWebAssembly");
-        assert_eq!(project.target_framework, "net6.0");
-        assert_eq!(project.project_type, ProjectType::BlazorWebAssembly);
-        assert_eq!(project.assembly_name, None);
+        assert_dotnet_project_metadata(
+            project_xml,
+            "Microsoft.NET.Sdk.BlazorWebAssembly",
+            "net6.0",
+            None,
+            None,
+        );
     }
 
     #[test]
@@ -229,11 +217,13 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = parse_project_file_content_from_xml(project_xml).unwrap();
-        assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.Worker");
-        assert_eq!(project.target_framework, "net6.0");
-        assert_eq!(project.project_type, ProjectType::Worker);
-        assert_eq!(project.assembly_name, None);
+        assert_dotnet_project_metadata(
+            project_xml,
+            "Microsoft.NET.Sdk.Worker",
+            "net6.0",
+            None,
+            None,
+        );
     }
 
     #[test]
@@ -245,11 +235,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = parse_project_file_content_from_xml(project_xml).unwrap();
-        assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
-        assert_eq!(project.target_framework, "net6.0");
-        assert_eq!(project.project_type, ProjectType::Library);
-        assert_eq!(project.assembly_name, None);
+        assert_dotnet_project_metadata(project_xml, "Microsoft.NET.Sdk", "net6.0", None, None);
     }
 
     #[test]
@@ -262,11 +248,13 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = parse_project_file_content_from_xml(project_xml).unwrap();
-        assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
-        assert_eq!(project.target_framework, "net6.0");
-        assert_eq!(project.project_type, ProjectType::Library);
-        assert_eq!(project.assembly_name, Some("MyAssembly".to_string()));
+        assert_dotnet_project_metadata(
+            project_xml,
+            "Microsoft.NET.Sdk",
+            "net6.0",
+            None,
+            Some("MyAssembly"),
+        );
     }
 
     #[test]
@@ -279,8 +267,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        let result = parse_project_file_content_from_xml(project_xml);
-        assert!(matches!(result, Err(ParseError::MissingSdkError)));
+        assert_dotnet_project_metadata(project_xml, "", "net6.0", Some("Library"), None);
     }
 
     #[test]
@@ -292,11 +279,8 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let result = parse_project_file_content_from_xml(project_xml);
-        assert!(matches!(
-            result,
-            Err(ParseError::MissingTargetFrameworkError)
-        ));
+        let result = parse_dotnet_project_metadata(project_xml);
+        assert!(matches!(result, Err(ParseError::MissingTargetFramework)));
     }
 
     #[test]
@@ -311,10 +295,56 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = parse_project_file_content_from_xml(project_xml).unwrap();
-        assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
-        assert_eq!(project.target_framework, "net6.0");
-        assert_eq!(project.project_type, ProjectType::Library);
-        assert_eq!(project.assembly_name, None);
+        assert_dotnet_project_metadata(
+            project_xml,
+            "Microsoft.NET.Sdk",
+            "net6.0",
+            Some("Library"),
+            None,
+        );
+    }
+
+    #[test]
+    fn test_infer_project_type_console_application() {
+        let metadata = DotnetProjectMetadata {
+            sdk_id: "Microsoft.NET.Sdk".to_string(),
+            target_framework: "net6.0".to_string(),
+            output_type: Some("Exe".to_string()),
+            assembly_name: None,
+        };
+        assert_eq!(
+            infer_project_type(&metadata),
+            ProjectType::ConsoleApplication
+        );
+    }
+
+    #[test]
+    fn test_infer_project_type_web_application() {
+        let metadata = DotnetProjectMetadata {
+            sdk_id: "Microsoft.NET.Sdk.Web".to_string(),
+            target_framework: "net6.0".to_string(),
+            output_type: None,
+            assembly_name: None,
+        };
+        assert_eq!(infer_project_type(&metadata), ProjectType::WebApplication);
+
+        let metadata = DotnetProjectMetadata {
+            sdk_id: "Microsoft.NET.Sdk.Razor".to_string(),
+            target_framework: "net6.0".to_string(),
+            output_type: None,
+            assembly_name: None,
+        };
+        assert_eq!(infer_project_type(&metadata), ProjectType::WebApplication);
+    }
+
+    #[test]
+    fn test_infer_project_type_unknown() {
+        let metadata = DotnetProjectMetadata {
+            sdk_id: "Unknown.Sdk".to_string(),
+            target_framework: "net6.0".to_string(),
+            output_type: None,
+            assembly_name: None,
+        };
+        assert_eq!(infer_project_type(&metadata), ProjectType::Unknown);
     }
 }
