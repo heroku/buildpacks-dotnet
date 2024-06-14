@@ -207,30 +207,26 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
     }
 }
 
-fn parse_project_sdk_version_requirement(
-    project: &DotnetProject,
-) -> Result<VersionReq, DotnetBuildpackError> {
-    log_info(format!(
-        "Detecting .NET version requirement for project {0}",
-        project.path.to_string_lossy()
-    ));
-
-    VersionReq::try_from(
-        project
-            .target_framework
-            .parse::<TargetFrameworkMoniker>()
-            .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
-    )
-    .map_err(DotnetBuildpackError::ParseVersionRequirement)
-}
-
 fn parse_sdk_version_req_for(
     solution: &DotnetSolution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
     let requirements = solution
         .projects
         .iter()
-        .map(parse_project_sdk_version_requirement)
+        .map(|project| {
+            log_info(format!(
+                "Detecting .NET version requirement for project {0}",
+                project.path.to_string_lossy()
+            ));
+
+            VersionReq::try_from(
+                project
+                    .target_framework
+                    .parse::<TargetFrameworkMoniker>()
+                    .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
+            )
+            .map_err(DotnetBuildpackError::ParseVersionRequirement)
+        })
         .collect::<Result<Vec<_>, _>>()?;
 
     requirements
