@@ -19,7 +19,9 @@ use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::layer_name;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
-use libcnb::layer::{CachedLayerDefinition, InspectExistingAction, InvalidMetadataAction};
+use libcnb::layer::{
+    CachedLayerDefinition, InspectRestoredAction, InvalidMetadataAction, LayerState,
+};
 use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::log::{log_header, log_info, log_warning};
@@ -113,15 +115,15 @@ impl Buildpack for DotnetBuildpack {
                     log_info("Invalid NuGet package cache");
                     InvalidMetadataAction::DeleteLayer
                 },
-                inspect_existing: &|_metadata: &NugetCacheLayerMetadata, _path| {
-                    InspectExistingAction::Keep
+                inspect_restored: &|_metadata: &NugetCacheLayerMetadata, _path| {
+                    InspectRestoredAction::KeepLayer
                 },
             },
         )?;
 
-        match nuget_cache_layer.contents {
-            libcnb::layer::LayerContents::Cached(()) => log_info("Reusing NuGet package cache"),
-            libcnb::layer::LayerContents::Empty(_) => {
+        match nuget_cache_layer.state {
+            LayerState::Restored { .. } => log_info("Reusing NuGet package cache"),
+            LayerState::Empty { .. } => {
                 log_info("Empty NuGet package cache");
                 nuget_cache_layer.replace_metadata(NugetCacheLayerMetadata {
                     version: String::from("foo"),
