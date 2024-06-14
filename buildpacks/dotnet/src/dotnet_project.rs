@@ -47,17 +47,17 @@ pub(crate) struct DotnetProject {
 
 impl DotnetProject {
     pub(crate) fn load_from_path(path: &Path) -> Result<Self, DotnetBuildpackError> {
-        fs::read_to_string(path)
-            .map_err(DotnetBuildpackError::ReadDotnetFile)?
-            .parse::<ProjectFileContent>()
-            .map_err(DotnetBuildpackError::ParseDotnetProjectFile)
-            .map(|project_file_contents| Self {
-                path: path.to_path_buf(),
-                sdk_id: project_file_contents.sdk_id,
-                target_framework: project_file_contents.target_framework,
-                project_type: project_file_contents.project_type,
-                assembly_name: project_file_contents.assembly_name,
-            })
+        parse_project_file_content_from_xml(
+            &fs::read_to_string(path).map_err(DotnetBuildpackError::ReadDotnetFile)?,
+        )
+        .map_err(DotnetBuildpackError::ParseDotnetProjectFile)
+        .map(|project_file_contents| Self {
+            path: path.to_path_buf(),
+            sdk_id: project_file_contents.sdk_id,
+            target_framework: project_file_contents.target_framework,
+            project_type: project_file_contents.project_type,
+            assembly_name: project_file_contents.assembly_name,
+        })
     }
 }
 
@@ -92,75 +92,73 @@ pub(crate) enum ParseError {
 ///
 /// TODO: A missing `Sdk` is not technically an error. Document this, or implement logic to
 /// infer project type by other means.
-impl FromStr for ProjectFileContent {
-    type Err = ParseError;
+fn parse_project_file_content_from_xml(
+    xml_content: &str,
+) -> Result<ProjectFileContent, ParseError> {
+    let doc = Document::parse(xml_content)?;
 
-    fn from_str(xml_content: &str) -> Result<Self, Self::Err> {
-        let doc = Document::parse(xml_content)?;
+    let mut sdk_id = String::new();
+    let mut target_framework = String::new();
+    let mut project_type = ProjectType::Unknown;
+    let mut assembly_name = None;
 
-        let mut sdk_id = String::new();
-        let mut target_framework = String::new();
-        let mut project_type = ProjectType::Unknown;
-        let mut assembly_name = None;
-
-        for node in doc.descendants() {
-            match node.tag_name().name() {
-                "Project" => {
-                    if let Some(sdk) = node.attribute("Sdk") {
-                        sdk_id = sdk.to_string();
-                        project_type = sdk_id.parse().unwrap_or(ProjectType::Unknown);
-                    }
+    for node in doc.descendants() {
+        match node.tag_name().name() {
+            "Project" => {
+                if let Some(sdk) = node.attribute("Sdk") {
+                    sdk_id = sdk.to_string();
+                    project_type = sdk_id.parse().unwrap_or(ProjectType::Unknown);
                 }
-                "Sdk" => {
-                    if let Some(name) = node.attribute("Name") {
-                        sdk_id = name.to_string();
-                        project_type = sdk_id.parse().unwrap_or(ProjectType::Unknown);
-                    } else {
-                        sdk_id = node.text().unwrap_or("").to_string();
-                        project_type = sdk_id.parse().unwrap_or(ProjectType::Unknown);
-                    }
-                }
-                "TargetFramework" => {
-                    target_framework = node.text().unwrap_or("").to_string();
-                }
-                "OutputType" => {
-                    let output_type = node.text().unwrap_or("");
-                    project_type = match output_type {
-                        "Exe" => ProjectType::ConsoleApplication,
-                        "Library" => ProjectType::Library,
-                        _ => ProjectType::Unknown,
-                    };
-                }
-                "AssemblyName" => {
-                    if let Some(text) = node.text() {
-                        if !text.is_empty() {
-                            assembly_name = Some(text.to_string());
-                        }
-                    }
-                }
-                _ => (),
             }
+            "Sdk" => {
+                if let Some(name) = node.attribute("Name") {
+                    sdk_id = name.to_string();
+                    project_type = sdk_id.parse().unwrap_or(ProjectType::Unknown);
+                } else {
+                    sdk_id = node.text().unwrap_or("").to_string();
+                    project_type = sdk_id.parse().unwrap_or(ProjectType::Unknown);
+                }
+            }
+            "TargetFramework" => {
+                target_framework = node.text().unwrap_or("").to_string();
+            }
+            "OutputType" => {
+                let output_type = node.text().unwrap_or("");
+                project_type = match output_type {
+                    "Exe" => ProjectType::ConsoleApplication,
+                    "Library" => ProjectType::Library,
+                    _ => ProjectType::Unknown,
+                };
+            }
+            "AssemblyName" => {
+                if let Some(text) = node.text() {
+                    if !text.is_empty() {
+                        assembly_name = Some(text.to_string());
+                    }
+                }
+            }
+            _ => (),
         }
-
-        if sdk_id.is_empty() {
-            return Err(ParseError::MissingSdkError);
-        }
-
-        if target_framework.is_empty() {
-            return Err(ParseError::MissingTargetFrameworkError);
-        }
-
-        if sdk_id == "Microsoft.NET.Sdk" && project_type == ProjectType::Unknown {
-            project_type = ProjectType::Library;
-        }
-
-        Ok(ProjectFileContent {
-            sdk_id,
-            target_framework,
-            project_type,
-            assembly_name,
-        })
     }
+
+    if sdk_id.is_empty() {
+        return Err(ParseError::MissingSdkError);
+    }
+
+    if target_framework.is_empty() {
+        return Err(ParseError::MissingTargetFrameworkError);
+    }
+
+    if sdk_id == "Microsoft.NET.Sdk" && project_type == ProjectType::Unknown {
+        project_type = ProjectType::Library;
+    }
+
+    Ok(ProjectFileContent {
+        sdk_id,
+        target_framework,
+        project_type,
+        assembly_name,
+    })
 }
 
 #[cfg(test)]
@@ -178,7 +176,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        let project = project_xml.parse::<ProjectFileContent>().unwrap();
+        let project = parse_project_file_content_from_xml(project_xml).unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::ConsoleApplication);
@@ -194,7 +192,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<ProjectFileContent>().unwrap();
+        let project = parse_project_file_content_from_xml(project_xml).unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.Web");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::WebApplication);
@@ -211,7 +209,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<ProjectFileContent>().unwrap();
+        let project = parse_project_file_content_from_xml(project_xml).unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.Razor");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::RazorApplication);
@@ -228,7 +226,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<ProjectFileContent>().unwrap();
+        let project = parse_project_file_content_from_xml(project_xml).unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.BlazorWebAssembly");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::BlazorWebAssembly);
@@ -245,7 +243,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<ProjectFileContent>().unwrap();
+        let project = parse_project_file_content_from_xml(project_xml).unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.Worker");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::Worker);
@@ -261,7 +259,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<ProjectFileContent>().unwrap();
+        let project = parse_project_file_content_from_xml(project_xml).unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::Library);
@@ -278,7 +276,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<ProjectFileContent>().unwrap();
+        let project = parse_project_file_content_from_xml(project_xml).unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::Library);
@@ -295,7 +293,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        let result = project_xml.parse::<ProjectFileContent>();
+        let result = parse_project_file_content_from_xml(project_xml);
         assert!(matches!(result, Err(ParseError::MissingSdkError)));
     }
 
@@ -308,7 +306,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let result = project_xml.parse::<ProjectFileContent>();
+        let result = parse_project_file_content_from_xml(project_xml);
         assert!(matches!(
             result,
             Err(ParseError::MissingTargetFrameworkError)
@@ -327,7 +325,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<ProjectFileContent>().unwrap();
+        let project = parse_project_file_content_from_xml(project_xml).unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::Library);
