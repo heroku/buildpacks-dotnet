@@ -14,6 +14,7 @@ fn test_sdk_resolution_with_target_framework() {
                 &indoc! {r"
                     [Determining .NET version]
                     Detected .NET file to publish: /workspace/foo.csproj
+                    Detecting .NET version requirement for project /workspace/foo.csproj
                     Inferred SDK version requirement: ^8.0
                     Resolved .NET SDK version 8.0."}
             );

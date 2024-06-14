@@ -49,9 +49,24 @@ impl DotnetProject {
     pub(crate) fn load_from_path(path: &Path) -> Result<Self, DotnetBuildpackError> {
         fs::read_to_string(path)
             .map_err(DotnetBuildpackError::ReadDotnetFile)?
-            .parse::<DotnetProject>()
+            .parse::<ProjectFileContent>()
             .map_err(DotnetBuildpackError::ParseDotnetProjectFile)
+            .map(|project_file_contents| Self {
+                path: path.to_path_buf(),
+                sdk_id: project_file_contents.sdk_id,
+                target_framework: project_file_contents.target_framework,
+                project_type: project_file_contents.project_type,
+                assembly_name: project_file_contents.assembly_name,
+            })
     }
+}
+
+#[derive(Debug)]
+struct ProjectFileContent {
+    pub(crate) sdk_id: String,
+    pub(crate) target_framework: String,
+    pub(crate) project_type: ProjectType,
+    pub(crate) assembly_name: Option<String>,
 }
 
 /// Enum representing possible errors that can occur during parsing.
@@ -65,7 +80,7 @@ pub(crate) enum ParseError {
     MissingTargetFrameworkError,
 }
 
-/// Parses .NET project file content from a string and returns a `DotNetProject` with relevant data.
+/// Parses .NET project file content from a string and returns a `ProjectFileContent` with relevant data.
 ///
 /// # Arguments
 ///
@@ -77,7 +92,7 @@ pub(crate) enum ParseError {
 ///
 /// TODO: A missing `Sdk` is not technically an error. Document this, or implement logic to
 /// infer project type by other means.
-impl FromStr for DotnetProject {
+impl FromStr for ProjectFileContent {
     type Err = ParseError;
 
     fn from_str(xml_content: &str) -> Result<Self, Self::Err> {
@@ -139,8 +154,7 @@ impl FromStr for DotnetProject {
             project_type = ProjectType::Library;
         }
 
-        Ok(DotnetProject {
-            path: Path::new("/workspace/foo.csproj").to_path_buf(),
+        Ok(ProjectFileContent {
             sdk_id,
             target_framework,
             project_type,
@@ -164,7 +178,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        let project = project_xml.parse::<DotnetProject>().unwrap();
+        let project = project_xml.parse::<ProjectFileContent>().unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::ConsoleApplication);
@@ -180,7 +194,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<DotnetProject>().unwrap();
+        let project = project_xml.parse::<ProjectFileContent>().unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.Web");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::WebApplication);
@@ -197,7 +211,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<DotnetProject>().unwrap();
+        let project = project_xml.parse::<ProjectFileContent>().unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.Razor");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::RazorApplication);
@@ -214,7 +228,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<DotnetProject>().unwrap();
+        let project = project_xml.parse::<ProjectFileContent>().unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.BlazorWebAssembly");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::BlazorWebAssembly);
@@ -231,7 +245,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<DotnetProject>().unwrap();
+        let project = project_xml.parse::<ProjectFileContent>().unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk.Worker");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::Worker);
@@ -247,7 +261,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<DotnetProject>().unwrap();
+        let project = project_xml.parse::<ProjectFileContent>().unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::Library);
@@ -264,7 +278,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<DotnetProject>().unwrap();
+        let project = project_xml.parse::<ProjectFileContent>().unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::Library);
@@ -281,7 +295,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        let result = project_xml.parse::<DotnetProject>();
+        let result = project_xml.parse::<ProjectFileContent>();
         assert!(matches!(result, Err(ParseError::MissingSdkError)));
     }
 
@@ -294,7 +308,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let result = project_xml.parse::<DotnetProject>();
+        let result = project_xml.parse::<ProjectFileContent>();
         assert!(matches!(
             result,
             Err(ParseError::MissingTargetFrameworkError)
@@ -313,7 +327,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project = project_xml.parse::<DotnetProject>().unwrap();
+        let project = project_xml.parse::<ProjectFileContent>().unwrap();
         assert_eq!(project.sdk_id, "Microsoft.NET.Sdk");
         assert_eq!(project.target_framework, "net6.0");
         assert_eq!(project.project_type, ProjectType::Library);
