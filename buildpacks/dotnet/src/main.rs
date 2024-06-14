@@ -30,7 +30,6 @@ use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::env::consts;
-use std::os::unix::process;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{fs, io};
@@ -77,7 +76,7 @@ impl Buildpack for DotnetBuildpack {
             )
             .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?
         } else {
-            VersionReq::try_from(&dotnet_file)?
+            get_version_requirement_from_dotnet_file(&dotnet_file)?
         };
 
         log_info(format!(
@@ -236,27 +235,25 @@ fn parse_project_sdk_version_requirement(
     .map_err(DotnetBuildpackError::ParseVersionRequirement)
 }
 
-impl TryFrom<&DotnetFile> for VersionReq {
-    type Error = DotnetBuildpackError;
+fn get_version_requirement_from_dotnet_file(
+    dotnet_file: &DotnetFile,
+) -> Result<VersionReq, DotnetBuildpackError> {
+    match dotnet_file {
+        DotnetFile::Solution(path) => {
+            let requirements = DotnetSolution::load_from_path(path)?
+                .projects
+                .iter()
+                .map(parse_project_sdk_version_requirement)
+                .collect::<Result<Vec<_>, _>>()?;
 
-    fn try_from(dotnet_file: &DotnetFile) -> Result<Self, Self::Error> {
-        match dotnet_file {
-            DotnetFile::Solution(path) => {
-                let requirements = DotnetSolution::load_from_path(path)?
-                    .projects
-                    .iter()
-                    .map(parse_project_sdk_version_requirement)
-                    .collect::<Result<Vec<_>, _>>()?;
-
-                requirements
-                    // TODO: Add logic to prefer the most recent version requirement, and log if projects target different versions
-                    .first()
-                    .cloned()
-                    .ok_or(DotnetBuildpackError::NoDotnetFiles)
-            }
-            DotnetFile::Project(path) => parse_project_sdk_version_requirement(
-                &DotnetProject::load_from_path(path.as_path())?,
-            ),
+            requirements
+                // TODO: Add logic to prefer the most recent version requirement, and log if projects target different versions
+                .first()
+                .cloned()
+                .ok_or(DotnetBuildpackError::NoDotnetFiles)
+        }
+        DotnetFile::Project(path) => {
+            parse_project_sdk_version_requirement(&DotnetProject::load_from_path(path.as_path())?)
         }
     }
 }
@@ -278,8 +275,6 @@ enum DotnetBuildpackError {
     ReadDotnetFile(io::Error),
     #[error("Error parsing .NET project file")]
     ParseDotnetProjectFile(dotnet_project::ParseError),
-    #[error("Error parsing target framework: {0}")]
-    ParseDotnetSolutionFile(io::Error),
     #[error("Error parsing solution file: {0}")]
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     #[error("Error reading global.json file")]
