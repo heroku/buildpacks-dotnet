@@ -110,16 +110,7 @@ fn get_executable_path(
 }
 
 fn build_launch_command(dotnet_project: &DotnetProject, executable_path: &Path) -> String {
-    let base_command = format!(
-        // TODO: We have to cd to the working directory (as libcnb.rs doesn't currently do it for us <https://github.com/heroku/libcnb.rs/pull/831>).
-        // Refactor this when libcnb.rs correctly sets the configured working directory.
-        "cd {}; {}",
-        executable_path
-            .parent()
-            .expect("Executable to have a parent directory")
-            .to_string_lossy(),
-        executable_path.to_string_lossy()
-    );
+    let base_command = format!("{}", executable_path.to_string_lossy());
 
     let executable_name = executable_path
         .file_name()
