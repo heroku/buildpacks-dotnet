@@ -214,7 +214,7 @@ mod tests {
         let command = build_launch_command(&dotnet_project, executable_path);
         assert_eq!(
             command,
-            "cd /path/to/bin/Release/net6.0/linux-x64/publish; /path/to/bin/Release/net6.0/linux-x64/publish/TestAssembly --urls http://0.0.0.0:$PORT"
+            "/path/to/bin/Release/net6.0/linux-x64/publish/TestAssembly --urls http://0.0.0.0:$PORT"
         );
     }
 
@@ -231,7 +231,7 @@ mod tests {
         let command = build_launch_command(&dotnet_project, executable_path);
         assert_eq!(
             command,
-            "cd /path/to/bin/Release/net6.0/linux-x64/publish; /path/to/bin/Release/net6.0/linux-x64/publish/TestAssembly"
+            "/path/to/bin/Release/net6.0/linux-x64/publish/TestAssembly"
         );
     }
 }
