@@ -9,6 +9,8 @@ mod tfm;
 mod utils;
 
 use crate::dotnet_project::DotnetProject;
+use crate::dotnet_rid::RuntimeIdentifier;
+use crate::dotnet_solution::DotnetSolution;
 use crate::global_json::GlobalJson;
 use crate::layers::sdk::SdkLayerError;
 use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
@@ -41,12 +43,7 @@ impl Buildpack for DotnetBuildpack {
     type Error = DotnetBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
-        let solution_files = detect::dotnet_solution_files(&context.app_dir)
-            .map_err(DotnetBuildpackError::BuildpackDetection)?;
-        let project_files = detect::dotnet_project_files(&context.app_dir)
-            .map_err(DotnetBuildpackError::BuildpackDetection)?;
-
-        if solution_files.is_empty() && project_files.is_empty() {
+        if detect::any_dotnet_files(&context.app_dir)? {
             log_info(
                 "No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.",
             );
@@ -59,13 +56,15 @@ impl Buildpack for DotnetBuildpack {
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         log_header("Determining .NET version");
 
-        let dotnet_file = determine_file_to_publish(&context.app_dir)?;
+        // Solution may be an "ephemeral" solution when only a project file is found in the root directory.
+        let solution = get_solution_to_publish(&context.app_dir)?;
         log_info(format!(
             "Detected .NET file to publish: {}",
-            dotnet_file.path().to_string_lossy()
+            solution.path.to_string_lossy()
         ));
 
-        let sdk_version_req = if let Some(file) = detect::find_global_json(&context.app_dir) {
+        let sdk_version_requirement = if let Some(file) = detect::global_json_file(&context.app_dir)
+        {
             log_info("Detected global.json file in the root directory");
             VersionReq::try_from(
                 fs::read_to_string(file.as_path())
@@ -75,12 +74,12 @@ impl Buildpack for DotnetBuildpack {
             )
             .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?
         } else {
-            VersionReq::try_from(&dotnet_file)?
+            parse_sdk_version_req_for(&solution)?
         };
 
         log_info(format!(
             "Inferred SDK version requirement: {}",
-            &sdk_version_req
+            &sdk_version_requirement
         ));
 
         let inventory = include_str!("../inventory.toml")
@@ -95,9 +94,9 @@ impl Buildpack for DotnetBuildpack {
                 consts::ARCH
                     .parse::<Arch>()
                     .expect("Arch should be always parseable, buildpack will not run on unsupported architectures."),
-                &sdk_version_req
+                &sdk_version_requirement
             )
-            .ok_or(DotnetBuildpackError::ResolveSdkVersion(sdk_version_req))?;
+            .ok_or(DotnetBuildpackError::ResolveSdkVersion(sdk_version_requirement))?;
 
         log_info(format!(
             "Resolved .NET SDK version {} ({}-{})",
@@ -141,20 +140,16 @@ impl Buildpack for DotnetBuildpack {
                 "NUGET_PACKAGES",
                 nuget_cache_layer.path(),
             );
+
         utils::run_command_and_stream_output(
-            Command::new("dotnet")
-                .args([
-                    "publish",
-                    &dotnet_file.path().to_string_lossy(),
-                    "--verbosity",
-                    "normal",
-                    "--configuration",
-                    "Release",
-                    "--runtime",
-                    &dotnet_rid::get_runtime_identifier().to_string(),
-                ])
-                .current_dir(&context.app_dir)
-                .envs(&command_env.apply(Scope::Build, &Env::from_current())),
+            Command::from(PublishCommand {
+                path: solution.path,
+                configuration: String::from("Release"), // TODO: Make publish configuration configurable
+                runtime_identifier: dotnet_rid::get_runtime_identifier(),
+                verbosity_level: String::from("normal"),
+            })
+            .current_dir(&context.app_dir)
+            .envs(&command_env.apply(Scope::Build, &Env::from_current())),
         )
         .map_err(DotnetBuildpackError::PublishCommand)?;
 
@@ -164,103 +159,100 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
-fn determine_file_to_publish(app_dir: &Path) -> Result<DotnetFile, DotnetBuildpackError> {
-    let solution_files =
-        detect::dotnet_solution_files(app_dir).expect("function to pass after detection");
-    let project_files =
-        detect::dotnet_project_files(app_dir).expect("function to pass after detection");
+struct PublishCommand {
+    path: PathBuf,
+    configuration: String,
+    runtime_identifier: RuntimeIdentifier,
+    verbosity_level: String, // TODO: Refactor verbosity level into an enum
+}
 
-    match (solution_files.first(), project_files.first()) {
-        (Some(solution_file), _) => {
-            if solution_files.len() > 1 {
-                log_warning(
-                    "Multiple .NET solution files detected",
-                    format!(
-                        "Found multiple .NET solution files: {}",
-                        solution_files
-                            .iter()
-                            .map(|f| f.to_string_lossy().to_string())
-                            .collect::<Vec<String>>()
-                            .join(", ")
-                    ),
-                );
-            }
-            Ok(DotnetFile::Solution(solution_file.clone()))
-        }
-        (None, Some(project_file)) => {
-            if project_files.len() > 1 {
-                return Err(DotnetBuildpackError::MultipleProjectFiles(
-                    project_files
+impl From<PublishCommand> for Command {
+    fn from(value: PublishCommand) -> Self {
+        let mut command = Command::new("dotnet");
+        command.args([
+            "publish",
+            &value.path.to_string_lossy(),
+            "--configuration",
+            &value.configuration,
+            "--runtime",
+            &value.runtime_identifier.to_string(),
+            "--verbosity",
+            &value.verbosity_level,
+        ]);
+        command
+    }
+}
+
+fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuildpackError> {
+    let solution_file_paths =
+        detect::solution_file_paths(app_dir).expect("function to pass after detection");
+    if let Some(solution_file) = solution_file_paths.first() {
+        if solution_file_paths.len() > 1 {
+            log_warning(
+                "Multiple .NET solution files detected",
+                format!(
+                    "Found multiple .NET solution files: {}",
+                    solution_file_paths
                         .iter()
                         .map(|f| f.to_string_lossy().to_string())
                         .collect::<Vec<String>>()
-                        .join(", "),
-                ));
-            }
-            Ok(DotnetFile::Project(project_file.clone()))
+                        .join(", ")
+                ),
+            );
         }
-        (None, None) => Err(DotnetBuildpackError::NoDotnetFiles),
+        return DotnetSolution::load_from_path(solution_file);
     }
-}
 
-#[derive(Debug, Clone)]
-enum DotnetFile {
-    Solution(PathBuf),
-    Project(PathBuf),
-}
-
-impl DotnetFile {
-    fn path(&self) -> &Path {
-        match self {
-            DotnetFile::Project(path) | DotnetFile::Solution(path) => path,
+    let project_file_paths =
+        detect::project_file_paths(app_dir).expect("function to pass after detection");
+    if let Some(project_file) = detect::project_file_paths(app_dir)
+        .expect("function to pass after detection")
+        .first()
+    {
+        if project_file_paths.len() > 1 {
+            return Err(DotnetBuildpackError::MultipleProjectFiles(
+                project_file_paths
+                    .iter()
+                    .map(|f| f.to_string_lossy().to_string())
+                    .collect::<Vec<String>>()
+                    .join(", "),
+            ));
         }
+        return Ok(DotnetSolution::ephemeral(DotnetProject::load_from_path(
+            project_file,
+        )?));
     }
+
+    Err(DotnetBuildpackError::NoDotnetFiles)
 }
 
-impl TryFrom<&DotnetFile> for VersionReq {
-    type Error = DotnetBuildpackError;
+fn parse_sdk_version_req_for(
+    solution: &DotnetSolution,
+) -> Result<VersionReq, DotnetBuildpackError> {
+    let requirements = solution
+        .projects
+        .iter()
+        .map(|project| {
+            log_info(format!(
+                "Detecting .NET version requirement for project {0}",
+                project.path.to_string_lossy()
+            ));
 
-    fn try_from(dotnet_file: &DotnetFile) -> Result<Self, Self::Error> {
-        match dotnet_file {
-            DotnetFile::Solution(path) => {
-                let mut requirements = vec![];
-                for project_path in dotnet_solution::project_file_paths(path)
-                    .map_err(DotnetBuildpackError::ParseDotnetSolutionFile)?
-                {
-                    log_info(format!(
-                        "Detecting .NET version requirement for project {0}",
-                        project_path.to_string_lossy()
-                    ));
-
-                    requirements.push(Self::try_from(&DotnetFile::Project(project_path))?);
-                }
-
-                requirements
-                    // TODO: Add logic to prefer the most recent version requirement, and log if projects target different versions
-                    .first()
-                    .cloned()
-                    .ok_or(DotnetBuildpackError::NoDotnetFiles)
-            }
-            DotnetFile::Project(path) => Self::try_from(
-                DotnetProject::try_from(path.as_path())?
+            VersionReq::try_from(
+                project
                     .target_framework
                     .parse::<TargetFrameworkMoniker>()
                     .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
             )
-            .map_err(DotnetBuildpackError::ParseVersionRequirement),
-        }
-    }
-}
+            .map_err(DotnetBuildpackError::ParseVersionRequirement)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
 
-impl TryFrom<&Path> for DotnetProject {
-    type Error = DotnetBuildpackError;
-
-    fn try_from(path: &Path) -> Result<Self, Self::Error> {
-        fs::read_to_string(path)
-            .map_err(DotnetBuildpackError::ReadProjectFile)?
-            .parse::<DotnetProject>()
-            .map_err(DotnetBuildpackError::ParseDotnetProjectFile)
-    }
+    requirements
+        // TODO: Add logic to prefer the most recent version requirement, and log if projects target different versions
+        .first()
+        .cloned()
+        .ok_or(DotnetBuildpackError::NoDotnetFiles)
 }
 
 #[derive(Serialize, Deserialize)]
@@ -276,12 +268,10 @@ enum DotnetBuildpackError {
     NoDotnetFiles,
     #[error("Multiple .NET project files found in root directory: {0}")]
     MultipleProjectFiles(String),
-    #[error("Error reading project file")]
-    ReadProjectFile(io::Error),
+    #[error("Error reading .NET file")]
+    ReadDotnetFile(io::Error),
     #[error("Error parsing .NET project file")]
     ParseDotnetProjectFile(dotnet_project::ParseError),
-    #[error("Error parsing target framework: {0}")]
-    ParseDotnetSolutionFile(io::Error),
     #[error("Error parsing solution file: {0}")]
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     #[error("Error reading global.json file")]
