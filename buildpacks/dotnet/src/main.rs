@@ -43,12 +43,7 @@ impl Buildpack for DotnetBuildpack {
     type Error = DotnetBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
-        let solution_files = detect::solution_file_paths(&context.app_dir)
-            .map_err(DotnetBuildpackError::BuildpackDetection)?;
-        let project_files = detect::project_file_paths(&context.app_dir)
-            .map_err(DotnetBuildpackError::BuildpackDetection)?;
-
-        if solution_files.is_empty() && project_files.is_empty() {
+        if detect::any_dotnet_files(&context.app_dir)? {
             log_info(
                 "No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.",
             );
