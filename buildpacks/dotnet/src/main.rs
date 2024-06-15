@@ -148,7 +148,7 @@ impl Buildpack for DotnetBuildpack {
         utils::run_command_and_stream_output(
             Command::from(PublishCommand {
                 path: solution.path,
-                configuration: String::from("Release"),
+                configuration: String::from("Release"), // TODO: Make publish configuration configurable
                 runtime_identifier: dotnet_rid::get_runtime_identifier(),
                 verbosity_level: String::from("normal"),
             })
@@ -167,7 +167,7 @@ struct PublishCommand {
     path: PathBuf,
     configuration: String,
     runtime_identifier: RuntimeIdentifier,
-    verbosity_level: String,
+    verbosity_level: String, // TODO: Refactor verbosity level into an enum
 }
 
 impl From<PublishCommand> for Command {
