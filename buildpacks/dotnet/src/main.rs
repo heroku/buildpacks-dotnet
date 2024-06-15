@@ -144,7 +144,7 @@ impl Buildpack for DotnetBuildpack {
                 nuget_cache_layer.path(),
             );
         utils::run_command_and_stream_output(
-            publish_command(&solution)
+            publish_command(&solution, "Release")
                 .current_dir(&context.app_dir)
                 .envs(&command_env.apply(Scope::Build, &Env::from_current())),
         )
@@ -156,7 +156,7 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
-fn publish_command(solution: &DotnetSolution) -> Command {
+fn publish_command(solution: &DotnetSolution, configuration: &str) -> Command {
     let mut command = Command::new("dotnet");
     command.args([
         "publish",
@@ -164,7 +164,7 @@ fn publish_command(solution: &DotnetSolution) -> Command {
         "--verbosity",
         "normal",
         "--configuration",
-        "Release",
+        configuration,
         "--runtime",
         &dotnet_rid::get_runtime_identifier().to_string(),
     ]);
