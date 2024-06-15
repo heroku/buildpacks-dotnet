@@ -63,7 +63,8 @@ impl Buildpack for DotnetBuildpack {
             solution.path.to_string_lossy()
         ));
 
-        let sdk_version_req = if let Some(file) = detect::global_json_file(&context.app_dir) {
+        let sdk_version_requirement = if let Some(file) = detect::global_json_file(&context.app_dir)
+        {
             log_info("Detected global.json file in the root directory");
             VersionReq::try_from(
                 fs::read_to_string(file.as_path())
@@ -78,7 +79,7 @@ impl Buildpack for DotnetBuildpack {
 
         log_info(format!(
             "Inferred SDK version requirement: {}",
-            &sdk_version_req
+            &sdk_version_requirement
         ));
 
         let inventory = include_str!("../inventory.toml")
@@ -93,9 +94,9 @@ impl Buildpack for DotnetBuildpack {
                 consts::ARCH
                     .parse::<Arch>()
                     .expect("Arch should be always parseable, buildpack will not run on unsupported architectures."),
-                &sdk_version_req
+                &sdk_version_requirement
             )
-            .ok_or(DotnetBuildpackError::ResolveSdkVersion(sdk_version_req))?;
+            .ok_or(DotnetBuildpackError::ResolveSdkVersion(sdk_version_requirement))?;
 
         log_info(format!(
             "Resolved .NET SDK version {} ({}-{})",
