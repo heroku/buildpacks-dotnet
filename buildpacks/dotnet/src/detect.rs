@@ -25,7 +25,7 @@ fn get_files_with_extensions(dir: &Path, extensions: &[&str]) -> Result<Vec<Path
 }
 
 /// Returns the path to `global.json` if it exists in the given directory.
-pub(crate) fn find_global_json<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
+pub(crate) fn global_json_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
     let dir = dir.as_ref();
     if !dir.is_dir() {
         return None;
@@ -75,30 +75,30 @@ mod tests {
     }
 
     #[test]
-    fn test_find_global_json_exists() {
+    fn test_global_json_file_exists() {
         let temp_dir = TempDir::new("test_global_json").unwrap();
         let global_json_path = temp_dir.path().join("global.json");
 
         File::create(&global_json_path).unwrap();
 
-        let result = find_global_json(temp_dir.path());
+        let result = global_json_file(temp_dir.path());
         assert_eq!(result, Some(global_json_path));
     }
 
     #[test]
-    fn test_find_global_json_does_not_exist() {
+    fn test_global_json_file_does_not_exist() {
         let temp_dir = TempDir::new("test_dir_not_exists").unwrap();
-        let result = find_global_json(temp_dir.path());
+        let result = global_json_file(temp_dir.path());
         assert_eq!(result, None);
     }
 
     #[test]
-    fn test_find_global_json_is_directory() {
+    fn test_global_json_file_is_directory() {
         let temp_dir = TempDir::new("test_dir_is_directory").unwrap();
         let global_json_path = temp_dir.path().join("global.json");
         fs::create_dir(global_json_path).unwrap();
 
-        let result = find_global_json(temp_dir.path());
+        let result = global_json_file(temp_dir.path());
         assert_eq!(result, None);
     }
 }

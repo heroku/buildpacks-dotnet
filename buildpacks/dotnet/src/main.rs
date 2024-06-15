@@ -67,7 +67,7 @@ impl Buildpack for DotnetBuildpack {
             solution.path.to_string_lossy()
         ));
 
-        let sdk_version_req = if let Some(file) = detect::find_global_json(&context.app_dir) {
+        let sdk_version_req = if let Some(file) = detect::global_json_file(&context.app_dir) {
             log_info("Detected global.json file in the root directory");
             VersionReq::try_from(
                 fs::read_to_string(file.as_path())
