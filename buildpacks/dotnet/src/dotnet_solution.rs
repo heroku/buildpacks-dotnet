@@ -1,10 +1,9 @@
+use crate::dotnet_project::DotnetProject;
+use crate::DotnetBuildpackError;
 use regex::Regex;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::{Path, PathBuf};
-
-use crate::dotnet_project::DotnetProject;
-use crate::DotnetBuildpackError;
 
 pub(crate) struct DotnetSolution {
     pub(crate) path: PathBuf,

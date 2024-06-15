@@ -1,9 +1,8 @@
+use crate::DotnetBuildpackError;
 use roxmltree::Document;
 use std::fs;
 use std::path::{Path, PathBuf};
 use thiserror::Error;
-
-use crate::DotnetBuildpackError;
 
 #[derive(Debug)]
 pub(crate) struct DotnetProject {

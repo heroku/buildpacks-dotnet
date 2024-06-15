@@ -1,6 +1,5 @@
-use std::path::Path;
-
 use libcnb::layer_env::{LayerEnv, ModificationBehavior, Scope};
+use std::path::Path;
 
 /// Helper function to generate a base `LayerEnv` for .NET layers that include the .NET runtime (e.g. SDK and runtime layers).
 pub(crate) fn generate_layer_env(layer_path: &Path, scope: &Scope) -> LayerEnv {

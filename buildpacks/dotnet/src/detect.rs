@@ -1,8 +1,7 @@
+use crate::DotnetBuildpackError;
 use std::fs::{self};
 use std::io;
 use std::path::{Path, PathBuf};
-
-use crate::DotnetBuildpackError;
 
 pub(crate) fn project_file_paths<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
     get_files_with_extensions(dir.as_ref(), &["csproj", "vbproj", "fsproj"])
