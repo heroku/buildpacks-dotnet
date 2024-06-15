@@ -144,17 +144,7 @@ impl Buildpack for DotnetBuildpack {
                 nuget_cache_layer.path(),
             );
         utils::run_command_and_stream_output(
-            Command::new("dotnet")
-                .args([
-                    "publish",
-                    &solution.path.to_string_lossy(),
-                    "--verbosity",
-                    "normal",
-                    "--configuration",
-                    "Release",
-                    "--runtime",
-                    &dotnet_rid::get_runtime_identifier().to_string(),
-                ])
+            publish_command(&solution)
                 .current_dir(&context.app_dir)
                 .envs(&command_env.apply(Scope::Build, &Env::from_current())),
         )
@@ -164,6 +154,21 @@ impl Buildpack for DotnetBuildpack {
 
         BuildResultBuilder::new().build()
     }
+}
+
+fn publish_command(solution: &DotnetSolution) -> Command {
+    let mut command = Command::new("dotnet");
+    command.args([
+        "publish",
+        &solution.path.to_string_lossy(),
+        "--verbosity",
+        "normal",
+        "--configuration",
+        "Release",
+        "--runtime",
+        &dotnet_rid::get_runtime_identifier().to_string(),
+    ]);
+    command
 }
 
 fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuildpackError> {
