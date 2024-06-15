@@ -31,7 +31,7 @@ use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::env::consts;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{fs, io};
 
@@ -144,13 +144,14 @@ impl Buildpack for DotnetBuildpack {
                 "NUGET_PACKAGES",
                 nuget_cache_layer.path(),
             );
+
         utils::run_command_and_stream_output(
-            publish_command(
-                &solution.path,
-                "Release",
-                &dotnet_rid::get_runtime_identifier(),
-                "normal",
-            )
+            Command::from(PublishCommand {
+                path: solution.path,
+                configuration: String::from("Release"),
+                runtime_identifier: dotnet_rid::get_runtime_identifier(),
+                verbosity_level: String::from("normal"),
+            })
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current())),
         )
@@ -162,24 +163,28 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
-fn publish_command(
-    path: &Path,
-    configuration: &str,
-    runtime: &RuntimeIdentifier,
-    verbosity_level: &str,
-) -> Command {
-    let mut command = Command::new("dotnet");
-    command.args([
-        "publish",
-        &path.to_string_lossy(),
-        "--verbosity",
-        verbosity_level,
-        "--configuration",
-        configuration,
-        "--runtime",
-        &runtime.to_string(),
-    ]);
-    command
+struct PublishCommand {
+    path: PathBuf,
+    configuration: String,
+    runtime_identifier: RuntimeIdentifier,
+    verbosity_level: String,
+}
+
+impl From<PublishCommand> for Command {
+    fn from(value: PublishCommand) -> Self {
+        let mut command = Command::new("dotnet");
+        command.args([
+            "publish",
+            &value.path.to_string_lossy(),
+            "--verbosity",
+            &value.verbosity_level,
+            "--configuration",
+            &value.configuration,
+            "--runtime",
+            &value.runtime_identifier.to_string(),
+        ]);
+        command
+    }
 }
 
 fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuildpackError> {
