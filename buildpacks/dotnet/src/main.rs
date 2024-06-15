@@ -176,12 +176,12 @@ impl From<PublishCommand> for Command {
         command.args([
             "publish",
             &value.path.to_string_lossy(),
-            "--verbosity",
-            &value.verbosity_level,
             "--configuration",
             &value.configuration,
             "--runtime",
             &value.runtime_identifier.to_string(),
+            "--verbosity",
+            &value.verbosity_level,
         ]);
         command
     }
