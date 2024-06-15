@@ -190,42 +190,44 @@ impl From<PublishCommand> for Command {
 fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuildpackError> {
     let solution_files =
         detect::dotnet_solution_files(app_dir).expect("function to pass after detection");
-    let project_files =
-        detect::dotnet_project_files(app_dir).expect("function to pass after detection");
-
-    match (solution_files.first(), project_files.first()) {
-        (Some(solution_file), _) => {
-            if solution_files.len() > 1 {
-                log_warning(
-                    "Multiple .NET solution files detected",
-                    format!(
-                        "Found multiple .NET solution files: {}",
-                        solution_files
-                            .iter()
-                            .map(|f| f.to_string_lossy().to_string())
-                            .collect::<Vec<String>>()
-                            .join(", ")
-                    ),
-                );
-            }
-            DotnetSolution::load_from_path(solution_file)
-        }
-        (None, Some(project_file)) => {
-            if project_files.len() > 1 {
-                return Err(DotnetBuildpackError::MultipleProjectFiles(
-                    project_files
+    if let Some(solution_file) = solution_files.first() {
+        if solution_files.len() > 1 {
+            log_warning(
+                "Multiple .NET solution files detected",
+                format!(
+                    "Found multiple .NET solution files: {}",
+                    solution_files
                         .iter()
                         .map(|f| f.to_string_lossy().to_string())
                         .collect::<Vec<String>>()
-                        .join(", "),
-                ));
-            }
-            Ok(DotnetSolution::ephemeral(DotnetProject::load_from_path(
-                project_file,
-            )?))
+                        .join(", ")
+                ),
+            );
         }
-        (None, None) => Err(DotnetBuildpackError::NoDotnetFiles),
+        return DotnetSolution::load_from_path(solution_file);
     }
+
+    let project_files =
+        detect::dotnet_project_files(app_dir).expect("function to pass after detection");
+    if let Some(project_file) = detect::dotnet_project_files(app_dir)
+        .expect("function to pass after detection")
+        .first()
+    {
+        if project_files.len() > 1 {
+            return Err(DotnetBuildpackError::MultipleProjectFiles(
+                project_files
+                    .iter()
+                    .map(|f| f.to_string_lossy().to_string())
+                    .collect::<Vec<String>>()
+                    .join(", "),
+            ));
+        }
+        return Ok(DotnetSolution::ephemeral(DotnetProject::load_from_path(
+            project_file,
+        )?));
+    }
+
+    Err(DotnetBuildpackError::NoDotnetFiles)
 }
 
 fn parse_sdk_version_req_for(
