@@ -9,6 +9,7 @@ mod tfm;
 mod utils;
 
 use crate::dotnet_project::DotnetProject;
+use crate::dotnet_rid::RuntimeIdentifier;
 use crate::dotnet_solution::DotnetSolution;
 use crate::global_json::GlobalJson;
 use crate::layers::sdk::SdkLayerError;
@@ -144,7 +145,7 @@ impl Buildpack for DotnetBuildpack {
                 nuget_cache_layer.path(),
             );
         utils::run_command_and_stream_output(
-            publish_command(&solution, "Release")
+            publish_command(&solution, "Release", &dotnet_rid::get_runtime_identifier())
                 .current_dir(&context.app_dir)
                 .envs(&command_env.apply(Scope::Build, &Env::from_current())),
         )
@@ -156,7 +157,11 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
-fn publish_command(solution: &DotnetSolution, configuration: &str) -> Command {
+fn publish_command(
+    solution: &DotnetSolution,
+    configuration: &str,
+    runtime: &RuntimeIdentifier,
+) -> Command {
     let mut command = Command::new("dotnet");
     command.args([
         "publish",
@@ -166,7 +171,7 @@ fn publish_command(solution: &DotnetSolution, configuration: &str) -> Command {
         "--configuration",
         configuration,
         "--runtime",
-        &dotnet_rid::get_runtime_identifier().to_string(),
+        &runtime.to_string(),
     ]);
     command
 }
