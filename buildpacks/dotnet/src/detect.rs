@@ -2,11 +2,11 @@ use std::fs::{self};
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub(crate) fn dotnet_project_files<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
+pub(crate) fn project_file_paths<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
     get_files_with_extensions(dir.as_ref(), &["csproj", "vbproj", "fsproj"])
 }
 
-pub(crate) fn dotnet_solution_files<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
+pub(crate) fn solution_file_paths<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
     get_files_with_extensions(dir.as_ref(), &["sln"])
 }
 
@@ -46,7 +46,7 @@ mod tests {
     use tempdir::TempDir;
 
     #[test]
-    fn test_find_dotnet_project_files() {
+    fn test_find_project_files() {
         let temp_dir = TempDir::new("dotnet-test").unwrap();
         let base_path = temp_dir.path();
 
@@ -55,13 +55,13 @@ mod tests {
         File::create(base_path.join("test3.fsproj")).unwrap();
         File::create(base_path.join("README.md")).unwrap();
 
-        let project_files = dotnet_project_files(&temp_dir).unwrap();
+        let project_files = project_file_paths(&temp_dir).unwrap();
 
         assert_eq!(3, project_files.len());
     }
 
     #[test]
-    fn test_find_dotnet_solution_files() {
+    fn test_find_solution_files() {
         let temp_dir = TempDir::new("dotnet-test").unwrap();
         let base_path = temp_dir.path();
 
@@ -69,7 +69,7 @@ mod tests {
         File::create(base_path.join("test2.sln")).unwrap();
         File::create(base_path.join("README.md")).unwrap();
 
-        let solution_files = dotnet_solution_files(&temp_dir).unwrap();
+        let solution_files = solution_file_paths(&temp_dir).unwrap();
 
         assert_eq!(2, solution_files.len());
     }

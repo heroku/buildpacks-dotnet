@@ -43,9 +43,9 @@ impl Buildpack for DotnetBuildpack {
     type Error = DotnetBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
-        let solution_files = detect::dotnet_solution_files(&context.app_dir)
+        let solution_files = detect::solution_file_paths(&context.app_dir)
             .map_err(DotnetBuildpackError::BuildpackDetection)?;
-        let project_files = detect::dotnet_project_files(&context.app_dir)
+        let project_files = detect::project_file_paths(&context.app_dir)
             .map_err(DotnetBuildpackError::BuildpackDetection)?;
 
         if solution_files.is_empty() && project_files.is_empty() {
@@ -188,15 +188,15 @@ impl From<PublishCommand> for Command {
 }
 
 fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuildpackError> {
-    let solution_files =
-        detect::dotnet_solution_files(app_dir).expect("function to pass after detection");
-    if let Some(solution_file) = solution_files.first() {
-        if solution_files.len() > 1 {
+    let solution_file_paths =
+        detect::solution_file_paths(app_dir).expect("function to pass after detection");
+    if let Some(solution_file) = solution_file_paths.first() {
+        if solution_file_paths.len() > 1 {
             log_warning(
                 "Multiple .NET solution files detected",
                 format!(
                     "Found multiple .NET solution files: {}",
-                    solution_files
+                    solution_file_paths
                         .iter()
                         .map(|f| f.to_string_lossy().to_string())
                         .collect::<Vec<String>>()
@@ -207,15 +207,15 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
         return DotnetSolution::load_from_path(solution_file);
     }
 
-    let project_files =
-        detect::dotnet_project_files(app_dir).expect("function to pass after detection");
-    if let Some(project_file) = detect::dotnet_project_files(app_dir)
+    let project_file_paths =
+        detect::project_file_paths(app_dir).expect("function to pass after detection");
+    if let Some(project_file) = detect::project_file_paths(app_dir)
         .expect("function to pass after detection")
         .first()
     {
-        if project_files.len() > 1 {
+        if project_file_paths.len() > 1 {
             return Err(DotnetBuildpackError::MultipleProjectFiles(
-                project_files
+                project_file_paths
                     .iter()
                     .map(|f| f.to_string_lossy().to_string())
                     .collect::<Vec<String>>()
