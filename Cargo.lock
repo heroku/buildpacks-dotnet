@@ -659,7 +659,7 @@ checksum = "97b3888a4aecf77e811145cadf6eef5901f4782c53886191b2f693f24761847c"
 [[package]]
 name = "libcnb"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#f7bc0f1b540f5f3253c1f411a3c57bf561bd9129"
 dependencies = [
  "libcnb-common",
  "libcnb-data",
@@ -672,7 +672,7 @@ dependencies = [
 [[package]]
 name = "libcnb-common"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#f7bc0f1b540f5f3253c1f411a3c57bf561bd9129"
 dependencies = [
  "serde",
  "thiserror",
@@ -682,7 +682,7 @@ dependencies = [
 [[package]]
 name = "libcnb-data"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#f7bc0f1b540f5f3253c1f411a3c57bf561bd9129"
 dependencies = [
  "fancy-regex",
  "libcnb-proc-macros",
@@ -695,7 +695,7 @@ dependencies = [
 [[package]]
 name = "libcnb-package"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#f7bc0f1b540f5f3253c1f411a3c57bf561bd9129"
 dependencies = [
  "cargo_metadata",
  "ignore",
@@ -711,7 +711,7 @@ dependencies = [
 [[package]]
 name = "libcnb-proc-macros"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#f7bc0f1b540f5f3253c1f411a3c57bf561bd9129"
 dependencies = [
  "cargo_metadata",
  "fancy-regex",
@@ -722,7 +722,7 @@ dependencies = [
 [[package]]
 name = "libcnb-test"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#f7bc0f1b540f5f3253c1f411a3c57bf561bd9129"
 dependencies = [
  "fastrand",
  "fs_extra",
@@ -737,7 +737,7 @@ dependencies = [
 [[package]]
 name = "libherokubuildpack"
 version = "0.21.0"
-source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#21ad86b869c4b541a2a122f9bec962341aff52ff"
+source = "git+https://github.com/heroku/libcnb.rs?branch=malax/layer-api#f7bc0f1b540f5f3253c1f411a3c57bf561bd9129"
 dependencies = [
  "crossbeam-utils",
  "flate2",
