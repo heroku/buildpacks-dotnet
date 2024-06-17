@@ -37,8 +37,8 @@ impl DotnetProject {
 
 #[derive(Debug)]
 struct DotnetProjectMetadata {
-    sdk_id: String,
     target_framework: String,
+    sdk_id: Option<String>,
     output_type: Option<String>,
     assembly_name: Option<String>,
 }
@@ -62,7 +62,7 @@ pub(crate) enum LoadProjectError {
 
 fn parse_dotnet_project_metadata(document: &Document) -> DotnetProjectMetadata {
     let mut metadata = DotnetProjectMetadata {
-        sdk_id: String::new(),
+        sdk_id: None,
         target_framework: String::new(),
         output_type: None,
         assembly_name: None,
@@ -72,14 +72,14 @@ fn parse_dotnet_project_metadata(document: &Document) -> DotnetProjectMetadata {
         match node.tag_name().name() {
             "Project" => {
                 if let Some(sdk) = node.attribute("Sdk") {
-                    metadata.sdk_id = sdk.to_string();
+                    metadata.sdk_id = Some(sdk.to_string());
                 }
             }
             "Sdk" => {
                 if let Some(name) = node.attribute("Name") {
-                    metadata.sdk_id = name.to_string();
+                    metadata.sdk_id = Some(name.to_string());
                 } else {
-                    metadata.sdk_id = node.text().unwrap_or("").to_string();
+                    metadata.sdk_id = node.text().map(ToString::to_string);
                 }
             }
             "TargetFramework" => {
@@ -102,14 +102,17 @@ fn parse_dotnet_project_metadata(document: &Document) -> DotnetProjectMetadata {
 }
 
 fn infer_project_type(metadata: &DotnetProjectMetadata) -> ProjectType {
-    match metadata.sdk_id.as_str() {
-        "Microsoft.NET.Sdk" => match metadata.output_type.as_deref() {
-            Some("Exe") => ProjectType::ConsoleApplication,
+    if let Some(sdk_id) = &metadata.sdk_id {
+        return match sdk_id.as_str() {
+            "Microsoft.NET.Sdk" => match metadata.output_type.as_deref() {
+                Some("Exe") => ProjectType::ConsoleApplication,
+                _ => ProjectType::Unknown,
+            },
+            "Microsoft.NET.Sdk.Web" | "Microsoft.NET.Sdk.Razor" => ProjectType::WebApplication,
             _ => ProjectType::Unknown,
-        },
-        "Microsoft.NET.Sdk.Web" | "Microsoft.NET.Sdk.Razor" => ProjectType::WebApplication,
-        _ => ProjectType::Unknown,
+        };
     }
+    ProjectType::Unknown
 }
 
 #[cfg(test)]
@@ -118,13 +121,13 @@ mod tests {
 
     fn assert_dotnet_project_metadata(
         project_xml: &str,
-        expected_sdk_id: &str,
+        expected_sdk_id: Option<&str>,
         expected_target_framework: &str,
         expected_output_type: Option<&str>,
         expected_assembly_name: Option<&str>,
     ) {
         let metadata = parse_dotnet_project_metadata(&Document::parse(project_xml).unwrap());
-        assert_eq!(metadata.sdk_id, expected_sdk_id);
+        assert_eq!(metadata.sdk_id, expected_sdk_id.map(ToString::to_string));
         assert_eq!(metadata.target_framework, expected_target_framework);
         assert_eq!(metadata.output_type, expected_output_type.map(String::from));
         assert_eq!(
@@ -146,7 +149,7 @@ mod tests {
 ";
         assert_dotnet_project_metadata(
             project_xml,
-            "Microsoft.NET.Sdk",
+            Some("Microsoft.NET.Sdk"),
             "net6.0",
             Some("Exe"),
             None,
@@ -162,7 +165,13 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_dotnet_project_metadata(project_xml, "Microsoft.NET.Sdk.Web", "net6.0", None, None);
+        assert_dotnet_project_metadata(
+            project_xml,
+            Some("Microsoft.NET.Sdk.Web"),
+            "net6.0",
+            None,
+            None,
+        );
     }
 
     #[test]
@@ -177,7 +186,7 @@ mod tests {
 "#;
         assert_dotnet_project_metadata(
             project_xml,
-            "Microsoft.NET.Sdk.Razor",
+            Some("Microsoft.NET.Sdk.Razor"),
             "net6.0",
             None,
             None,
@@ -196,7 +205,7 @@ mod tests {
 "#;
         assert_dotnet_project_metadata(
             project_xml,
-            "Microsoft.NET.Sdk.BlazorWebAssembly",
+            Some("Microsoft.NET.Sdk.BlazorWebAssembly"),
             "net6.0",
             None,
             None,
@@ -215,7 +224,7 @@ mod tests {
 "#;
         assert_dotnet_project_metadata(
             project_xml,
-            "Microsoft.NET.Sdk.Worker",
+            Some("Microsoft.NET.Sdk.Worker"),
             "net6.0",
             None,
             None,
@@ -231,7 +240,13 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_dotnet_project_metadata(project_xml, "Microsoft.NET.Sdk", "net6.0", None, None);
+        assert_dotnet_project_metadata(
+            project_xml,
+            Some("Microsoft.NET.Sdk"),
+            "net6.0",
+            None,
+            None,
+        );
     }
 
     #[test]
@@ -246,7 +261,7 @@ mod tests {
 "#;
         assert_dotnet_project_metadata(
             project_xml,
-            "Microsoft.NET.Sdk",
+            Some("Microsoft.NET.Sdk"),
             "net6.0",
             None,
             Some("MyAssembly"),
@@ -263,7 +278,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        assert_dotnet_project_metadata(project_xml, "", "net6.0", Some("Library"), None);
+        assert_dotnet_project_metadata(project_xml, None, "net6.0", Some("Library"), None);
     }
 
     #[test]
@@ -280,7 +295,7 @@ mod tests {
 "#;
         assert_dotnet_project_metadata(
             project_xml,
-            "Microsoft.NET.Sdk",
+            Some("Microsoft.NET.Sdk"),
             "net6.0",
             Some("Library"),
             None,
@@ -290,7 +305,7 @@ mod tests {
     #[test]
     fn test_infer_project_type_console_application() {
         let metadata = DotnetProjectMetadata {
-            sdk_id: "Microsoft.NET.Sdk".to_string(),
+            sdk_id: Some("Microsoft.NET.Sdk".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: Some("Exe".to_string()),
             assembly_name: None,
@@ -304,7 +319,7 @@ mod tests {
     #[test]
     fn test_infer_project_type_web_application() {
         let metadata = DotnetProjectMetadata {
-            sdk_id: "Microsoft.NET.Sdk.Web".to_string(),
+            sdk_id: Some("Microsoft.NET.Sdk.Web".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: None,
             assembly_name: None,
@@ -312,7 +327,7 @@ mod tests {
         assert_eq!(infer_project_type(&metadata), ProjectType::WebApplication);
 
         let metadata = DotnetProjectMetadata {
-            sdk_id: "Microsoft.NET.Sdk.Razor".to_string(),
+            sdk_id: Some("Microsoft.NET.Sdk.Razor".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: None,
             assembly_name: None,
@@ -323,7 +338,7 @@ mod tests {
     #[test]
     fn test_infer_project_type_unknown() {
         let metadata = DotnetProjectMetadata {
-            sdk_id: "Unknown.Sdk".to_string(),
+            sdk_id: Some("Unknown.Sdk".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: None,
             assembly_name: None,
