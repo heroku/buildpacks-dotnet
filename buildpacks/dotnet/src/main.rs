@@ -218,9 +218,10 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
                     .join(", "),
             ));
         }
-        return Ok(DotnetSolution::ephemeral(DotnetProject::load_from_path(
-            project_file,
-        )?));
+        return Ok(DotnetSolution::ephemeral(
+            DotnetProject::load_from_path(project_file)
+                .map_err(DotnetBuildpackError::LoadDotnetProjectFile)?,
+        ));
     }
 
     Err(DotnetBuildpackError::NoDotnetFiles)
@@ -268,10 +269,10 @@ enum DotnetBuildpackError {
     NoDotnetFiles,
     #[error("Multiple .NET project files found in root directory: {0}")]
     MultipleProjectFiles(String),
-    #[error("Error reading .NET file")]
-    ReadDotnetFile(io::Error),
-    #[error("Error parsing .NET project file")]
-    ParseDotnetProjectFile(dotnet_project::ParseError),
+    #[error("Error reading solution file")]
+    ReadSolutionFile(io::Error),
+    #[error("Error loading .NET project file")]
+    LoadDotnetProjectFile(dotnet_project::LoadProjectError),
     #[error("Error parsing solution file: {0}")]
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     #[error("Error reading global.json file")]

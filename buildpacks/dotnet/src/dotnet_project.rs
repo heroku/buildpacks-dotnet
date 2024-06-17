@@ -1,7 +1,6 @@
-use crate::DotnetBuildpackError;
 use roxmltree::Document;
-use std::fs;
 use std::path::{Path, PathBuf};
+use std::{fs, io};
 use thiserror::Error;
 
 #[derive(Debug)]
@@ -15,10 +14,15 @@ pub(crate) struct DotnetProject {
 }
 
 impl DotnetProject {
-    pub(crate) fn load_from_path(path: &Path) -> Result<Self, DotnetBuildpackError> {
-        let content = fs::read_to_string(path).map_err(DotnetBuildpackError::ReadDotnetFile)?;
-        let metadata = parse_dotnet_project_metadata(&content)
-            .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
+    pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadProjectError> {
+        let content = fs::read_to_string(path).map_err(LoadProjectError::ReadProjectFile)?;
+        let metadata = parse_dotnet_project_metadata(
+            &Document::parse(&content).map_err(LoadProjectError::XmlParseError)?,
+        );
+
+        if metadata.target_framework.is_empty() {
+            return Err(LoadProjectError::MissingTargetFramework);
+        }
 
         let project_type = infer_project_type(&metadata);
 
@@ -33,8 +37,8 @@ impl DotnetProject {
 
 #[derive(Debug)]
 struct DotnetProjectMetadata {
-    sdk_id: String,
     target_framework: String,
+    sdk_id: Option<String>,
     output_type: Option<String>,
     assembly_name: Option<String>,
 }
@@ -47,72 +51,68 @@ pub(crate) enum ProjectType {
 }
 
 #[derive(Error, Debug)]
-pub(crate) enum ParseError {
+pub(crate) enum LoadProjectError {
+    #[error("Error reading project file")]
+    ReadProjectFile(io::Error),
     #[error("Error parsing XML")]
     XmlParseError(#[from] roxmltree::Error),
     #[error("Missing TargetFramework")]
     MissingTargetFramework,
 }
 
-fn parse_dotnet_project_metadata(xml_content: &str) -> Result<DotnetProjectMetadata, ParseError> {
-    let doc = Document::parse(xml_content)?;
+fn parse_dotnet_project_metadata(document: &Document) -> DotnetProjectMetadata {
+    let mut metadata = DotnetProjectMetadata {
+        sdk_id: None,
+        target_framework: String::new(),
+        output_type: None,
+        assembly_name: None,
+    };
 
-    let mut sdk_id = String::new();
-    let mut target_framework = String::new();
-    let mut output_type = None;
-    let mut assembly_name = None;
-
-    for node in doc.descendants() {
+    for node in document.descendants() {
         match node.tag_name().name() {
             "Project" => {
                 if let Some(sdk) = node.attribute("Sdk") {
-                    sdk_id = sdk.to_string();
+                    metadata.sdk_id = Some(sdk.to_string());
                 }
             }
             "Sdk" => {
                 if let Some(name) = node.attribute("Name") {
-                    sdk_id = name.to_string();
+                    metadata.sdk_id = Some(name.to_string());
                 } else {
-                    sdk_id = node.text().unwrap_or("").to_string();
+                    metadata.sdk_id = node.text().map(ToString::to_string);
                 }
             }
             "TargetFramework" => {
-                target_framework = node.text().unwrap_or("").to_string();
+                metadata.target_framework = node.text().unwrap_or("").to_string();
             }
             "OutputType" => {
-                output_type = node.text().map(ToString::to_string);
+                metadata.output_type = node.text().map(ToString::to_string);
             }
             "AssemblyName" => {
                 if let Some(text) = node.text() {
                     if !text.is_empty() {
-                        assembly_name = Some(text.to_string());
+                        metadata.assembly_name = Some(text.to_string());
                     }
                 }
             }
             _ => (),
         }
     }
-    if target_framework.is_empty() {
-        return Err(ParseError::MissingTargetFramework);
-    }
-
-    Ok(DotnetProjectMetadata {
-        sdk_id,
-        target_framework,
-        output_type,
-        assembly_name,
-    })
+    metadata
 }
 
 fn infer_project_type(metadata: &DotnetProjectMetadata) -> ProjectType {
-    match metadata.sdk_id.as_str() {
-        "Microsoft.NET.Sdk" => match metadata.output_type.as_deref() {
-            Some("Exe") => ProjectType::ConsoleApplication,
+    if let Some(sdk_id) = &metadata.sdk_id {
+        return match sdk_id.as_str() {
+            "Microsoft.NET.Sdk" => match metadata.output_type.as_deref() {
+                Some("Exe") => ProjectType::ConsoleApplication,
+                _ => ProjectType::Unknown,
+            },
+            "Microsoft.NET.Sdk.Web" | "Microsoft.NET.Sdk.Razor" => ProjectType::WebApplication,
             _ => ProjectType::Unknown,
-        },
-        "Microsoft.NET.Sdk.Web" | "Microsoft.NET.Sdk.Razor" => ProjectType::WebApplication,
-        _ => ProjectType::Unknown,
+        };
     }
+    ProjectType::Unknown
 }
 
 #[cfg(test)]
@@ -121,13 +121,13 @@ mod tests {
 
     fn assert_dotnet_project_metadata(
         project_xml: &str,
-        expected_sdk_id: &str,
+        expected_sdk_id: Option<&str>,
         expected_target_framework: &str,
         expected_output_type: Option<&str>,
         expected_assembly_name: Option<&str>,
     ) {
-        let metadata = parse_dotnet_project_metadata(project_xml).unwrap();
-        assert_eq!(metadata.sdk_id, expected_sdk_id);
+        let metadata = parse_dotnet_project_metadata(&Document::parse(project_xml).unwrap());
+        assert_eq!(metadata.sdk_id, expected_sdk_id.map(ToString::to_string));
         assert_eq!(metadata.target_framework, expected_target_framework);
         assert_eq!(metadata.output_type, expected_output_type.map(String::from));
         assert_eq!(
@@ -149,7 +149,7 @@ mod tests {
 ";
         assert_dotnet_project_metadata(
             project_xml,
-            "Microsoft.NET.Sdk",
+            Some("Microsoft.NET.Sdk"),
             "net6.0",
             Some("Exe"),
             None,
@@ -165,7 +165,13 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_dotnet_project_metadata(project_xml, "Microsoft.NET.Sdk.Web", "net6.0", None, None);
+        assert_dotnet_project_metadata(
+            project_xml,
+            Some("Microsoft.NET.Sdk.Web"),
+            "net6.0",
+            None,
+            None,
+        );
     }
 
     #[test]
@@ -180,7 +186,7 @@ mod tests {
 "#;
         assert_dotnet_project_metadata(
             project_xml,
-            "Microsoft.NET.Sdk.Razor",
+            Some("Microsoft.NET.Sdk.Razor"),
             "net6.0",
             None,
             None,
@@ -199,7 +205,7 @@ mod tests {
 "#;
         assert_dotnet_project_metadata(
             project_xml,
-            "Microsoft.NET.Sdk.BlazorWebAssembly",
+            Some("Microsoft.NET.Sdk.BlazorWebAssembly"),
             "net6.0",
             None,
             None,
@@ -218,7 +224,7 @@ mod tests {
 "#;
         assert_dotnet_project_metadata(
             project_xml,
-            "Microsoft.NET.Sdk.Worker",
+            Some("Microsoft.NET.Sdk.Worker"),
             "net6.0",
             None,
             None,
@@ -234,7 +240,13 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_dotnet_project_metadata(project_xml, "Microsoft.NET.Sdk", "net6.0", None, None);
+        assert_dotnet_project_metadata(
+            project_xml,
+            Some("Microsoft.NET.Sdk"),
+            "net6.0",
+            None,
+            None,
+        );
     }
 
     #[test]
@@ -249,7 +261,7 @@ mod tests {
 "#;
         assert_dotnet_project_metadata(
             project_xml,
-            "Microsoft.NET.Sdk",
+            Some("Microsoft.NET.Sdk"),
             "net6.0",
             None,
             Some("MyAssembly"),
@@ -266,20 +278,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        assert_dotnet_project_metadata(project_xml, "", "net6.0", Some("Library"), None);
-    }
-
-    #[test]
-    fn test_parse_project_with_missing_target_framework() {
-        let project_xml = r#"
-<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <OutputType>Library</OutputType>
-    </PropertyGroup>
-</Project>
-"#;
-        let result = parse_dotnet_project_metadata(project_xml);
-        assert!(matches!(result, Err(ParseError::MissingTargetFramework)));
+        assert_dotnet_project_metadata(project_xml, None, "net6.0", Some("Library"), None);
     }
 
     #[test]
@@ -296,7 +295,7 @@ mod tests {
 "#;
         assert_dotnet_project_metadata(
             project_xml,
-            "Microsoft.NET.Sdk",
+            Some("Microsoft.NET.Sdk"),
             "net6.0",
             Some("Library"),
             None,
@@ -306,7 +305,7 @@ mod tests {
     #[test]
     fn test_infer_project_type_console_application() {
         let metadata = DotnetProjectMetadata {
-            sdk_id: "Microsoft.NET.Sdk".to_string(),
+            sdk_id: Some("Microsoft.NET.Sdk".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: Some("Exe".to_string()),
             assembly_name: None,
@@ -320,7 +319,7 @@ mod tests {
     #[test]
     fn test_infer_project_type_web_application() {
         let metadata = DotnetProjectMetadata {
-            sdk_id: "Microsoft.NET.Sdk.Web".to_string(),
+            sdk_id: Some("Microsoft.NET.Sdk.Web".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: None,
             assembly_name: None,
@@ -328,7 +327,7 @@ mod tests {
         assert_eq!(infer_project_type(&metadata), ProjectType::WebApplication);
 
         let metadata = DotnetProjectMetadata {
-            sdk_id: "Microsoft.NET.Sdk.Razor".to_string(),
+            sdk_id: Some("Microsoft.NET.Sdk.Razor".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: None,
             assembly_name: None,
@@ -339,7 +338,7 @@ mod tests {
     #[test]
     fn test_infer_project_type_unknown() {
         let metadata = DotnetProjectMetadata {
-            sdk_id: "Unknown.Sdk".to_string(),
+            sdk_id: Some("Unknown.Sdk".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: None,
             assembly_name: None,
