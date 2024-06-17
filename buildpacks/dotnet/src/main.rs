@@ -110,10 +110,7 @@ impl Buildpack for DotnetBuildpack {
             CachedLayerDefinition {
                 build: false,
                 launch: false,
-                invalid_metadata_action: &|_| {
-                    log_info("Invalid NuGet package cache");
-                    InvalidMetadataAction::DeleteLayer
-                },
+                invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
                 restored_layer_action: &|_metadata: &NugetCacheLayerMetadata, _path| {
                     InspectRestoredAction::KeepLayer
                 },
