@@ -3,7 +3,8 @@ use inventory::artifact::Artifact;
 use inventory::checksum::Checksum;
 use libcnb::data::layer_name;
 use libcnb::layer::{
-    CachedLayerDefinition, InspectRestoredAction, InvalidMetadataAction, LayerRef, LayerState,
+    CachedLayerDefinition, EmptyLayerCause, InspectRestoredAction, InvalidMetadataAction, LayerRef,
+    LayerState,
 };
 use libcnb::layer_env::Scope;
 use libherokubuildpack::download::download_file;
@@ -21,10 +22,15 @@ pub(crate) struct SdkLayerMetadata {
     artifact: Artifact<Version, Sha512, Option<()>>,
 }
 
+pub(crate) enum CustomCause {
+    Ok,
+    DifferentSdkArtifact(Artifact<Version, Sha512, Option<()>>),
+}
+
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
     artifact: &Artifact<Version, Sha512, Option<()>>,
-) -> Result<LayerRef<DotnetBuildpack, (), ()>, libcnb::Error<DotnetBuildpackError>> {
+) -> Result<LayerRef<DotnetBuildpack, (), CustomCause>, libcnb::Error<DotnetBuildpackError>> {
     let sdk_layer = context.cached_layer(
         layer_name!("sdk"),
         CachedLayerDefinition {
@@ -33,13 +39,12 @@ pub(crate) fn handle(
             invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
             restored_layer_action: &|metadata: &SdkLayerMetadata, _path| {
                 if metadata.artifact == *artifact {
-                    InspectRestoredAction::KeepLayer
+                    (InspectRestoredAction::KeepLayer, CustomCause::Ok)
                 } else {
-                    log_info(format!(
-                        "Deleting cached .NET SDK version: {}",
-                        metadata.artifact.version
-                    ));
-                    InspectRestoredAction::DeleteLayer
+                    (
+                        InspectRestoredAction::DeleteLayer,
+                        CustomCause::DifferentSdkArtifact(metadata.artifact.clone()),
+                    )
                 }
             },
         },
@@ -52,7 +57,17 @@ pub(crate) fn handle(
                 artifact.version
             ));
         }
-        LayerState::Empty { .. } => {
+        LayerState::Empty { ref cause } => {
+            if let EmptyLayerCause::Inspect {
+                cause: CustomCause::DifferentSdkArtifact(old_artifact),
+            } = cause
+            {
+                log_info(format!(
+                    "Deleting cached .NET SDK version: {}",
+                    old_artifact.version
+                ));
+            }
+
             sdk_layer.write_metadata(SdkLayerMetadata {
                 artifact: artifact.clone(),
             })?;
