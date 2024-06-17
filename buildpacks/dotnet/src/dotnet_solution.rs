@@ -15,9 +15,12 @@ impl DotnetSolution {
         Ok(Self {
             path: path.to_path_buf(),
             projects: project_file_paths(path)
-                .map_err(DotnetBuildpackError::ReadDotnetFile)?
+                .map_err(DotnetBuildpackError::ReadSolutionFile)?
                 .into_iter()
-                .map(|project_path| DotnetProject::load_from_path(&project_path))
+                .map(|project_path| {
+                    DotnetProject::load_from_path(&project_path)
+                        .map_err(DotnetBuildpackError::LoadDotnetProjectFile)
+                })
                 .collect::<Result<Vec<_>, _>>()?,
         })
     }

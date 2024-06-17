@@ -1,7 +1,6 @@
-use crate::DotnetBuildpackError;
 use roxmltree::Document;
-use std::fs;
 use std::path::{Path, PathBuf};
+use std::{fs, io};
 use thiserror::Error;
 
 #[derive(Debug)]
@@ -15,10 +14,15 @@ pub(crate) struct DotnetProject {
 }
 
 impl DotnetProject {
-    pub(crate) fn load_from_path(path: &Path) -> Result<Self, DotnetBuildpackError> {
-        let content = fs::read_to_string(path).map_err(DotnetBuildpackError::ReadDotnetFile)?;
-        let metadata = parse_dotnet_project_metadata(&content)
-            .map_err(DotnetBuildpackError::ParseDotnetProjectFile)?;
+    pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadProjectError> {
+        let content = fs::read_to_string(path).map_err(LoadProjectError::ReadProjectFile)?;
+        let metadata = parse_dotnet_project_metadata(
+            &Document::parse(&content).map_err(LoadProjectError::XmlParseError)?,
+        );
+
+        if metadata.target_framework.is_empty() {
+            return Err(LoadProjectError::MissingTargetFramework);
+        }
 
         let project_type = infer_project_type(&metadata);
 
@@ -47,22 +51,22 @@ pub(crate) enum ProjectType {
 }
 
 #[derive(Error, Debug)]
-pub(crate) enum ParseError {
+pub(crate) enum LoadProjectError {
+    #[error("Error reading project file")]
+    ReadProjectFile(io::Error),
     #[error("Error parsing XML")]
     XmlParseError(#[from] roxmltree::Error),
     #[error("Missing TargetFramework")]
     MissingTargetFramework,
 }
 
-fn parse_dotnet_project_metadata(xml_content: &str) -> Result<DotnetProjectMetadata, ParseError> {
-    let doc = Document::parse(xml_content)?;
-
+fn parse_dotnet_project_metadata(document: &Document) -> DotnetProjectMetadata {
     let mut sdk_id = String::new();
     let mut target_framework = String::new();
     let mut output_type = None;
     let mut assembly_name = None;
 
-    for node in doc.descendants() {
+    for node in document.descendants() {
         match node.tag_name().name() {
             "Project" => {
                 if let Some(sdk) = node.attribute("Sdk") {
@@ -92,16 +96,13 @@ fn parse_dotnet_project_metadata(xml_content: &str) -> Result<DotnetProjectMetad
             _ => (),
         }
     }
-    if target_framework.is_empty() {
-        return Err(ParseError::MissingTargetFramework);
-    }
 
-    Ok(DotnetProjectMetadata {
+    DotnetProjectMetadata {
         sdk_id,
         target_framework,
         output_type,
         assembly_name,
-    })
+    }
 }
 
 fn infer_project_type(metadata: &DotnetProjectMetadata) -> ProjectType {
@@ -126,7 +127,7 @@ mod tests {
         expected_output_type: Option<&str>,
         expected_assembly_name: Option<&str>,
     ) {
-        let metadata = parse_dotnet_project_metadata(project_xml).unwrap();
+        let metadata = parse_dotnet_project_metadata(&Document::parse(project_xml).unwrap());
         assert_eq!(metadata.sdk_id, expected_sdk_id);
         assert_eq!(metadata.target_framework, expected_target_framework);
         assert_eq!(metadata.output_type, expected_output_type.map(String::from));
@@ -267,19 +268,6 @@ mod tests {
 </Project>
 ";
         assert_dotnet_project_metadata(project_xml, "", "net6.0", Some("Library"), None);
-    }
-
-    #[test]
-    fn test_parse_project_with_missing_target_framework() {
-        let project_xml = r#"
-<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <OutputType>Library</OutputType>
-    </PropertyGroup>
-</Project>
-"#;
-        let result = parse_dotnet_project_metadata(project_xml);
-        assert!(matches!(result, Err(ParseError::MissingTargetFramework)));
     }
 
     #[test]
