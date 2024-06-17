@@ -30,8 +30,8 @@ pub(crate) fn handle(
         CachedLayerDefinition {
             build: true,
             launch: false,
-            invalid_metadata: &|_| InvalidMetadataAction::DeleteLayer,
-            inspect_restored: &|metadata: &SdkLayerMetadata, _path| {
+            invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
+            restored_layer_action: &|metadata: &SdkLayerMetadata, _path| {
                 if metadata.artifact == *artifact {
                     InspectRestoredAction::KeepLayer
                 } else {
@@ -53,7 +53,7 @@ pub(crate) fn handle(
             ));
         }
         LayerState::Empty { .. } => {
-            sdk_layer.replace_metadata(SdkLayerMetadata {
+            sdk_layer.write_metadata(SdkLayerMetadata {
                 artifact: artifact.clone(),
             })?;
 
@@ -75,7 +75,7 @@ pub(crate) fn handle(
             )
             .map_err(SdkLayerError::UntarSdk)?;
 
-            sdk_layer.replace_env(dotnet_layer_env::generate_layer_env(
+            sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
                 sdk_layer.path().as_path(),
                 &Scope::Build,
             ))?;
