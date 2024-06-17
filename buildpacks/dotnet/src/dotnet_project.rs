@@ -61,48 +61,44 @@ pub(crate) enum LoadProjectError {
 }
 
 fn parse_dotnet_project_metadata(document: &Document) -> DotnetProjectMetadata {
-    let mut sdk_id = String::new();
-    let mut target_framework = String::new();
-    let mut output_type = None;
-    let mut assembly_name = None;
+    let mut metadata = DotnetProjectMetadata {
+        sdk_id: String::new(),
+        target_framework: String::new(),
+        output_type: None,
+        assembly_name: None,
+    };
 
     for node in document.descendants() {
         match node.tag_name().name() {
             "Project" => {
                 if let Some(sdk) = node.attribute("Sdk") {
-                    sdk_id = sdk.to_string();
+                    metadata.sdk_id = sdk.to_string();
                 }
             }
             "Sdk" => {
                 if let Some(name) = node.attribute("Name") {
-                    sdk_id = name.to_string();
+                    metadata.sdk_id = name.to_string();
                 } else {
-                    sdk_id = node.text().unwrap_or("").to_string();
+                    metadata.sdk_id = node.text().unwrap_or("").to_string();
                 }
             }
             "TargetFramework" => {
-                target_framework = node.text().unwrap_or("").to_string();
+                metadata.target_framework = node.text().unwrap_or("").to_string();
             }
             "OutputType" => {
-                output_type = node.text().map(ToString::to_string);
+                metadata.output_type = node.text().map(ToString::to_string);
             }
             "AssemblyName" => {
                 if let Some(text) = node.text() {
                     if !text.is_empty() {
-                        assembly_name = Some(text.to_string());
+                        metadata.assembly_name = Some(text.to_string());
                     }
                 }
             }
             _ => (),
         }
     }
-
-    DotnetProjectMetadata {
-        sdk_id,
-        target_framework,
-        output_type,
-        assembly_name,
-    }
+    metadata
 }
 
 fn infer_project_type(metadata: &DotnetProjectMetadata) -> ProjectType {
