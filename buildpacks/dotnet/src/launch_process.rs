@@ -6,16 +6,16 @@ use libcnb::data::launch::{
 };
 
 #[derive(thiserror::Error, Debug)]
-pub(crate) enum LaunchProcessError {
+pub(crate) enum LaunchProcessDetectionError {
     #[error("Project has an invalid process type name: {0}")]
     ProcessType(ProcessTypeError),
 }
 
-pub(crate) fn solution_launch_processes(
+pub(crate) fn detect_solution_processes(
     solution: &DotnetSolution,
     configuration: &str,
     rid: &RuntimeIdentifier,
-) -> Result<Vec<Process>, LaunchProcessError> {
+) -> Result<Vec<Process>, LaunchProcessDetectionError> {
     solution
         .projects
         .iter()
@@ -45,7 +45,7 @@ pub(crate) fn solution_launch_processes(
             project
                 .assembly_name
                 .parse::<ProcessType>()
-                .map_err(LaunchProcessError::ProcessType)
+                .map_err(LaunchProcessDetectionError::ProcessType)
                 .map(|process_type| {
                     ProcessBuilder::new(process_type, ["bash", "-c", &command])
                         .working_directory(WorkingDirectory::Directory(

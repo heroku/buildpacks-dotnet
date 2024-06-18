@@ -13,7 +13,7 @@ use crate::dotnet_project::DotnetProject;
 use crate::dotnet_rid::RuntimeIdentifier;
 use crate::dotnet_solution::DotnetSolution;
 use crate::global_json::GlobalJson;
-use crate::launch_process::LaunchProcessError;
+use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::utils::StreamedCommandError;
@@ -143,7 +143,7 @@ impl Buildpack for DotnetBuildpack {
 
         let configuration = String::from("Release"); // TODO: Make publish configuration configurable;
         let runtime_identifier = dotnet_rid::get_runtime_identifier();
-        let launch_processes = launch_process::solution_launch_processes(
+        let launch_processes_result = launch_process::detect_solution_processes(
             &solution,
             &configuration,
             &runtime_identifier,
@@ -167,7 +167,11 @@ impl Buildpack for DotnetBuildpack {
             .launch(
                 LaunchBuilder::new()
                     .processes(
-                        launch_processes.map_err(DotnetBuildpackError::LaunchProcessDetection)?,
+                        launch_processes_result
+                            // TODO: Failing to detect launch processes probably shouldn't cause a buildpack error.
+                            // Handle errors in a way that provides helpful information to correct the issue, or
+                            // instructions for writing a Procfile.
+                            .map_err(DotnetBuildpackError::LaunchProcessDetection)?,
                     )
                     .build(),
             )
@@ -312,7 +316,7 @@ enum DotnetBuildpackError {
     #[error("Error copying runtime files {0}")]
     CopyRuntimeFilesToRuntimeLayer(io::Error),
     #[error("Launch process detection error: {0}")]
-    LaunchProcessDetection(LaunchProcessError),
+    LaunchProcessDetection(LaunchProcessDetectionError),
 }
 
 impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
