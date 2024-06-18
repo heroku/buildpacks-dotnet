@@ -1,9 +1,9 @@
-use crate::dotnet_project::DotnetProject;
-use crate::DotnetBuildpackError;
+use crate::dotnet_project::{DotnetProject, LoadProjectError};
 use regex::Regex;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::{Path, PathBuf};
+use thiserror::Error;
 
 pub(crate) struct DotnetSolution {
     pub(crate) path: PathBuf,
@@ -11,15 +11,15 @@ pub(crate) struct DotnetSolution {
 }
 
 impl DotnetSolution {
-    pub(crate) fn load_from_path(path: &Path) -> Result<Self, DotnetBuildpackError> {
+    pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadSolutionError> {
         Ok(Self {
             path: path.to_path_buf(),
             projects: project_file_paths(path)
-                .map_err(DotnetBuildpackError::ReadSolutionFile)?
+                .map_err(LoadSolutionError::ReadSolutionFile)?
                 .into_iter()
                 .map(|project_path| {
                     DotnetProject::load_from_path(&project_path)
-                        .map_err(DotnetBuildpackError::LoadDotnetProjectFile)
+                        .map_err(LoadSolutionError::LoadProject)
                 })
                 .collect::<Result<Vec<_>, _>>()?,
         })
@@ -32,6 +32,15 @@ impl DotnetSolution {
         }
     }
 }
+
+#[derive(Error, Debug)]
+pub(crate) enum LoadSolutionError {
+    #[error("Error reading solution file")]
+    ReadSolutionFile(io::Error),
+    #[error("Error loading .NET project file")]
+    LoadProject(LoadProjectError),
+}
+
 /// Parses a .NET solution file and extracts a list of project file paths.
 ///
 /// # Arguments

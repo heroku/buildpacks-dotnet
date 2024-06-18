@@ -220,7 +220,8 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
                 ),
             );
         }
-        return DotnetSolution::load_from_path(solution_file);
+        return DotnetSolution::load_from_path(solution_file)
+            .map_err(DotnetBuildpackError::LoadDotnetSolutionFile);
     }
 
     let project_file_paths =
@@ -289,8 +290,8 @@ enum DotnetBuildpackError {
     NoDotnetFiles,
     #[error("Multiple .NET project files found in root directory: {0}")]
     MultipleProjectFiles(String),
-    #[error("Error reading solution file")]
-    ReadSolutionFile(io::Error),
+    #[error("Error loading .NET solution file")]
+    LoadDotnetSolutionFile(dotnet_solution::LoadSolutionError),
     #[error("Error loading .NET project file")]
     LoadDotnetProjectFile(dotnet_project::LoadProjectError),
     #[error("Error parsing solution file: {0}")]
