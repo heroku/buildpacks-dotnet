@@ -10,7 +10,7 @@ pub(crate) struct DotnetProject {
     #[allow(dead_code)]
     pub(crate) project_type: ProjectType,
     #[allow(dead_code)]
-    pub(crate) assembly_name: Option<String>,
+    pub(crate) assembly_name: String,
 }
 
 impl DotnetProject {
@@ -30,7 +30,15 @@ impl DotnetProject {
             path: path.to_path_buf(),
             target_framework: metadata.target_framework,
             project_type,
-            assembly_name: metadata.assembly_name,
+            assembly_name: metadata
+                .assembly_name
+                .filter(|name| !name.is_empty())
+                .unwrap_or_else(|| {
+                    path.file_stem()
+                        .expect("path to have a file name")
+                        .to_string_lossy()
+                        .to_string()
+                }),
         })
     }
 }
