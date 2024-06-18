@@ -294,7 +294,7 @@ enum DotnetBuildpackError {
     LoadDotnetSolutionFile(dotnet_solution::LoadSolutionError),
     #[error("Error loading .NET project file")]
     LoadDotnetProjectFile(dotnet_project::LoadProjectError),
-    #[error("Error parsing solution file: {0}")]
+    #[error("Error parsing target framework moniker: {0}")]
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     #[error("Error reading global.json file")]
     ReadGlobalJsonFile(io::Error),
