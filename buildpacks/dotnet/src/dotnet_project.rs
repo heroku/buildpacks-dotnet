@@ -7,9 +7,7 @@ use thiserror::Error;
 pub(crate) struct DotnetProject {
     pub(crate) path: PathBuf,
     pub(crate) target_framework: String,
-    #[allow(dead_code)]
     pub(crate) project_type: ProjectType,
-    #[allow(dead_code)]
     pub(crate) assembly_name: String,
 }
 
