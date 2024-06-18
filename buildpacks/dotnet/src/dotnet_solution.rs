@@ -1,9 +1,9 @@
-use crate::dotnet_project::DotnetProject;
-use crate::DotnetBuildpackError;
+use crate::dotnet_project::{DotnetProject, LoadProjectError};
 use regex::Regex;
-use std::fs::File;
-use std::io::{self, BufRead};
+use std::fs::{self};
+use std::io::{self};
 use std::path::{Path, PathBuf};
+use thiserror::Error;
 
 pub(crate) struct DotnetSolution {
     pub(crate) path: PathBuf,
@@ -11,17 +11,20 @@ pub(crate) struct DotnetSolution {
 }
 
 impl DotnetSolution {
-    pub(crate) fn load_from_path(path: &Path) -> Result<Self, DotnetBuildpackError> {
+    pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadSolutionError> {
         Ok(Self {
             path: path.to_path_buf(),
-            projects: project_file_paths(path)
-                .map_err(DotnetBuildpackError::ReadSolutionFile)?
-                .into_iter()
-                .map(|project_path| {
-                    DotnetProject::load_from_path(&project_path)
-                        .map_err(DotnetBuildpackError::LoadDotnetProjectFile)
+            projects: extract_project_references(
+                &fs::read_to_string(path).map_err(LoadSolutionError::ReadSolutionFile)?,
+            )
+            .into_iter()
+            .filter_map(|project_path| {
+                path.parent().map(|dir| {
+                    DotnetProject::load_from_path(&dir.join(project_path))
+                        .map_err(LoadSolutionError::LoadProject)
                 })
-                .collect::<Result<Vec<_>, _>>()?,
+            })
+            .collect::<Result<Vec<_>, _>>()?,
         })
     }
 
@@ -32,70 +35,36 @@ impl DotnetSolution {
         }
     }
 }
-/// Parses a .NET solution file and extracts a list of project file paths.
-///
-/// # Arguments
-///
-/// * `path` - A path to the .NET solution file.
-///
-/// # Returns
-///
-/// * `Ok(Vec<PathBuf>)` - A vector of absolute project file paths if parsing is successful.
-/// * `Err(io::Error)` - An I/O error if reading the file fails.
-pub(crate) fn project_file_paths<P: AsRef<Path>>(path: P) -> io::Result<Vec<PathBuf>> {
-    let file = File::open(&path)?;
-    let reader = io::BufReader::new(file);
-    let parent_dir = path
-        .as_ref()
-        .parent()
-        .expect("solution file to have a parent directory");
 
-    Ok(extract_project_paths(reader)?
-        .into_iter()
-        .map(|project_path| parent_dir.join(project_path))
-        .collect())
+#[derive(Error, Debug)]
+pub(crate) enum LoadSolutionError {
+    #[error("Error reading solution file")]
+    ReadSolutionFile(io::Error),
+    #[error("Error loading .NET project")]
+    LoadProject(LoadProjectError),
 }
 
-/// Extracts project file paths from a .NET solution file.
-///
-/// # Arguments
-///
-/// * `reader` - A buffered reader for the solution file.
-///
-/// # Returns
-///
-/// * `Ok(Vec<String>)` - A vector of relative project file paths if parsing is successful.
-/// * `Err(io::Error)` - An I/O error if reading the file fails.
-fn extract_project_paths<R: BufRead>(reader: R) -> io::Result<Vec<String>> {
+fn extract_project_references(contents: &str) -> Vec<String> {
     let project_line_regex =
         Regex::new(r#"Project\("\{[^}]+\}"\) = "[^"]+", "([^"]+\.[^"]+)", "\{[^}]+\}""#)
             .expect("regex to be valid");
-    let mut project_paths = Vec::new();
-
-    for line in reader.lines() {
-        let line = line?;
-        if let Some(captures) = project_line_regex.captures(&line) {
-            if let Some(project_path) = captures.get(1) {
-                // Normalize the path to use forward slashes
-                let normalized_path = project_path.as_str().replace('\\', "/");
-                project_paths.push(normalized_path);
-            }
-        }
-    }
-
-    Ok(project_paths)
+    contents
+        .lines()
+        .filter_map(|line| {
+            project_line_regex
+                .captures(line)
+                .and_then(|captures| captures.get(1))
+                .map(|project_path| project_path.as_str().replace('\\', "/"))
+        })
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::File;
-    use std::io::Cursor;
-    use std::io::Write;
-    use tempdir::TempDir;
 
     #[test]
-    fn test_extract_project_paths() {
+    fn test_extract_project_references() {
         let solution_content = r#"
         Microsoft Visual Studio Solution File, Format Version 12.00
         # Visual Studio Version 16
@@ -113,17 +82,15 @@ mod tests {
         EndGlobal
         "#;
 
-        let cursor = Cursor::new(solution_content);
+        let project_references = extract_project_references(solution_content);
 
-        let project_paths = extract_project_paths(cursor).unwrap();
-
-        assert_eq!(project_paths.len(), 2);
-        assert_eq!(project_paths[0], "Project1/Project1.csproj");
-        assert_eq!(project_paths[1], "Project2/Project2.csproj");
+        assert_eq!(project_references.len(), 2);
+        assert_eq!(project_references[0], "Project1/Project1.csproj");
+        assert_eq!(project_references[1], "Project2/Project2.csproj");
     }
 
     #[test]
-    fn test_extract_project_paths_with_no_projects() {
+    fn test_extract_project_references_with_no_projects() {
         let solution_content = r"
         Microsoft Visual Studio Solution File, Format Version 12.00
         # Visual Studio Version 16
@@ -137,15 +104,13 @@ mod tests {
         EndGlobal
         ";
 
-        let cursor = Cursor::new(solution_content);
+        let project_references = extract_project_references(solution_content);
 
-        let project_paths = extract_project_paths(cursor).unwrap();
-
-        assert_eq!(project_paths.len(), 0);
+        assert_eq!(project_references.len(), 0);
     }
 
     #[test]
-    fn test_extract_project_paths_with_solution_folder() {
+    fn test_extract_project_references_with_solution_folder() {
         let solution_content = r#"
         Microsoft Visual Studio Solution File, Format Version 12.00
         # Visual Studio Version 16
@@ -163,20 +128,18 @@ mod tests {
         EndGlobal
         "#;
 
-        let cursor = Cursor::new(solution_content);
-
-        let project_paths = extract_project_paths(cursor).unwrap();
+        let project_references = extract_project_references(solution_content);
 
         // Expect only the actual project path
-        assert_eq!(project_paths.len(), 1);
+        assert_eq!(project_references.len(), 1);
         assert_eq!(
-            project_paths[0],
+            project_references[0],
             "SolutionFolder/NestedProject/NestedProject.csproj"
         );
     }
 
     #[test]
-    fn test_extract_project_paths_with_solution_items() {
+    fn test_extract_project_references_with_solution_items() {
         let solution_content = r#"
         Microsoft Visual Studio Solution File, Format Version 12.00
         # Visual Studio Version 16
@@ -202,53 +165,13 @@ mod tests {
         EndGlobal
         "#;
 
-        let cursor = Cursor::new(solution_content);
-
-        let project_paths = extract_project_paths(cursor).unwrap();
+        let project_references = extract_project_references(solution_content);
 
         // Expect only the actual project path
-        assert_eq!(project_paths.len(), 1);
+        assert_eq!(project_references.len(), 1);
         assert_eq!(
-            project_paths[0],
+            project_references[0],
             "ProjectWithParams/ProjectWithParams.csproj"
-        );
-    }
-
-    #[test]
-    fn test_project_file_paths() {
-        let solution_content = r#"
-        Microsoft Visual Studio Solution File, Format Version 12.00
-        # Visual Studio Version 16
-        VisualStudioVersion = 16.0.28729.10
-        MinimumVisualStudioVersion = 10.0.40219.1
-        Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project1", "Project1\Project1.csproj", "{8C28B63A-F94D-4A0B-A2B0-6DC6E1B88264}"
-        EndProject
-        Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project2", "Project2\Project2.csproj", "{FEA4E2C3-9F8E-4A2C-88C9-1E6E41F8B9AD}"
-        EndProject
-        Global
-        GlobalSection(SolutionConfigurationPlatforms) = preSolution
-            Debug|Any CPU = Debug|Any CPU
-            Release|Any CPU = Release|Any CPU
-        EndGlobalSection
-        EndGlobal
-        "#;
-
-        // Create a temporary file to simulate the solution file
-        let temp_dir = TempDir::new("dotnet-test").unwrap();
-        let solution_file_path = temp_dir.path().join("solution.sln");
-        let mut solution_file = File::create(&solution_file_path).unwrap();
-        write!(solution_file, "{solution_content}").unwrap();
-
-        let project_paths = project_file_paths(solution_file_path).unwrap();
-
-        assert_eq!(project_paths.len(), 2);
-        assert_eq!(
-            project_paths[0],
-            temp_dir.path().join("Project1/Project1.csproj")
-        );
-        assert_eq!(
-            project_paths[1],
-            temp_dir.path().join("Project2/Project2.csproj")
         );
     }
 }
