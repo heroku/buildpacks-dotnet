@@ -18,12 +18,11 @@ impl DotnetSolution {
                 &fs::read_to_string(path).map_err(LoadSolutionError::ReadSolutionFile)?,
             )
             .into_iter()
-            .map(|project_path| {
-                let parent_dir = path
-                    .parent()
-                    .expect("solution file to have a parent directory");
-                DotnetProject::load_from_path(&parent_dir.join(project_path))
-                    .map_err(LoadSolutionError::LoadProject)
+            .filter_map(|project_path| {
+                path.parent().map(|dir| {
+                    DotnetProject::load_from_path(&dir.join(project_path))
+                        .map_err(LoadSolutionError::LoadProject)
+                })
             })
             .collect::<Result<Vec<_>, _>>()?,
         })
