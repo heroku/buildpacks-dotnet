@@ -40,7 +40,7 @@ impl DotnetSolution {
 pub(crate) enum LoadSolutionError {
     #[error("Error reading solution file")]
     ReadSolutionFile(io::Error),
-    #[error("Error loading .NET project file")]
+    #[error("Error loading .NET project")]
     LoadProject(LoadProjectError),
 }
 
