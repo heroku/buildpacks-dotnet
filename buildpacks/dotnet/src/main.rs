@@ -13,12 +13,14 @@ use crate::dotnet_project::DotnetProject;
 use crate::dotnet_rid::RuntimeIdentifier;
 use crate::dotnet_solution::DotnetSolution;
 use crate::global_json::GlobalJson;
+use crate::launch_process::LaunchProcessError;
 use crate::layers::sdk::SdkLayerError;
 use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::utils::StreamedCommandError;
 use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
+use libcnb::data::launch::LaunchBuilder;
 use libcnb::data::layer_name;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
@@ -139,11 +141,19 @@ impl Buildpack for DotnetBuildpack {
                 nuget_cache_layer.path(),
             );
 
+        let configuration = String::from("Release"); // TODO: Make publish configuration configurable;
+        let runtime_identifier = dotnet_rid::get_runtime_identifier();
+        let launch_processes = launch_process::solution_launch_processes(
+            &solution,
+            &configuration,
+            &runtime_identifier,
+        );
+
         utils::run_command_and_stream_output(
             Command::from(PublishCommand {
                 path: solution.path,
-                configuration: String::from("Release"), // TODO: Make publish configuration configurable
-                runtime_identifier: dotnet_rid::get_runtime_identifier(),
+                configuration,
+                runtime_identifier,
                 verbosity_level: String::from("normal"),
             })
             .current_dir(&context.app_dir)
@@ -153,7 +163,15 @@ impl Buildpack for DotnetBuildpack {
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
-        BuildResultBuilder::new().build()
+        BuildResultBuilder::new()
+            .launch(
+                LaunchBuilder::new()
+                    .processes(
+                        launch_processes.map_err(DotnetBuildpackError::LaunchProcessDetection)?,
+                    )
+                    .build(),
+            )
+            .build()
     }
 }
 
@@ -293,6 +311,8 @@ enum DotnetBuildpackError {
     PublishCommand(#[from] StreamedCommandError),
     #[error("Error copying runtime files {0}")]
     CopyRuntimeFilesToRuntimeLayer(io::Error),
+    #[error("Launch process detection error: {0}")]
+    LaunchProcessDetection(LaunchProcessError),
 }
 
 impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
