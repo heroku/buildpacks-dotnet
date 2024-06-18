@@ -115,7 +115,7 @@ impl Buildpack for DotnetBuildpack {
                 launch: false,
                 invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
                 restored_layer_action: &|_metadata: &NugetCacheLayerMetadata, _path| {
-                    RestoredLayerAction::DeleteLayer
+                    RestoredLayerAction::KeepLayer
                 },
             },
         )?;
