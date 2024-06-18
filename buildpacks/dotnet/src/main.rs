@@ -4,6 +4,7 @@ mod dotnet_project;
 mod dotnet_rid;
 mod dotnet_solution;
 mod global_json;
+mod launch_process;
 mod layers;
 mod tfm;
 mod utils;
