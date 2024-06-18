@@ -25,7 +25,7 @@ use libcnb::data::layer_name;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer::{
-    CachedLayerDefinition, InspectRestoredAction, InvalidMetadataAction, LayerState,
+    CachedLayerDefinition, InvalidMetadataAction, LayerState, RestoredLayerAction,
 };
 use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{buildpack_main, Buildpack, Env};
@@ -115,7 +115,7 @@ impl Buildpack for DotnetBuildpack {
                 launch: false,
                 invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
                 restored_layer_action: &|_metadata: &NugetCacheLayerMetadata, _path| {
-                    InspectRestoredAction::KeepLayer
+                    RestoredLayerAction::DeleteLayer
                 },
             },
         )?;
