@@ -25,9 +25,9 @@ use libcnb::data::layer_name;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer::{
-    CachedLayerDefinition, InspectRestoredAction, InvalidMetadataAction, LayerState,
+    CachedLayerDefinition, InvalidMetadataAction, LayerState, RestoredLayerAction,
 };
-use libcnb::layer_env::{LayerEnv, Scope};
+use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::log::{log_header, log_info, log_warning};
 use semver::{Version, VersionReq};
@@ -115,7 +115,7 @@ impl Buildpack for DotnetBuildpack {
                 launch: false,
                 invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
                 restored_layer_action: &|_metadata: &NugetCacheLayerMetadata, _path| {
-                    InspectRestoredAction::KeepLayer
+                    RestoredLayerAction::KeepLayer
                 },
             },
         )?;
@@ -132,14 +132,12 @@ impl Buildpack for DotnetBuildpack {
 
         log_header("Publish");
 
-        let command_env = LayerEnv::read_from_layer_dir(sdk_layer.path())
-            .map_err(DotnetBuildpackError::ReadSdkLayerEnvironment)?
-            .chainable_insert(
-                Scope::Build,
-                libcnb::layer_env::ModificationBehavior::Override,
-                "NUGET_PACKAGES",
-                nuget_cache_layer.path(),
-            );
+        let command_env = sdk_layer.read_env()?.chainable_insert(
+            Scope::Build,
+            libcnb::layer_env::ModificationBehavior::Override,
+            "NUGET_PACKAGES",
+            nuget_cache_layer.path(),
+        );
 
         let configuration = String::from("Release"); // TODO: Make publish configuration configurable;
         let runtime_identifier = dotnet_rid::get_runtime_identifier();
@@ -310,8 +308,6 @@ enum DotnetBuildpackError {
     ResolveSdkVersion(VersionReq),
     #[error(transparent)]
     SdkLayer(#[from] SdkLayerError),
-    #[error("Error reading SDK layer environment")]
-    ReadSdkLayerEnvironment(io::Error),
     #[error("Error executing publish task")]
     PublishCommand(#[from] StreamedCommandError),
     #[error("Error copying runtime files {0}")]

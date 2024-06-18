@@ -3,8 +3,8 @@ use inventory::artifact::Artifact;
 use inventory::checksum::Checksum;
 use libcnb::data::layer_name;
 use libcnb::layer::{
-    CachedLayerDefinition, EmptyLayerCause, InspectRestoredAction, InvalidMetadataAction, LayerRef,
-    LayerState,
+    CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerRef, LayerState,
+    RestoredLayerAction,
 };
 use libcnb::layer_env::Scope;
 use libherokubuildpack::download::download_file;
@@ -39,10 +39,10 @@ pub(crate) fn handle(
             invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
             restored_layer_action: &|metadata: &SdkLayerMetadata, _path| {
                 if metadata.artifact == *artifact {
-                    (InspectRestoredAction::KeepLayer, CustomCause::Ok)
+                    (RestoredLayerAction::KeepLayer, CustomCause::Ok)
                 } else {
                     (
-                        InspectRestoredAction::DeleteLayer,
+                        RestoredLayerAction::DeleteLayer,
                         CustomCause::DifferentSdkArtifact(metadata.artifact.clone()),
                     )
                 }
@@ -58,7 +58,7 @@ pub(crate) fn handle(
             ));
         }
         LayerState::Empty { ref cause } => {
-            if let EmptyLayerCause::Inspect {
+            if let EmptyLayerCause::RestoredLayerAction {
                 cause: CustomCause::DifferentSdkArtifact(old_artifact),
             } = cause
             {
