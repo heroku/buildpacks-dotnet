@@ -33,7 +33,6 @@ use libherokubuildpack::log::{log_header, log_info, log_warning};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use sha2::Sha512;
-use std::env::consts;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{fs, io};
@@ -91,10 +90,10 @@ impl Buildpack for DotnetBuildpack {
 
         let artifact = inventory
             .resolve(
-                consts::OS
+                context.target.os
                     .parse::<Os>()
                     .expect("OS should be always parseable, buildpack will not run on unsupported operating systems."),
-                consts::ARCH
+                context.target.arch
                     .parse::<Arch>()
                     .expect("Arch should be always parseable, buildpack will not run on unsupported architectures."),
                 &sdk_version_requirement
