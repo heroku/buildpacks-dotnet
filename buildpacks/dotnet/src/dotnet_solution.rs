@@ -51,7 +51,7 @@ pub(crate) enum LoadSolutionError {
 ///
 /// * `Ok(Vec<PathBuf>)` - A vector of absolute project file paths if parsing is successful.
 /// * `Err(io::Error)` - An I/O error if reading the file fails.
-pub(crate) fn project_file_paths<P: AsRef<Path>>(path: P) -> io::Result<Vec<PathBuf>> {
+fn project_file_paths<P: AsRef<Path>>(path: P) -> io::Result<Vec<PathBuf>> {
     let file = File::open(&path)?;
     let reader = io::BufReader::new(file);
     let parent_dir = path
