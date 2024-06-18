@@ -1,7 +1,7 @@
 use crate::dotnet_project::{DotnetProject, LoadProjectError};
 use regex::Regex;
-use std::fs::File;
-use std::io::{self, BufRead};
+use std::fs::{self};
+use std::io::{self};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
@@ -14,8 +14,7 @@ impl DotnetSolution {
     pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadSolutionError> {
         Ok(Self {
             path: path.to_path_buf(),
-            projects: project_file_paths(path)
-                .map_err(LoadSolutionError::ReadSolutionFile)?
+            projects: project_file_paths(path)?
                 .into_iter()
                 .map(|project_path| {
                     DotnetProject::load_from_path(&project_path)
@@ -51,39 +50,28 @@ pub(crate) enum LoadSolutionError {
 ///
 /// * `Ok(Vec<PathBuf>)` - A vector of absolute project file paths if parsing is successful.
 /// * `Err(io::Error)` - An I/O error if reading the file fails.
-fn project_file_paths<P: AsRef<Path>>(path: P) -> io::Result<Vec<PathBuf>> {
-    let file = File::open(&path)?;
-    let reader = io::BufReader::new(file);
+fn project_file_paths<P: AsRef<Path>>(path: P) -> Result<Vec<PathBuf>, LoadSolutionError> {
+    let solution_contents =
+        fs::read_to_string(&path).map_err(LoadSolutionError::ReadSolutionFile)?;
     let parent_dir = path
         .as_ref()
         .parent()
         .expect("solution file to have a parent directory");
 
-    Ok(extract_project_paths(reader)?
+    Ok(extract_project_paths(&solution_contents)
         .into_iter()
         .map(|project_path| parent_dir.join(project_path))
         .collect())
 }
 
-/// Extracts project file paths from a .NET solution file.
-///
-/// # Arguments
-///
-/// * `reader` - A buffered reader for the solution file.
-///
-/// # Returns
-///
-/// * `Ok(Vec<String>)` - A vector of relative project file paths if parsing is successful.
-/// * `Err(io::Error)` - An I/O error if reading the file fails.
-fn extract_project_paths<R: BufRead>(reader: R) -> io::Result<Vec<String>> {
+fn extract_project_paths(contents: &str) -> Vec<String> {
     let project_line_regex =
         Regex::new(r#"Project\("\{[^}]+\}"\) = "[^"]+", "([^"]+\.[^"]+)", "\{[^}]+\}""#)
             .expect("regex to be valid");
     let mut project_paths = Vec::new();
 
-    for line in reader.lines() {
-        let line = line?;
-        if let Some(captures) = project_line_regex.captures(&line) {
+    for line in contents.lines() {
+        if let Some(captures) = project_line_regex.captures(line) {
             if let Some(project_path) = captures.get(1) {
                 // Normalize the path to use forward slashes
                 let normalized_path = project_path.as_str().replace('\\', "/");
@@ -92,14 +80,13 @@ fn extract_project_paths<R: BufRead>(reader: R) -> io::Result<Vec<String>> {
         }
     }
 
-    Ok(project_paths)
+    project_paths
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::fs::File;
-    use std::io::Cursor;
     use std::io::Write;
     use tempdir::TempDir;
 
@@ -122,9 +109,7 @@ mod tests {
         EndGlobal
         "#;
 
-        let cursor = Cursor::new(solution_content);
-
-        let project_paths = extract_project_paths(cursor).unwrap();
+        let project_paths = extract_project_paths(solution_content);
 
         assert_eq!(project_paths.len(), 2);
         assert_eq!(project_paths[0], "Project1/Project1.csproj");
@@ -146,9 +131,7 @@ mod tests {
         EndGlobal
         ";
 
-        let cursor = Cursor::new(solution_content);
-
-        let project_paths = extract_project_paths(cursor).unwrap();
+        let project_paths = extract_project_paths(solution_content);
 
         assert_eq!(project_paths.len(), 0);
     }
@@ -172,9 +155,7 @@ mod tests {
         EndGlobal
         "#;
 
-        let cursor = Cursor::new(solution_content);
-
-        let project_paths = extract_project_paths(cursor).unwrap();
+        let project_paths = extract_project_paths(solution_content);
 
         // Expect only the actual project path
         assert_eq!(project_paths.len(), 1);
@@ -211,9 +192,7 @@ mod tests {
         EndGlobal
         "#;
 
-        let cursor = Cursor::new(solution_content);
-
-        let project_paths = extract_project_paths(cursor).unwrap();
+        let project_paths = extract_project_paths(solution_content);
 
         // Expect only the actual project path
         assert_eq!(project_paths.len(), 1);
