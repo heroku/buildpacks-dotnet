@@ -1,6 +1,7 @@
 mod detect;
 mod dotnet_layer_env;
 mod dotnet_project;
+mod dotnet_publish_command;
 mod dotnet_rid;
 mod dotnet_solution;
 mod global_json;
@@ -10,7 +11,7 @@ mod tfm;
 mod utils;
 
 use crate::dotnet_project::DotnetProject;
-use crate::dotnet_rid::RuntimeIdentifier;
+use crate::dotnet_publish_command::{PublishCommand, VerbosityLevel};
 use crate::dotnet_solution::DotnetSolution;
 use crate::global_json::GlobalJson;
 use crate::launch_process::LaunchProcessDetectionError;
@@ -33,7 +34,7 @@ use libherokubuildpack::log::{log_header, log_info, log_warning};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use sha2::Sha512;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 use std::{fs, io};
 
@@ -120,52 +121,6 @@ impl Buildpack for DotnetBuildpack {
                     .build(),
             )
             .build()
-    }
-}
-
-struct PublishCommand {
-    path: PathBuf,
-    configuration: String,
-    runtime_identifier: RuntimeIdentifier,
-    verbosity_level: VerbosityLevel,
-}
-
-impl From<PublishCommand> for Command {
-    fn from(value: PublishCommand) -> Self {
-        let mut command = Command::new("dotnet");
-        command.args([
-            "publish",
-            &value.path.to_string_lossy(),
-            "--configuration",
-            &value.configuration,
-            "--runtime",
-            &value.runtime_identifier.to_string(),
-            "--verbosity",
-            &value.verbosity_level.to_string(),
-        ]);
-        command
-    }
-}
-
-#[derive(Clone, Copy)]
-#[allow(dead_code)]
-enum VerbosityLevel {
-    Quiet,
-    Minimal,
-    Normal,
-    Detailed,
-    Diagnostic,
-}
-
-impl fmt::Display for VerbosityLevel {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            VerbosityLevel::Quiet => write!(f, "quiet"),
-            VerbosityLevel::Minimal => write!(f, "minimal"),
-            VerbosityLevel::Normal => write!(f, "normal"),
-            VerbosityLevel::Detailed => write!(f, "detailed"),
-            VerbosityLevel::Diagnostic => write!(f, "diagnostic"),
-        }
     }
 }
 
