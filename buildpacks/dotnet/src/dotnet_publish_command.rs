@@ -4,15 +4,15 @@ use std::process::Command;
 
 use crate::dotnet_rid::RuntimeIdentifier;
 
-pub(crate) struct PublishCommand {
+pub(crate) struct DotnetPublishCommand {
     pub(crate) path: PathBuf,
     pub(crate) configuration: String,
     pub(crate) runtime_identifier: RuntimeIdentifier,
     pub(crate) verbosity_level: VerbosityLevel,
 }
 
-impl From<PublishCommand> for Command {
-    fn from(value: PublishCommand) -> Self {
+impl From<DotnetPublishCommand> for Command {
+    fn from(value: DotnetPublishCommand) -> Self {
         let mut command = Command::new("dotnet");
         command.args([
             "publish",

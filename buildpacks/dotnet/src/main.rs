@@ -11,7 +11,7 @@ mod tfm;
 mod utils;
 
 use crate::dotnet_project::DotnetProject;
-use crate::dotnet_publish_command::{PublishCommand, VerbosityLevel};
+use crate::dotnet_publish_command::{DotnetPublishCommand, VerbosityLevel};
 use crate::dotnet_solution::DotnetSolution;
 use crate::global_json::GlobalJson;
 use crate::launch_process::LaunchProcessDetectionError;
@@ -58,9 +58,7 @@ impl Buildpack for DotnetBuildpack {
 
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         log_header("Determining .NET version");
-
-        // Solution may be an "ephemeral" solution when only a project file is found in the root directory.
-        let solution = get_solution_to_publish(&context.app_dir)?;
+        let solution = get_solution_to_publish(&context.app_dir)?; // Solution may be an "ephemeral" solution when only a project file is found in the root directory.
         log_info(format!(
             "Detected .NET file to publish: {}",
             solution.path.to_string_lossy()
@@ -71,19 +69,18 @@ impl Buildpack for DotnetBuildpack {
         log_info(format!(
             "Inferred SDK version requirement: {sdk_version_requirement}",
         ));
-
-        let artifact = resolve_sdk_artifact(&context.target, sdk_version_requirement)?;
+        let sdk_artifact = resolve_sdk_artifact(&context.target, sdk_version_requirement)?;
         log_info(format!(
             "Resolved .NET SDK version {} ({}-{})",
-            artifact.version, artifact.os, artifact.arch
+            sdk_artifact.version, sdk_artifact.os, sdk_artifact.arch
         ));
-
-        let sdk_layer = layers::sdk::handle(&context, &artifact)?;
+        let sdk_layer = layers::sdk::handle(&context, &sdk_artifact)?;
 
         let nuget_cache_layer = handle_nuget_cache_layer(&context)?;
 
         log_header("Publish");
-
+        let build_configuration = String::from("Release");
+        let runtime_identifier = dotnet_rid::get_runtime_identifier();
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
             libcnb::layer_env::ModificationBehavior::Override,
@@ -91,19 +88,17 @@ impl Buildpack for DotnetBuildpack {
             nuget_cache_layer.path(),
         );
 
-        let configuration = String::from("Release"); // TODO: Make publish configuration configurable;
-        let runtime_identifier = dotnet_rid::get_runtime_identifier();
         let launch_processes_result = launch_process::detect_solution_processes(
             &solution,
-            &configuration,
+            &build_configuration,
             &runtime_identifier,
         )
         .map_err(DotnetBuildpackError::LaunchProcessDetection);
 
         utils::run_command_and_stream_output(
-            Command::from(PublishCommand {
+            Command::from(DotnetPublishCommand {
                 path: solution.path,
-                configuration,
+                configuration: build_configuration,
                 runtime_identifier,
                 verbosity_level: VerbosityLevel::Normal,
             })
