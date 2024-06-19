@@ -167,30 +167,27 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
 fn get_solution_sdk_version_requirement(
     solution: &DotnetSolution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
-    let requirements = solution
+    let target_framework_monikers = solution
         .projects
         .iter()
         .map(|project| {
             log_info(format!(
-                "Detecting .NET version requirement for project {0}",
+                "Detecting target framework for project {0}",
                 project.path.to_string_lossy()
             ));
-
-            VersionReq::try_from(
-                project
-                    .target_framework
-                    .parse::<TargetFrameworkMoniker>()
-                    .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
-            )
-            .map_err(DotnetBuildpackError::ParseVersionRequirement)
+            project
+                .target_framework
+                .parse::<TargetFrameworkMoniker>()
+                .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    requirements
-        // TODO: Add logic to prefer the most recent version requirement, and log if projects target different versions
-        .first()
-        .cloned()
-        .ok_or(DotnetBuildpackError::NoDotnetFiles)
+    VersionReq::try_from(
+        target_framework_monikers
+            .first()
+            .ok_or(DotnetBuildpackError::NoDotnetFiles)?,
+    )
+    .map_err(DotnetBuildpackError::ParseVersionRequirement)
 }
 
 fn detect_global_json_sdk_version_requirement(

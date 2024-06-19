@@ -51,10 +51,10 @@ impl FromStr for TargetFrameworkMoniker {
     }
 }
 
-impl TryFrom<TargetFrameworkMoniker> for VersionReq {
+impl TryFrom<&TargetFrameworkMoniker> for VersionReq {
     type Error = semver::Error;
 
-    fn try_from(tf: TargetFrameworkMoniker) -> Result<Self, Self::Error> {
+    fn try_from(tf: &TargetFrameworkMoniker) -> Result<Self, Self::Error> {
         VersionReq::from_str(&format!("^{}", tf.version_part))
     }
 }
@@ -70,7 +70,7 @@ mod tests {
         let tfm = "net6.0";
         let target_framework = tfm.parse::<TargetFrameworkMoniker>().unwrap();
         let expected = VersionReq::from_str("^6.0").unwrap();
-        assert_eq!(VersionReq::try_from(target_framework).unwrap(), expected);
+        assert_eq!(VersionReq::try_from(&target_framework).unwrap(), expected);
     }
 
     #[test]
@@ -78,7 +78,7 @@ mod tests {
         let tfm = "net7.0";
         let target_framework = tfm.parse::<TargetFrameworkMoniker>().unwrap();
         let expected = VersionReq::from_str("^7.0").unwrap();
-        assert_eq!(VersionReq::try_from(target_framework).unwrap(), expected);
+        assert_eq!(VersionReq::try_from(&target_framework).unwrap(), expected);
     }
 
     #[test]
@@ -86,7 +86,7 @@ mod tests {
         let tfm = "net8.0";
         let target_framework = tfm.parse::<TargetFrameworkMoniker>().unwrap();
         let expected = VersionReq::from_str("^8.0").unwrap();
-        assert_eq!(VersionReq::try_from(target_framework).unwrap(), expected);
+        assert_eq!(VersionReq::try_from(&target_framework).unwrap(), expected);
     }
 
     #[test]
