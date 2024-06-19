@@ -14,7 +14,7 @@ fn test_sdk_resolution_with_target_framework() {
                 &indoc! {r"
                     [Determining .NET version]
                     Detected .NET file to publish: /workspace/foo.csproj
-                    Detecting target framework for project /workspace/foo.csproj
+                    Parsing target framework moniker for project: /workspace/foo.csproj
                     Inferred SDK version requirement: ^8.0
                     Resolved .NET SDK version 8.0."}
             );
@@ -34,8 +34,8 @@ fn test_sdk_resolution_with_solution_file() {
                 &indoc! {r"
                     [Determining .NET version]
                     Detected .NET file to publish: /workspace/foo.sln
-                    Detecting target framework for project /workspace/web/web.csproj
-                    Detecting target framework for project /workspace/worker/worker.csproj
+                    Parsing target framework moniker for project: /workspace/web/web.csproj
+                    Parsing target framework moniker for project: /workspace/worker/worker.csproj
                     Inferred SDK version requirement: ^8.0"}
             );
         },

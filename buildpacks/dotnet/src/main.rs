@@ -172,7 +172,7 @@ fn get_solution_sdk_version_requirement(
         .iter()
         .map(|project| {
             log_info(format!(
-                "Detecting target framework for project {0}",
+                "Parsing target framework moniker for project: {0}",
                 project.path.to_string_lossy()
             ));
             project
