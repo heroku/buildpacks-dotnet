@@ -12,7 +12,7 @@ pub(crate) enum ParseTargetFrameworkError {
 
 #[derive(Debug)]
 pub(crate) struct TargetFrameworkMoniker {
-    version_part: String,
+    pub(crate) version_part: String,
 }
 
 impl FromStr for TargetFrameworkMoniker {

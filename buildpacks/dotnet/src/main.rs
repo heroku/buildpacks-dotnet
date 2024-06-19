@@ -167,7 +167,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
 fn get_solution_sdk_version_requirement(
     solution: &DotnetSolution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
-    let target_framework_monikers = solution
+    let mut target_framework_monikers = solution
         .projects
         .iter()
         .map(|project| {
@@ -181,6 +181,7 @@ fn get_solution_sdk_version_requirement(
                 .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)
         })
         .collect::<Result<Vec<_>, _>>()?;
+    target_framework_monikers.sort_by_key(|tfm| tfm.version_part.clone());
 
     VersionReq::try_from(
         target_framework_monikers
