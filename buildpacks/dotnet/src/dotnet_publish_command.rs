@@ -1,8 +1,7 @@
+use crate::dotnet_rid::RuntimeIdentifier;
 use std::fmt;
 use std::path::PathBuf;
 use std::process::Command;
-
-use crate::dotnet_rid::RuntimeIdentifier;
 
 pub(crate) struct DotnetPublishCommand {
     pub(crate) path: PathBuf,
