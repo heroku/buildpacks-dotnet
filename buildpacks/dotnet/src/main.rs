@@ -151,7 +151,7 @@ impl Buildpack for DotnetBuildpack {
                 path: solution.path,
                 configuration,
                 runtime_identifier,
-                verbosity_level: String::from("normal"),
+                verbosity_level: VerbosityLevel::Normal,
             })
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current())),
@@ -180,7 +180,7 @@ struct PublishCommand {
     path: PathBuf,
     configuration: String,
     runtime_identifier: RuntimeIdentifier,
-    verbosity_level: String, // TODO: Refactor verbosity level into an enum
+    verbosity_level: VerbosityLevel,
 }
 
 impl From<PublishCommand> for Command {
@@ -194,9 +194,31 @@ impl From<PublishCommand> for Command {
             "--runtime",
             &value.runtime_identifier.to_string(),
             "--verbosity",
-            &value.verbosity_level,
+            &value.verbosity_level.to_string(),
         ]);
         command
+    }
+}
+
+#[derive(Clone, Copy)]
+#[allow(dead_code)]
+enum VerbosityLevel {
+    Quiet,
+    Minimal,
+    Normal,
+    Detailed,
+    Diagnostic,
+}
+
+impl fmt::Display for VerbosityLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            VerbosityLevel::Quiet => write!(f, "quiet"),
+            VerbosityLevel::Minimal => write!(f, "minimal"),
+            VerbosityLevel::Normal => write!(f, "normal"),
+            VerbosityLevel::Detailed => write!(f, "detailed"),
+            VerbosityLevel::Diagnostic => write!(f, "diagnostic"),
+        }
     }
 }
 
