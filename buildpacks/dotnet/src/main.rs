@@ -46,12 +46,12 @@ impl Buildpack for DotnetBuildpack {
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
         if detect::any_dotnet_files(&context.app_dir)? {
+            DetectResultBuilder::pass().build()
+        } else {
             log_info(
                 "No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.",
             );
             DetectResultBuilder::fail().build()
-        } else {
-            DetectResultBuilder::pass().build()
         }
     }
 

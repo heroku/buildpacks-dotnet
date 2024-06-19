@@ -12,10 +12,10 @@ pub(crate) fn solution_file_paths<P: AsRef<Path>>(dir: P) -> io::Result<Vec<Path
 }
 
 pub(crate) fn any_dotnet_files(dir: &Path) -> Result<bool, DotnetBuildpackError> {
-    Ok(solution_file_paths(dir)
+    Ok(!solution_file_paths(dir)
         .map_err(DotnetBuildpackError::BuildpackDetection)?
         .is_empty()
-        && project_file_paths(dir)
+        || !project_file_paths(dir)
             .map_err(DotnetBuildpackError::BuildpackDetection)?
             .is_empty())
 }
