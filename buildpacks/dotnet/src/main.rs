@@ -144,7 +144,8 @@ impl Buildpack for DotnetBuildpack {
             &solution,
             &configuration,
             &runtime_identifier,
-        );
+        )
+        .map_err(DotnetBuildpackError::LaunchProcessDetection);
 
         utils::run_command_and_stream_output(
             Command::from(PublishCommand {
@@ -163,13 +164,7 @@ impl Buildpack for DotnetBuildpack {
         BuildResultBuilder::new()
             .launch(
                 LaunchBuilder::new()
-                    .processes(
-                        launch_processes_result
-                            // TODO: Failing to detect launch processes probably shouldn't cause a buildpack error.
-                            // Handle errors in a way that provides helpful information to correct the issue, or
-                            // instructions for writing a Procfile.
-                            .map_err(DotnetBuildpackError::LaunchProcessDetection)?,
-                    )
+                    .processes(launch_processes_result?)
                     .build(),
             )
             .build()
