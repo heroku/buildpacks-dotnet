@@ -181,11 +181,15 @@ fn get_solution_sdk_version_requirement(
                 .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)
         })
         .collect::<Result<Vec<_>, _>>()?;
+
+    // The target framework monikers are sorted lexicographically, which is sufficient for now
+    // (as the only expected TFMs are currently "net5.0", "net6.0", "net7.0", "net8.0", "net9.0").
     target_framework_monikers.sort_by_key(|tfm| tfm.version_part.clone());
 
     VersionReq::try_from(
         target_framework_monikers
-            .first()
+            // The last (i.e. most recent, based on the sorting logic above) target framework moniker is preferred
+            .last()
             .ok_or(DotnetBuildpackError::NoDotnetFiles)?,
     )
     .map_err(DotnetBuildpackError::ParseVersionRequirement)
