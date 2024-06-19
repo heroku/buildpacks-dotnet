@@ -1,6 +1,7 @@
 mod detect;
 mod dotnet_layer_env;
 mod dotnet_project;
+mod dotnet_publish_command;
 mod dotnet_rid;
 mod dotnet_solution;
 mod global_json;
@@ -10,14 +11,14 @@ mod tfm;
 mod utils;
 
 use crate::dotnet_project::DotnetProject;
-use crate::dotnet_rid::RuntimeIdentifier;
+use crate::dotnet_publish_command::{DotnetPublishCommand, VerbosityLevel};
 use crate::dotnet_solution::DotnetSolution;
 use crate::global_json::GlobalJson;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::utils::StreamedCommandError;
-use inventory::artifact::{Arch, Os};
+use inventory::artifact::{Arch, Artifact, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::LaunchBuilder;
@@ -25,15 +26,15 @@ use libcnb::data::layer_name;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer::{
-    CachedLayerDefinition, InvalidMetadataAction, LayerState, RestoredLayerAction,
+    CachedLayerDefinition, InvalidMetadataAction, LayerRef, LayerState, RestoredLayerAction,
 };
 use libcnb::layer_env::Scope;
-use libcnb::{buildpack_main, Buildpack, Env};
+use libcnb::{buildpack_main, Buildpack, Env, Target};
 use libherokubuildpack::log::{log_header, log_info, log_warning};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use sha2::Sha512;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 use std::{fs, io};
 
@@ -57,80 +58,29 @@ impl Buildpack for DotnetBuildpack {
 
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         log_header("Determining .NET version");
-
-        // Solution may be an "ephemeral" solution when only a project file is found in the root directory.
-        let solution = get_solution_to_publish(&context.app_dir)?;
+        let solution = get_solution_to_publish(&context.app_dir)?; // Solution may be an "ephemeral" solution when only a project file is found in the root directory.
         log_info(format!(
             "Detected .NET file to publish: {}",
             solution.path.to_string_lossy()
         ));
 
-        let sdk_version_requirement = if let Some(file) = detect::global_json_file(&context.app_dir)
-        {
-            log_info("Detected global.json file in the root directory");
-            VersionReq::try_from(
-                fs::read_to_string(file.as_path())
-                    .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
-                    .parse::<GlobalJson>()
-                    .map_err(DotnetBuildpackError::ParseGlobalJson)?,
-            )
-            .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?
-        } else {
-            parse_sdk_version_req_for(&solution)?
-        };
-
+        let sdk_version_requirement = detect_global_json_sdk_version_requirement(&context.app_dir)
+            .unwrap_or_else(|| get_solution_sdk_version_requirement(&solution))?;
         log_info(format!(
-            "Inferred SDK version requirement: {}",
-            &sdk_version_requirement
+            "Inferred SDK version requirement: {sdk_version_requirement}",
         ));
-
-        let inventory = include_str!("../inventory.toml")
-            .parse::<Inventory<Version, Sha512, Option<()>>>()
-            .map_err(DotnetBuildpackError::ParseInventory)?;
-
-        let artifact = inventory
-            .resolve(
-                context.target.os
-                    .parse::<Os>()
-                    .expect("OS should be always parseable, buildpack will not run on unsupported operating systems."),
-                context.target.arch
-                    .parse::<Arch>()
-                    .expect("Arch should be always parseable, buildpack will not run on unsupported architectures."),
-                &sdk_version_requirement
-            )
-            .ok_or(DotnetBuildpackError::ResolveSdkVersion(sdk_version_requirement))?;
-
+        let sdk_artifact = resolve_sdk_artifact(&context.target, sdk_version_requirement)?;
         log_info(format!(
             "Resolved .NET SDK version {} ({}-{})",
-            artifact.version, artifact.os, artifact.arch
+            sdk_artifact.version, sdk_artifact.os, sdk_artifact.arch
         ));
+        let sdk_layer = layers::sdk::handle(&context, &sdk_artifact)?;
 
-        let sdk_layer = layers::sdk::handle(&context, artifact)?;
-
-        let nuget_cache_layer = context.cached_layer(
-            layer_name!("nuget-cache"),
-            CachedLayerDefinition {
-                build: false,
-                launch: false,
-                invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
-                restored_layer_action: &|_metadata: &NugetCacheLayerMetadata, _path| {
-                    RestoredLayerAction::KeepLayer
-                },
-            },
-        )?;
-
-        match nuget_cache_layer.state {
-            LayerState::Restored { .. } => log_info("Reusing NuGet package cache"),
-            LayerState::Empty { .. } => {
-                log_info("Empty NuGet package cache");
-                nuget_cache_layer.write_metadata(NugetCacheLayerMetadata {
-                    version: String::from("foo"),
-                })?;
-            }
-        }
+        let nuget_cache_layer = handle_nuget_cache_layer(&context)?;
 
         log_header("Publish");
-
+        let build_configuration = String::from("Release");
+        let runtime_identifier = dotnet_rid::get_runtime_identifier();
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
             libcnb::layer_env::ModificationBehavior::Override,
@@ -138,20 +88,19 @@ impl Buildpack for DotnetBuildpack {
             nuget_cache_layer.path(),
         );
 
-        let configuration = String::from("Release"); // TODO: Make publish configuration configurable;
-        let runtime_identifier = dotnet_rid::get_runtime_identifier();
         let launch_processes_result = launch_process::detect_solution_processes(
             &solution,
-            &configuration,
+            &build_configuration,
             &runtime_identifier,
-        );
+        )
+        .map_err(DotnetBuildpackError::LaunchProcessDetection);
 
         utils::run_command_and_stream_output(
-            Command::from(PublishCommand {
+            Command::from(DotnetPublishCommand {
                 path: solution.path,
-                configuration,
+                configuration: build_configuration,
                 runtime_identifier,
-                verbosity_level: String::from("normal"),
+                verbosity_level: VerbosityLevel::Normal,
             })
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current())),
@@ -163,40 +112,10 @@ impl Buildpack for DotnetBuildpack {
         BuildResultBuilder::new()
             .launch(
                 LaunchBuilder::new()
-                    .processes(
-                        launch_processes_result
-                            // TODO: Failing to detect launch processes probably shouldn't cause a buildpack error.
-                            // Handle errors in a way that provides helpful information to correct the issue, or
-                            // instructions for writing a Procfile.
-                            .map_err(DotnetBuildpackError::LaunchProcessDetection)?,
-                    )
+                    .processes(launch_processes_result?)
                     .build(),
             )
             .build()
-    }
-}
-
-struct PublishCommand {
-    path: PathBuf,
-    configuration: String,
-    runtime_identifier: RuntimeIdentifier,
-    verbosity_level: String, // TODO: Refactor verbosity level into an enum
-}
-
-impl From<PublishCommand> for Command {
-    fn from(value: PublishCommand) -> Self {
-        let mut command = Command::new("dotnet");
-        command.args([
-            "publish",
-            &value.path.to_string_lossy(),
-            "--configuration",
-            &value.configuration,
-            "--runtime",
-            &value.runtime_identifier.to_string(),
-            "--verbosity",
-            &value.verbosity_level,
-        ]);
-        command
     }
 }
 
@@ -245,7 +164,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
     Err(DotnetBuildpackError::NoDotnetFiles)
 }
 
-fn parse_sdk_version_req_for(
+fn get_solution_sdk_version_requirement(
     solution: &DotnetSolution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
     let requirements = solution
@@ -274,9 +193,72 @@ fn parse_sdk_version_req_for(
         .ok_or(DotnetBuildpackError::NoDotnetFiles)
 }
 
+fn detect_global_json_sdk_version_requirement(
+    app_dir: &Path,
+) -> Option<Result<VersionReq, DotnetBuildpackError>> {
+    detect::global_json_file(app_dir).map(|file| {
+        log_info("Detected global.json file in the root directory");
+        VersionReq::try_from(
+            fs::read_to_string(file.as_path())
+                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
+                .parse::<GlobalJson>()
+                .map_err(DotnetBuildpackError::ParseGlobalJson)?,
+        )
+        .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)
+    })
+}
+
+fn resolve_sdk_artifact(
+    target: &Target,
+    sdk_version_requirement: VersionReq,
+) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
+    let inventory = include_str!("../inventory.toml")
+        .parse::<Inventory<Version, Sha512, Option<()>>>()
+        .map_err(DotnetBuildpackError::ParseInventory)?;
+
+    inventory
+        .resolve(
+            target.os
+                .parse::<Os>()
+                .expect("OS should be always parseable, buildpack will not run on unsupported operating systems."),
+            target.arch
+                .parse::<Arch>()
+                .expect("Arch should be always parseable, buildpack will not run on unsupported architectures."),
+            &sdk_version_requirement
+        )
+        .ok_or(DotnetBuildpackError::ResolveSdkVersion(sdk_version_requirement)).cloned()
+}
+
 #[derive(Serialize, Deserialize)]
 struct NugetCacheLayerMetadata {
     version: String,
+}
+
+fn handle_nuget_cache_layer(
+    context: &BuildContext<DotnetBuildpack>,
+) -> Result<LayerRef<DotnetBuildpack, (), ()>, libcnb::Error<<DotnetBuildpack as Buildpack>::Error>>
+{
+    let nuget_cache_layer = context.cached_layer(
+        layer_name!("nuget-cache"),
+        CachedLayerDefinition {
+            build: false,
+            launch: false,
+            invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
+            restored_layer_action: &|_metadata: &NugetCacheLayerMetadata, _path| {
+                RestoredLayerAction::KeepLayer
+            },
+        },
+    )?;
+    match nuget_cache_layer.state {
+        LayerState::Restored { .. } => log_info("Reusing NuGet package cache"),
+        LayerState::Empty { .. } => {
+            log_info("Empty NuGet package cache");
+            nuget_cache_layer.write_metadata(NugetCacheLayerMetadata {
+                version: String::from("foo"),
+            })?;
+        }
+    }
+    Ok(nuget_cache_layer)
 }
 
 #[derive(thiserror::Error, Debug)]

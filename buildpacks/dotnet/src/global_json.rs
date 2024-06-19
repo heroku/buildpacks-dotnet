@@ -33,24 +33,17 @@ impl TryFrom<GlobalJson> for VersionReq {
         let sdk_config = global_json.sdk;
         let version = &sdk_config.version;
         let roll_forward = sdk_config.roll_forward.as_deref();
+
         let version_req_str = match roll_forward {
             Some("patch" | "latestPatch") => format!("~{version}"),
-            Some("feature" | "latestFeature") => {
-                let parts: Vec<&str> = version.split('.').collect();
-                if parts.len() > 2 {
-                    format!("~{}.{}", parts[0], parts[1])
-                } else {
-                    format!("~{version}")
-                }
-            }
-            Some("minor" | "latestMinor") => {
-                let parts: Vec<&str> = version.split('.').collect();
-                if parts.len() > 1 {
-                    format!("^{}.{}", parts[0], parts[1])
-                } else {
-                    format!("^{version}")
-                }
-            }
+            Some("feature" | "latestFeature") => format!(
+                "~{}",
+                version.split('.').take(2).collect::<Vec<_>>().join(".")
+            ),
+            Some("minor" | "latestMinor") => format!(
+                "^{}",
+                version.split('.').take(2).collect::<Vec<_>>().join(".")
+            ),
             Some("major" | "latestMajor") => "*".to_string(),
             Some("disable") => format!("={version}"),
             _ => version.clone(),
