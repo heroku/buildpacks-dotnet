@@ -190,7 +190,7 @@ fn get_solution_sdk_version_requirement(
         target_framework_monikers
             // The last (i.e. most recent, based on the sorting logic above) target framework moniker is preferred
             .last()
-            .ok_or(DotnetBuildpackError::NoDotnetFiles)?,
+            .ok_or(DotnetBuildpackError::NoSolutionProjects)?,
     )
     .map_err(DotnetBuildpackError::ParseVersionRequirement)
 }
@@ -269,6 +269,8 @@ enum DotnetBuildpackError {
     BuildpackDetection(io::Error),
     #[error("No .NET solution or project files found")]
     NoDotnetFiles,
+    #[error("No project references found in solution")]
+    NoSolutionProjects,
     #[error("Multiple .NET project files found in root directory: {0}")]
     MultipleProjectFiles(String),
     #[error("Error loading .NET solution file")]
