@@ -17,7 +17,7 @@ use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::utils::StreamedCommandError;
-use inventory::artifact::{Arch, Os};
+use inventory::artifact::{Arch, Artifact, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::LaunchBuilder;
@@ -25,10 +25,10 @@ use libcnb::data::layer_name;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer::{
-    CachedLayerDefinition, InvalidMetadataAction, LayerState, RestoredLayerAction,
+    CachedLayerDefinition, InvalidMetadataAction, LayerRef, LayerState, RestoredLayerAction,
 };
 use libcnb::layer_env::Scope;
-use libcnb::{buildpack_main, Buildpack, Env};
+use libcnb::{buildpack_main, Buildpack, Env, Target};
 use libherokubuildpack::log::{log_header, log_info, log_warning};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
@@ -65,68 +65,21 @@ impl Buildpack for DotnetBuildpack {
             solution.path.to_string_lossy()
         ));
 
-        let sdk_version_requirement = if let Some(file) = detect::global_json_file(&context.app_dir)
-        {
-            log_info("Detected global.json file in the root directory");
-            VersionReq::try_from(
-                fs::read_to_string(file.as_path())
-                    .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
-                    .parse::<GlobalJson>()
-                    .map_err(DotnetBuildpackError::ParseGlobalJson)?,
-            )
-            .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?
-        } else {
-            parse_sdk_version_req_for(&solution)?
-        };
-
+        let sdk_version_requirement = detect_global_json_sdk_version_requirement(&context.app_dir)
+            .unwrap_or_else(|| get_solution_sdk_version_requirement(&solution))?;
         log_info(format!(
             "Inferred SDK version requirement: {sdk_version_requirement}",
         ));
 
-        let inventory = include_str!("../inventory.toml")
-            .parse::<Inventory<Version, Sha512, Option<()>>>()
-            .map_err(DotnetBuildpackError::ParseInventory)?;
-
-        let artifact = inventory
-            .resolve(
-                context.target.os
-                    .parse::<Os>()
-                    .expect("OS should be always parseable, buildpack will not run on unsupported operating systems."),
-                context.target.arch
-                    .parse::<Arch>()
-                    .expect("Arch should be always parseable, buildpack will not run on unsupported architectures."),
-                &sdk_version_requirement
-            )
-            .ok_or(DotnetBuildpackError::ResolveSdkVersion(sdk_version_requirement))?;
-
+        let artifact = resolve_sdk_artifact(&context.target, sdk_version_requirement)?;
         log_info(format!(
             "Resolved .NET SDK version {} ({}-{})",
             artifact.version, artifact.os, artifact.arch
         ));
 
-        let sdk_layer = layers::sdk::handle(&context, artifact)?;
+        let sdk_layer = layers::sdk::handle(&context, &artifact)?;
 
-        let nuget_cache_layer = context.cached_layer(
-            layer_name!("nuget-cache"),
-            CachedLayerDefinition {
-                build: false,
-                launch: false,
-                invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
-                restored_layer_action: &|_metadata: &NugetCacheLayerMetadata, _path| {
-                    RestoredLayerAction::KeepLayer
-                },
-            },
-        )?;
-
-        match nuget_cache_layer.state {
-            LayerState::Restored { .. } => log_info("Reusing NuGet package cache"),
-            LayerState::Empty { .. } => {
-                log_info("Empty NuGet package cache");
-                nuget_cache_layer.write_metadata(NugetCacheLayerMetadata {
-                    version: String::from("foo"),
-                })?;
-            }
-        }
+        let nuget_cache_layer = handle_nuget_cache_layer(&context)?;
 
         log_header("Publish");
 
@@ -261,7 +214,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
     Err(DotnetBuildpackError::NoDotnetFiles)
 }
 
-fn parse_sdk_version_req_for(
+fn get_solution_sdk_version_requirement(
     solution: &DotnetSolution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
     let requirements = solution
@@ -290,9 +243,72 @@ fn parse_sdk_version_req_for(
         .ok_or(DotnetBuildpackError::NoDotnetFiles)
 }
 
+fn detect_global_json_sdk_version_requirement(
+    app_dir: &Path,
+) -> Option<Result<VersionReq, DotnetBuildpackError>> {
+    detect::global_json_file(app_dir).map(|file| {
+        log_info("Detected global.json file in the root directory");
+        VersionReq::try_from(
+            fs::read_to_string(file.as_path())
+                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
+                .parse::<GlobalJson>()
+                .map_err(DotnetBuildpackError::ParseGlobalJson)?,
+        )
+        .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)
+    })
+}
+
+fn resolve_sdk_artifact(
+    target: &Target,
+    sdk_version_requirement: VersionReq,
+) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
+    let inventory = include_str!("../inventory.toml")
+        .parse::<Inventory<Version, Sha512, Option<()>>>()
+        .map_err(DotnetBuildpackError::ParseInventory)?;
+
+    inventory
+        .resolve(
+            target.os
+                .parse::<Os>()
+                .expect("OS should be always parseable, buildpack will not run on unsupported operating systems."),
+            target.arch
+                .parse::<Arch>()
+                .expect("Arch should be always parseable, buildpack will not run on unsupported architectures."),
+            &sdk_version_requirement
+        )
+        .ok_or(DotnetBuildpackError::ResolveSdkVersion(sdk_version_requirement)).cloned()
+}
+
 #[derive(Serialize, Deserialize)]
 struct NugetCacheLayerMetadata {
     version: String,
+}
+
+fn handle_nuget_cache_layer(
+    context: &BuildContext<DotnetBuildpack>,
+) -> Result<LayerRef<DotnetBuildpack, (), ()>, libcnb::Error<<DotnetBuildpack as Buildpack>::Error>>
+{
+    let nuget_cache_layer = context.cached_layer(
+        layer_name!("nuget-cache"),
+        CachedLayerDefinition {
+            build: false,
+            launch: false,
+            invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
+            restored_layer_action: &|_metadata: &NugetCacheLayerMetadata, _path| {
+                RestoredLayerAction::KeepLayer
+            },
+        },
+    )?;
+    match nuget_cache_layer.state {
+        LayerState::Restored { .. } => log_info("Reusing NuGet package cache"),
+        LayerState::Empty { .. } => {
+            log_info("Empty NuGet package cache");
+            nuget_cache_layer.write_metadata(NugetCacheLayerMetadata {
+                version: String::from("foo"),
+            })?;
+        }
+    }
+    Ok(nuget_cache_layer)
 }
 
 #[derive(thiserror::Error, Debug)]
