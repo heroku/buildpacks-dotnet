@@ -80,8 +80,7 @@ impl Buildpack for DotnetBuildpack {
         };
 
         log_info(format!(
-            "Inferred SDK version requirement: {}",
-            &sdk_version_requirement
+            "Inferred SDK version requirement: {sdk_version_requirement}",
         ));
 
         let inventory = include_str!("../inventory.toml")
