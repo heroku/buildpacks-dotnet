@@ -126,7 +126,7 @@ fn infer_project_type(metadata: &DotnetProjectMetadata) -> ProjectType {
 mod tests {
     use super::*;
 
-    fn assert_dotnet_project_metadata(
+    fn assert_project_metadata(
         project_xml: &str,
         expected_sdk_id: Option<&str>,
         expected_target_framework: &str,
@@ -154,7 +154,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        assert_dotnet_project_metadata(
+        assert_project_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk"),
             "net6.0",
@@ -172,7 +172,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_dotnet_project_metadata(
+        assert_project_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk.Web"),
             "net6.0",
@@ -191,7 +191,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_dotnet_project_metadata(
+        assert_project_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk.Razor"),
             "net6.0",
@@ -210,7 +210,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_dotnet_project_metadata(
+        assert_project_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk.BlazorWebAssembly"),
             "net6.0",
@@ -229,7 +229,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_dotnet_project_metadata(
+        assert_project_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk.Worker"),
             "net6.0",
@@ -247,13 +247,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_dotnet_project_metadata(
-            project_xml,
-            Some("Microsoft.NET.Sdk"),
-            "net6.0",
-            None,
-            None,
-        );
+        assert_project_metadata(project_xml, Some("Microsoft.NET.Sdk"), "net6.0", None, None);
     }
 
     #[test]
@@ -266,7 +260,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_dotnet_project_metadata(
+        assert_project_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk"),
             "net6.0",
@@ -285,7 +279,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        assert_dotnet_project_metadata(project_xml, None, "net6.0", Some("Library"), None);
+        assert_project_metadata(project_xml, None, "net6.0", Some("Library"), None);
     }
 
     #[test]
@@ -300,7 +294,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_dotnet_project_metadata(
+        assert_project_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk"),
             "net6.0",
