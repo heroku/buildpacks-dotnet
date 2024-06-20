@@ -1,7 +1,7 @@
 use inventory::artifact::{Arch, Os};
 use std::fmt;
 
-/// Enum representing various .NET Runtime Identifiers (RIDs).
+/// Enum representing supported .NET Runtime Identifiers (RIDs).
 #[derive(Debug, PartialEq)]
 pub(crate) enum RuntimeIdentifier {
     LinuxX64,
