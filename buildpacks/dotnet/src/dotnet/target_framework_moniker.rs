@@ -66,7 +66,7 @@ mod tests {
     use std::convert::TryFrom;
 
     #[test]
-    fn test_parse_valid_tfm_net6_0() {
+    fn test_parse_net6_0() {
         let tfm = "net6.0";
         let target_framework = tfm.parse::<TargetFrameworkMoniker>().unwrap();
         let expected = VersionReq::from_str("^6.0").unwrap();
@@ -74,7 +74,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_valid_tfm_net7_0() {
+    fn test_parse_net7_0() {
         let tfm = "net7.0";
         let target_framework = tfm.parse::<TargetFrameworkMoniker>().unwrap();
         let expected = VersionReq::from_str("^7.0").unwrap();
@@ -82,7 +82,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_valid_tfm_net8_0() {
+    fn test_parse_net8_0() {
         let tfm = "net8.0";
         let target_framework = tfm.parse::<TargetFrameworkMoniker>().unwrap();
         let expected = VersionReq::from_str("^8.0").unwrap();
@@ -90,7 +90,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_invalid_tfm_empty() {
+    fn test_parse_invalid_empty() {
         let tfm = "";
         assert!(matches!(
             tfm.parse::<TargetFrameworkMoniker>(),
@@ -99,7 +99,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_invalid_tfm_non_numeric() {
+    fn test_parse_invalid_non_numeric() {
         let tfm = "netcoreapp";
         assert!(matches!(
             tfm.parse::<TargetFrameworkMoniker>(),
@@ -108,7 +108,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_invalid_tfm_malformed_version() {
+    fn test_parse_invalid_malformed_version() {
         let tfm = "net6.x";
         assert!(matches!(
             tfm.parse::<TargetFrameworkMoniker>(),
@@ -117,7 +117,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_unsupported_os_tfm() {
+    fn test_parse_unsupported_os() {
         let tfm = "net6.0-ios15.0";
         assert!(matches!(
             tfm.parse::<TargetFrameworkMoniker>(),

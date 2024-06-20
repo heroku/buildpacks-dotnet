@@ -1,22 +1,19 @@
 mod detect;
+mod dotnet;
 mod dotnet_layer_env;
-mod dotnet_project;
 mod dotnet_publish_command;
-mod dotnet_runtime_identifier;
-mod dotnet_solution;
-mod global_json;
 mod launch_process;
 mod layers;
-mod tfm;
 mod utils;
 
-use crate::dotnet_project::DotnetProject;
+use crate::dotnet::global_json::GlobalJson;
+use crate::dotnet::project::Project;
+use crate::dotnet::runtime_identifier;
+use crate::dotnet::solution::Solution;
+use crate::dotnet::target_framework_moniker::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::dotnet_publish_command::{DotnetPublishCommand, VerbosityLevel};
-use crate::dotnet_solution::DotnetSolution;
-use crate::global_json::GlobalJson;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
-use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::utils::StreamedCommandError;
 use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
@@ -89,8 +86,7 @@ impl Buildpack for DotnetBuildpack {
 
         log_header("Publish");
         let build_configuration = String::from("Release");
-        let runtime_identifier =
-            dotnet_runtime_identifier::get_runtime_identifier(target_os, target_arch);
+        let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
             libcnb::layer_env::ModificationBehavior::Override,
@@ -129,7 +125,7 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
-fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuildpackError> {
+fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackError> {
     let solution_file_paths =
         detect::solution_file_paths(app_dir).expect("function to pass after detection");
     if let Some(solution_file) = solution_file_paths.first() {
@@ -146,7 +142,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
                 ),
             );
         }
-        return DotnetSolution::load_from_path(solution_file)
+        return Solution::load_from_path(solution_file)
             .map_err(DotnetBuildpackError::LoadDotnetSolutionFile);
     }
 
@@ -165,8 +161,8 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
                     .join(", "),
             ));
         }
-        return Ok(DotnetSolution::ephemeral(
-            DotnetProject::load_from_path(project_file)
+        return Ok(Solution::ephemeral(
+            Project::load_from_path(project_file)
                 .map_err(DotnetBuildpackError::LoadDotnetProjectFile)?,
         ));
     }
@@ -175,7 +171,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
 }
 
 fn get_solution_sdk_version_requirement(
-    solution: &DotnetSolution,
+    solution: &Solution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
     let mut target_framework_monikers = solution
         .projects
@@ -231,9 +227,9 @@ enum DotnetBuildpackError {
     #[error("Multiple .NET project files found in root directory: {0}")]
     MultipleProjectFiles(String),
     #[error("Error loading .NET solution file")]
-    LoadDotnetSolutionFile(dotnet_solution::LoadSolutionError),
+    LoadDotnetSolutionFile(dotnet::solution::LoadError),
     #[error("Error loading .NET project file")]
-    LoadDotnetProjectFile(dotnet_project::LoadProjectError),
+    LoadDotnetProjectFile(dotnet::project::LoadError),
     #[error("Error parsing target framework moniker: {0}")]
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     #[error("Error reading global.json file")]

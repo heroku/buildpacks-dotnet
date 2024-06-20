@@ -1,34 +1,33 @@
-use crate::dotnet_project::{DotnetProject, LoadProjectError};
+use crate::dotnet::project::{self, Project};
 use regex::Regex;
 use std::fs::{self};
 use std::io::{self};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
-pub(crate) struct DotnetSolution {
+pub(crate) struct Solution {
     pub(crate) path: PathBuf,
-    pub(crate) projects: Vec<DotnetProject>,
+    pub(crate) projects: Vec<Project>,
 }
 
-impl DotnetSolution {
-    pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadSolutionError> {
+impl Solution {
+    pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadError> {
         Ok(Self {
             path: path.to_path_buf(),
             projects: extract_project_references(
-                &fs::read_to_string(path).map_err(LoadSolutionError::ReadSolutionFile)?,
+                &fs::read_to_string(path).map_err(LoadError::ReadSolutionFile)?,
             )
             .into_iter()
             .filter_map(|project_path| {
                 path.parent().map(|dir| {
-                    DotnetProject::load_from_path(&dir.join(project_path))
-                        .map_err(LoadSolutionError::LoadProject)
+                    Project::load_from_path(&dir.join(project_path)).map_err(LoadError::LoadProject)
                 })
             })
             .collect::<Result<Vec<_>, _>>()?,
         })
     }
 
-    pub(crate) fn ephemeral(project: DotnetProject) -> Self {
+    pub(crate) fn ephemeral(project: Project) -> Self {
         Self {
             path: project.path.clone(),
             projects: vec![project],
@@ -37,11 +36,11 @@ impl DotnetSolution {
 }
 
 #[derive(Error, Debug)]
-pub(crate) enum LoadSolutionError {
+pub(crate) enum LoadError {
     #[error("Error reading solution file")]
     ReadSolutionFile(io::Error),
     #[error("Error loading .NET project")]
-    LoadProject(LoadProjectError),
+    LoadProject(project::LoadError),
 }
 
 fn extract_project_references(contents: &str) -> Vec<String> {

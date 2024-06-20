@@ -1,6 +1,6 @@
-use crate::dotnet_project::ProjectType;
-use crate::dotnet_runtime_identifier::RuntimeIdentifier;
-use crate::dotnet_solution::DotnetSolution;
+use crate::dotnet::project::ProjectType;
+use crate::dotnet::runtime_identifier::RuntimeIdentifier;
+use crate::dotnet::solution::Solution;
 use libcnb::data::launch::{
     Process, ProcessBuilder, ProcessType, ProcessTypeError, WorkingDirectory,
 };
@@ -12,7 +12,7 @@ pub(crate) enum LaunchProcessDetectionError {
 }
 
 pub(crate) fn detect_solution_processes(
-    solution: &DotnetSolution,
+    solution: &Solution,
     configuration: &str,
     runtime_identifier: &RuntimeIdentifier,
 ) -> Result<Vec<Process>, LaunchProcessDetectionError> {

@@ -35,7 +35,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_dotnet_rid_linux_x64() {
+    fn test_linux_x64() {
         assert_eq!(
             get_runtime_identifier(Os::Linux, Arch::Amd64),
             RuntimeIdentifier::LinuxX64
@@ -43,7 +43,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_dotnet_rid_linux_arm64() {
+    fn test_linux_arm64() {
         assert_eq!(
             get_runtime_identifier(Os::Linux, Arch::Arm64),
             RuntimeIdentifier::LinuxArm64
@@ -51,7 +51,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_dotnet_rid_osx_x64() {
+    fn test_osx_x64() {
         assert_eq!(
             get_runtime_identifier(Os::Darwin, Arch::Amd64),
             RuntimeIdentifier::OsxX64
@@ -59,7 +59,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_dotnet_rid_osx_arm64() {
+    fn test_osx_arm64() {
         assert_eq!(
             get_runtime_identifier(Os::Darwin, Arch::Arm64),
             RuntimeIdentifier::OsxArm64
