@@ -71,23 +71,19 @@ impl Buildpack for DotnetBuildpack {
             "Arch should always be parseable, buildpack will not run on unsupported architectures.",
         );
 
-        let sdk_artifact = {
-            let inventory = include_str!("../inventory.toml")
-                .parse::<Inventory<Version, Sha512, Option<()>>>()
-                .map_err(DotnetBuildpackError::ParseInventory)?;
-
-            inventory
-                .resolve(target_os, target_arch, &sdk_version_requirement)
-                .ok_or(DotnetBuildpackError::ResolveSdkVersion(
-                    sdk_version_requirement,
-                ))
-                .cloned()
-        }?;
+        let sdk_inventory = include_str!("../inventory.toml")
+            .parse::<Inventory<Version, Sha512, Option<()>>>()
+            .map_err(DotnetBuildpackError::ParseInventory)?;
+        let sdk_artifact = sdk_inventory
+            .resolve(target_os, target_arch, &sdk_version_requirement)
+            .ok_or(DotnetBuildpackError::ResolveSdkVersion(
+                sdk_version_requirement,
+            ))?;
         log_info(format!(
             "Resolved .NET SDK version {} ({}-{})",
             sdk_artifact.version, sdk_artifact.os, sdk_artifact.arch
         ));
-        let sdk_layer = layers::sdk::handle(&context, &sdk_artifact)?;
+        let sdk_layer = layers::sdk::handle(&context, sdk_artifact)?;
 
         let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
 
