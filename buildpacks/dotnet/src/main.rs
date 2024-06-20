@@ -4,17 +4,16 @@ mod dotnet_layer_env;
 mod dotnet_publish_command;
 mod launch_process;
 mod layers;
-mod tfm;
 mod utils;
 
 use crate::dotnet::global_json::GlobalJson;
 use crate::dotnet::project::{self, Project};
 use crate::dotnet::runtime_identifier;
 use crate::dotnet::solution::{self, Solution};
+use crate::dotnet::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::dotnet_publish_command::{DotnetPublishCommand, VerbosityLevel};
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
-use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::utils::StreamedCommandError;
 use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
