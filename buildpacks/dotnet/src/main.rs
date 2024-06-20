@@ -2,12 +2,12 @@ mod detect;
 mod dotnet;
 mod dotnet_layer_env;
 mod dotnet_publish_command;
-mod dotnet_runtime_identifier;
 mod launch_process;
 mod layers;
 mod tfm;
 mod utils;
 
+use crate::dotnet::dotnet_runtime_identifier;
 use crate::dotnet::global_json::GlobalJson;
 use crate::dotnet::project::{self, Project};
 use crate::dotnet::solution::{self, Solution};
