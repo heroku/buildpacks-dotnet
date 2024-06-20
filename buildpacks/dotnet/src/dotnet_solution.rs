@@ -1,4 +1,4 @@
-use crate::dotnet_project::{DotnetProject, LoadProjectError};
+use crate::dotnet::dotnet_project::{DotnetProject, LoadProjectError};
 use regex::Regex;
 use std::fs::{self};
 use std::io::{self};

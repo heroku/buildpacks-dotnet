@@ -1,6 +1,6 @@
 mod detect;
+mod dotnet;
 mod dotnet_layer_env;
-mod dotnet_project;
 mod dotnet_publish_command;
 mod dotnet_runtime_identifier;
 mod dotnet_solution;
@@ -10,7 +10,7 @@ mod layers;
 mod tfm;
 mod utils;
 
-use crate::dotnet_project::DotnetProject;
+use crate::dotnet::dotnet_project::{self, DotnetProject};
 use crate::dotnet_publish_command::{DotnetPublishCommand, VerbosityLevel};
 use crate::dotnet_solution::DotnetSolution;
 use crate::global_json::GlobalJson;
