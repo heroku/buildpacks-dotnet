@@ -2,7 +2,7 @@ mod detect;
 mod dotnet_layer_env;
 mod dotnet_project;
 mod dotnet_publish_command;
-mod dotnet_rid;
+mod dotnet_runtime_identifier;
 mod dotnet_solution;
 mod global_json;
 mod launch_process;
@@ -89,7 +89,8 @@ impl Buildpack for DotnetBuildpack {
 
         log_header("Publish");
         let build_configuration = String::from("Release");
-        let runtime_identifier = dotnet_rid::get_runtime_identifier(target_os, target_arch);
+        let runtime_identifier =
+            dotnet_runtime_identifier::get_runtime_identifier(target_os, target_arch);
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
             libcnb::layer_env::ModificationBehavior::Override,
