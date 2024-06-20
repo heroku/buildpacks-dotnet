@@ -42,7 +42,7 @@ impl Project {
 }
 
 #[derive(Debug)]
-struct ProjectMetadata {
+struct Metadata {
     target_framework: String,
     sdk_id: Option<String>,
     output_type: Option<String>,
@@ -66,8 +66,8 @@ pub(crate) enum LoadError {
     MissingTargetFramework,
 }
 
-fn parse_metadata(document: &Document) -> ProjectMetadata {
-    let mut metadata = ProjectMetadata {
+fn parse_metadata(document: &Document) -> Metadata {
+    let mut metadata = Metadata {
         sdk_id: None,
         target_framework: String::new(),
         output_type: None,
@@ -107,7 +107,7 @@ fn parse_metadata(document: &Document) -> ProjectMetadata {
     metadata
 }
 
-fn infer_project_type(metadata: &ProjectMetadata) -> ProjectType {
+fn infer_project_type(metadata: &Metadata) -> ProjectType {
     if let Some(sdk_id) = &metadata.sdk_id {
         return match sdk_id.as_str() {
             "Microsoft.NET.Sdk" => match metadata.output_type.as_deref() {
@@ -125,7 +125,7 @@ fn infer_project_type(metadata: &ProjectMetadata) -> ProjectType {
 mod tests {
     use super::*;
 
-    fn assert_project_metadata(
+    fn assert_metadata(
         project_xml: &str,
         expected_sdk_id: Option<&str>,
         expected_target_framework: &str,
@@ -153,7 +153,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        assert_project_metadata(
+        assert_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk"),
             "net6.0",
@@ -171,7 +171,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_project_metadata(
+        assert_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk.Web"),
             "net6.0",
@@ -190,7 +190,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_project_metadata(
+        assert_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk.Razor"),
             "net6.0",
@@ -209,7 +209,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_project_metadata(
+        assert_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk.BlazorWebAssembly"),
             "net6.0",
@@ -228,7 +228,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_project_metadata(
+        assert_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk.Worker"),
             "net6.0",
@@ -246,7 +246,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_project_metadata(project_xml, Some("Microsoft.NET.Sdk"), "net6.0", None, None);
+        assert_metadata(project_xml, Some("Microsoft.NET.Sdk"), "net6.0", None, None);
     }
 
     #[test]
@@ -259,7 +259,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_project_metadata(
+        assert_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk"),
             "net6.0",
@@ -278,7 +278,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        assert_project_metadata(project_xml, None, "net6.0", Some("Library"), None);
+        assert_metadata(project_xml, None, "net6.0", Some("Library"), None);
     }
 
     #[test]
@@ -293,7 +293,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_project_metadata(
+        assert_metadata(
             project_xml,
             Some("Microsoft.NET.Sdk"),
             "net6.0",
@@ -304,7 +304,7 @@ mod tests {
 
     #[test]
     fn test_infer_project_type_console_application() {
-        let metadata = ProjectMetadata {
+        let metadata = Metadata {
             sdk_id: Some("Microsoft.NET.Sdk".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: Some("Exe".to_string()),
@@ -318,7 +318,7 @@ mod tests {
 
     #[test]
     fn test_infer_project_type_web_application() {
-        let metadata = ProjectMetadata {
+        let metadata = Metadata {
             sdk_id: Some("Microsoft.NET.Sdk.Web".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: None,
@@ -326,7 +326,7 @@ mod tests {
         };
         assert_eq!(infer_project_type(&metadata), ProjectType::WebApplication);
 
-        let metadata = ProjectMetadata {
+        let metadata = Metadata {
             sdk_id: Some("Microsoft.NET.Sdk.Razor".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: None,
@@ -337,7 +337,7 @@ mod tests {
 
     #[test]
     fn test_infer_project_type_unknown() {
-        let metadata = ProjectMetadata {
+        let metadata = Metadata {
             sdk_id: Some("Unknown.Sdk".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: None,
