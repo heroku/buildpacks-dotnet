@@ -21,7 +21,7 @@ fn test_dotnet_publish_with_rid() {
             assert_contains!(
                 replace_msbuild_log_patterns_with_placeholder(&context.pack_stdout, "<PLACEHOLDER>"), 
                 &formatdoc! {r#"
-                Empty NuGet package cache
+                Created NuGet package cache
 
                 [Publish]
                 MSBuild version 17.8.3+195e7f5a3 for .NET
