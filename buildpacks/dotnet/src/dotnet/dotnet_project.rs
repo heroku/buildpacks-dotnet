@@ -15,9 +15,8 @@ pub(crate) struct Project {
 impl Project {
     pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadProjectError> {
         let content = fs::read_to_string(path).map_err(LoadProjectError::ReadProjectFile)?;
-        let metadata = parse_dotnet_project_metadata(
-            &Document::parse(&content).map_err(LoadProjectError::XmlParseError)?,
-        );
+        let metadata =
+            parse_metadata(&Document::parse(&content).map_err(LoadProjectError::XmlParseError)?);
 
         if metadata.target_framework.is_empty() {
             return Err(LoadProjectError::MissingTargetFramework);
@@ -43,7 +42,7 @@ impl Project {
 }
 
 #[derive(Debug)]
-struct DotnetProjectMetadata {
+struct ProjectMetadata {
     target_framework: String,
     sdk_id: Option<String>,
     output_type: Option<String>,
@@ -67,8 +66,8 @@ pub(crate) enum LoadProjectError {
     MissingTargetFramework,
 }
 
-fn parse_dotnet_project_metadata(document: &Document) -> DotnetProjectMetadata {
-    let mut metadata = DotnetProjectMetadata {
+fn parse_metadata(document: &Document) -> ProjectMetadata {
+    let mut metadata = ProjectMetadata {
         sdk_id: None,
         target_framework: String::new(),
         output_type: None,
@@ -108,7 +107,7 @@ fn parse_dotnet_project_metadata(document: &Document) -> DotnetProjectMetadata {
     metadata
 }
 
-fn infer_project_type(metadata: &DotnetProjectMetadata) -> ProjectType {
+fn infer_project_type(metadata: &ProjectMetadata) -> ProjectType {
     if let Some(sdk_id) = &metadata.sdk_id {
         return match sdk_id.as_str() {
             "Microsoft.NET.Sdk" => match metadata.output_type.as_deref() {
@@ -133,7 +132,7 @@ mod tests {
         expected_output_type: Option<&str>,
         expected_assembly_name: Option<&str>,
     ) {
-        let metadata = parse_dotnet_project_metadata(&Document::parse(project_xml).unwrap());
+        let metadata = parse_metadata(&Document::parse(project_xml).unwrap());
         assert_eq!(metadata.sdk_id, expected_sdk_id.map(ToString::to_string));
         assert_eq!(metadata.target_framework, expected_target_framework);
         assert_eq!(metadata.output_type, expected_output_type.map(String::from));
@@ -305,7 +304,7 @@ mod tests {
 
     #[test]
     fn test_infer_project_type_console_application() {
-        let metadata = DotnetProjectMetadata {
+        let metadata = ProjectMetadata {
             sdk_id: Some("Microsoft.NET.Sdk".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: Some("Exe".to_string()),
@@ -319,7 +318,7 @@ mod tests {
 
     #[test]
     fn test_infer_project_type_web_application() {
-        let metadata = DotnetProjectMetadata {
+        let metadata = ProjectMetadata {
             sdk_id: Some("Microsoft.NET.Sdk.Web".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: None,
@@ -327,7 +326,7 @@ mod tests {
         };
         assert_eq!(infer_project_type(&metadata), ProjectType::WebApplication);
 
-        let metadata = DotnetProjectMetadata {
+        let metadata = ProjectMetadata {
             sdk_id: Some("Microsoft.NET.Sdk.Razor".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: None,
@@ -338,7 +337,7 @@ mod tests {
 
     #[test]
     fn test_infer_project_type_unknown() {
-        let metadata = DotnetProjectMetadata {
+        let metadata = ProjectMetadata {
             sdk_id: Some("Unknown.Sdk".to_string()),
             target_framework: "net6.0".to_string(),
             output_type: None,
