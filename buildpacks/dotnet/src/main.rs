@@ -227,9 +227,9 @@ enum DotnetBuildpackError {
     #[error("Multiple .NET project files found in root directory: {0}")]
     MultipleProjectFiles(String),
     #[error("Error loading .NET solution file")]
-    LoadDotnetSolutionFile(solution::LoadSolutionError),
+    LoadDotnetSolutionFile(solution::LoadError),
     #[error("Error loading .NET project file")]
-    LoadDotnetProjectFile(project::LoadProjectError),
+    LoadDotnetProjectFile(project::LoadError),
     #[error("Error parsing target framework moniker: {0}")]
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     #[error("Error reading global.json file")]

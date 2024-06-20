@@ -13,13 +13,13 @@ pub(crate) struct Project {
 }
 
 impl Project {
-    pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadProjectError> {
-        let content = fs::read_to_string(path).map_err(LoadProjectError::ReadProjectFile)?;
+    pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadError> {
+        let content = fs::read_to_string(path).map_err(LoadError::ReadProjectFile)?;
         let metadata =
-            parse_metadata(&Document::parse(&content).map_err(LoadProjectError::XmlParseError)?);
+            parse_metadata(&Document::parse(&content).map_err(LoadError::XmlParseError)?);
 
         if metadata.target_framework.is_empty() {
-            return Err(LoadProjectError::MissingTargetFramework);
+            return Err(LoadError::MissingTargetFramework);
         }
 
         let project_type = infer_project_type(&metadata);
@@ -57,7 +57,7 @@ pub(crate) enum ProjectType {
 }
 
 #[derive(Error, Debug)]
-pub(crate) enum LoadProjectError {
+pub(crate) enum LoadError {
     #[error("Error reading project file")]
     ReadProjectFile(io::Error),
     #[error("Error parsing XML")]

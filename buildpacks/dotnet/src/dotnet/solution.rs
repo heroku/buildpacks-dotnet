@@ -1,4 +1,4 @@
-use crate::dotnet::project::{LoadProjectError, Project};
+use crate::dotnet::project::{self, Project};
 use regex::Regex;
 use std::fs::{self};
 use std::io::{self};
@@ -11,17 +11,16 @@ pub(crate) struct Solution {
 }
 
 impl Solution {
-    pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadSolutionError> {
+    pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadError> {
         Ok(Self {
             path: path.to_path_buf(),
             projects: extract_project_references(
-                &fs::read_to_string(path).map_err(LoadSolutionError::ReadSolutionFile)?,
+                &fs::read_to_string(path).map_err(LoadError::ReadSolutionFile)?,
             )
             .into_iter()
             .filter_map(|project_path| {
                 path.parent().map(|dir| {
-                    Project::load_from_path(&dir.join(project_path))
-                        .map_err(LoadSolutionError::LoadProject)
+                    Project::load_from_path(&dir.join(project_path)).map_err(LoadError::LoadProject)
                 })
             })
             .collect::<Result<Vec<_>, _>>()?,
@@ -37,11 +36,11 @@ impl Solution {
 }
 
 #[derive(Error, Debug)]
-pub(crate) enum LoadSolutionError {
+pub(crate) enum LoadError {
     #[error("Error reading solution file")]
     ReadSolutionFile(io::Error),
     #[error("Error loading .NET project")]
-    LoadProject(LoadProjectError),
+    LoadProject(project::LoadError),
 }
 
 fn extract_project_references(contents: &str) -> Vec<String> {
