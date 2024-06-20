@@ -14,7 +14,7 @@ pub(crate) enum LaunchProcessDetectionError {
 pub(crate) fn detect_solution_processes(
     solution: &DotnetSolution,
     configuration: &str,
-    rid: &RuntimeIdentifier,
+    runtime_identifier: &RuntimeIdentifier,
 ) -> Result<Vec<Process>, LaunchProcessDetectionError> {
     solution
         .projects
@@ -33,7 +33,7 @@ pub(crate) fn detect_solution_processes(
                 .join("bin")
                 .join(configuration)
                 .join(&project.target_framework)
-                .join(rid.to_string())
+                .join(runtime_identifier.to_string())
                 .join("publish")
                 .join(&project.assembly_name);
             let mut command = format!("{}", executable_path.to_string_lossy());
