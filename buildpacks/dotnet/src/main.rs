@@ -9,8 +9,8 @@ mod layers;
 mod tfm;
 mod utils;
 
-use crate::dotnet::dotnet_project::{self, Project};
 use crate::dotnet::dotnet_solution::{self, DotnetSolution};
+use crate::dotnet::project::{self, Project};
 use crate::dotnet_publish_command::{DotnetPublishCommand, VerbosityLevel};
 use crate::global_json::GlobalJson;
 use crate::launch_process::LaunchProcessDetectionError;
@@ -232,7 +232,7 @@ enum DotnetBuildpackError {
     #[error("Error loading .NET solution file")]
     LoadDotnetSolutionFile(dotnet_solution::LoadSolutionError),
     #[error("Error loading .NET project file")]
-    LoadDotnetProjectFile(dotnet_project::LoadProjectError),
+    LoadDotnetProjectFile(project::LoadProjectError),
     #[error("Error parsing target framework moniker: {0}")]
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     #[error("Error reading global.json file")]

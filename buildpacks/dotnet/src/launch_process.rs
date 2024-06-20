@@ -1,5 +1,5 @@
-use crate::dotnet::dotnet_project::ProjectType;
 use crate::dotnet::dotnet_solution::DotnetSolution;
+use crate::dotnet::project::ProjectType;
 use crate::dotnet_runtime_identifier::RuntimeIdentifier;
 use libcnb::data::launch::{
     Process, ProcessBuilder, ProcessType, ProcessTypeError, WorkingDirectory,
