@@ -167,30 +167,32 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
 fn get_solution_sdk_version_requirement(
     solution: &DotnetSolution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
-    let requirements = solution
+    let mut target_framework_monikers = solution
         .projects
         .iter()
         .map(|project| {
             log_info(format!(
-                "Detecting .NET version requirement for project {0}",
+                "Parsing target framework moniker for project: {0}",
                 project.path.to_string_lossy()
             ));
-
-            VersionReq::try_from(
-                project
-                    .target_framework
-                    .parse::<TargetFrameworkMoniker>()
-                    .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)?,
-            )
-            .map_err(DotnetBuildpackError::ParseVersionRequirement)
+            project
+                .target_framework
+                .parse::<TargetFrameworkMoniker>()
+                .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    requirements
-        // TODO: Add logic to prefer the most recent version requirement, and log if projects target different versions
-        .first()
-        .cloned()
-        .ok_or(DotnetBuildpackError::NoDotnetFiles)
+    // The target framework monikers are sorted lexicographically, which is sufficient for now
+    // (as the only expected TFMs are currently "net5.0", "net6.0", "net7.0", "net8.0", "net9.0").
+    target_framework_monikers.sort_by_key(|tfm| tfm.version_part.clone());
+
+    VersionReq::try_from(
+        target_framework_monikers
+            // The last (i.e. most recent, based on the sorting logic above) target framework moniker is preferred
+            .last()
+            .ok_or(DotnetBuildpackError::NoSolutionProjects)?,
+    )
+    .map_err(DotnetBuildpackError::ParseVersionRequirement)
 }
 
 fn detect_global_json_sdk_version_requirement(
@@ -267,6 +269,8 @@ enum DotnetBuildpackError {
     BuildpackDetection(io::Error),
     #[error("No .NET solution or project files found")]
     NoDotnetFiles,
+    #[error("No project references found in solution")]
+    NoSolutionProjects,
     #[error("Multiple .NET project files found in root directory: {0}")]
     MultipleProjectFiles(String),
     #[error("Error loading .NET solution file")]
