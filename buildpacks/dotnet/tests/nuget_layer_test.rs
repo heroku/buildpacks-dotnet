@@ -12,7 +12,7 @@ fn test_nuget_restore_and_cache() {
             assert_contains!(
                 replace_msbuild_log_patterns_with_placeholder(&context.pack_stdout, "<PLACEHOLDER>"),
                 &indoc! {r#"
-                Empty NuGet package cache
+                Created NuGet package cache
 
                 [Publish]
                 MSBuild version 17.9.8+610b4d3b5 for .NET
