@@ -18,14 +18,14 @@ use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::utils::StreamedCommandError;
-use inventory::artifact::{Arch, Artifact, Os};
+use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::LaunchBuilder;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
-use libcnb::{buildpack_main, Buildpack, Env, Target};
+use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::log::{log_header, log_info, log_warning};
 use semver::{Version, VersionReq};
 use sha2::Sha512;
@@ -64,7 +64,25 @@ impl Buildpack for DotnetBuildpack {
         log_info(format!(
             "Inferred SDK version requirement: {sdk_version_requirement}",
         ));
-        let sdk_artifact = resolve_sdk_artifact(&context.target, sdk_version_requirement)?;
+
+        let target_os = context.target.os.parse::<Os>()
+            .expect("OS should always be parseable, buildpack will not run on unsupported operating systems.");
+        let target_arch = context.target.arch.parse::<Arch>().expect(
+            "Arch should always be parseable, buildpack will not run on unsupported architectures.",
+        );
+
+        let sdk_artifact = {
+            let inventory = include_str!("../inventory.toml")
+                .parse::<Inventory<Version, Sha512, Option<()>>>()
+                .map_err(DotnetBuildpackError::ParseInventory)?;
+
+            inventory
+                .resolve(target_os, target_arch, &sdk_version_requirement)
+                .ok_or(DotnetBuildpackError::ResolveSdkVersion(
+                    sdk_version_requirement,
+                ))
+                .cloned()
+        }?;
         log_info(format!(
             "Resolved .NET SDK version {} ({}-{})",
             sdk_artifact.version, sdk_artifact.os, sdk_artifact.arch
@@ -75,7 +93,7 @@ impl Buildpack for DotnetBuildpack {
 
         log_header("Publish");
         let build_configuration = String::from("Release");
-        let runtime_identifier = dotnet_rid::get_runtime_identifier();
+        let runtime_identifier = dotnet_rid::get_runtime_identifier(target_os, target_arch);
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
             libcnb::layer_env::ModificationBehavior::Override,
@@ -203,27 +221,6 @@ fn detect_global_json_sdk_version_requirement(
         )
         .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)
     })
-}
-
-fn resolve_sdk_artifact(
-    target: &Target,
-    sdk_version_requirement: VersionReq,
-) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
-    let inventory = include_str!("../inventory.toml")
-        .parse::<Inventory<Version, Sha512, Option<()>>>()
-        .map_err(DotnetBuildpackError::ParseInventory)?;
-
-    inventory
-        .resolve(
-            target.os
-                .parse::<Os>()
-                .expect("OS should be always parseable, buildpack will not run on unsupported operating systems."),
-            target.arch
-                .parse::<Arch>()
-                .expect("Arch should be always parseable, buildpack will not run on unsupported architectures."),
-            &sdk_version_requirement
-        )
-        .ok_or(DotnetBuildpackError::ResolveSdkVersion(sdk_version_requirement)).cloned()
 }
 
 #[derive(thiserror::Error, Debug)]

@@ -1,4 +1,4 @@
-use std::env;
+use inventory::artifact::{Arch, Os};
 use std::fmt;
 
 /// Enum representing various .NET Runtime Identifiers (RIDs).
@@ -10,7 +10,6 @@ pub(crate) enum RuntimeIdentifier {
     LinuxMuslArm64,
     OsxX64,
     OsxArm64,
-    Unknown,
 }
 
 impl fmt::Display for RuntimeIdentifier {
@@ -22,13 +21,12 @@ impl fmt::Display for RuntimeIdentifier {
             RuntimeIdentifier::LinuxMuslArm64 => write!(f, "linux-musl-arm64"),
             RuntimeIdentifier::OsxX64 => write!(f, "osx-x64"),
             RuntimeIdentifier::OsxArm64 => write!(f, "osx-arm64"),
-            RuntimeIdentifier::Unknown => write!(f, "unknown"),
         }
     }
 }
 
 /// This function returns the .NET Runtime Identifier (RID)
-/// based on the current operating system and architecture.
+/// based on the specified operating system and architecture.
 ///
 /// It supports the following RIDs:
 /// - `linux-x64`
@@ -37,30 +35,24 @@ impl fmt::Display for RuntimeIdentifier {
 /// - `linux-musl-arm64`
 /// - `osx-x64`
 /// - `osx-arm64`
-///
-/// Other combinations of OS and architecture will return `Unknown`.
-pub(crate) fn get_runtime_identifier() -> RuntimeIdentifier {
-    let os = env::consts::OS;
-    let arch = env::consts::ARCH;
-
+pub(crate) fn get_runtime_identifier(os: Os, arch: Arch) -> RuntimeIdentifier {
     match (os, arch) {
-        ("linux", "x86_64") => {
+        (Os::Linux, Arch::Amd64) => {
             if is_musl() {
                 RuntimeIdentifier::LinuxMuslX64
             } else {
                 RuntimeIdentifier::LinuxX64
             }
         }
-        ("linux", "aarch64") => {
+        (Os::Linux, Arch::Arm64) => {
             if is_musl() {
                 RuntimeIdentifier::LinuxMuslArm64
             } else {
                 RuntimeIdentifier::LinuxArm64
             }
         }
-        ("macos", "x86_64") => RuntimeIdentifier::OsxX64,
-        ("macos", "aarch64") => RuntimeIdentifier::OsxArm64,
-        _ => RuntimeIdentifier::Unknown,
+        (Os::Darwin, Arch::Amd64) => RuntimeIdentifier::OsxX64,
+        (Os::Darwin, Arch::Arm64) => RuntimeIdentifier::OsxArm64,
     }
 }
 
@@ -81,56 +73,57 @@ fn is_musl() -> bool {
 
 #[cfg(test)]
 mod tests {
-    use std::env::consts::{ARCH, OS};
-
     use super::*;
 
     #[test]
     fn test_get_dotnet_rid_linux_x64() {
-        if OS == "linux" && ARCH == "x86_64" && !is_musl() {
-            assert_eq!(get_runtime_identifier(), RuntimeIdentifier::LinuxX64);
-        }
+        assert_eq!(
+            get_runtime_identifier(Os::Linux, Arch::Amd64),
+            RuntimeIdentifier::LinuxX64
+        );
     }
 
     #[test]
     fn test_get_dotnet_rid_linux_arm64() {
-        if OS == "linux" && ARCH == "aarch64" && !is_musl() {
-            assert_eq!(get_runtime_identifier(), RuntimeIdentifier::LinuxArm64);
-        }
+        assert_eq!(
+            get_runtime_identifier(Os::Linux, Arch::Arm64),
+            RuntimeIdentifier::LinuxArm64
+        );
     }
 
     #[test]
     fn test_get_dotnet_rid_linux_musl_x64() {
-        if OS == "linux" && ARCH == "x86_64" && is_musl() {
-            assert_eq!(get_runtime_identifier(), RuntimeIdentifier::LinuxMuslX64);
+        if is_musl() {
+            assert_eq!(
+                get_runtime_identifier(Os::Linux, Arch::Amd64),
+                RuntimeIdentifier::LinuxMuslX64
+            );
         }
     }
 
     #[test]
     fn test_get_dotnet_rid_linux_musl_arm64() {
-        if OS == "linux" && ARCH == "aarch64" && is_musl() {
-            assert_eq!(get_runtime_identifier(), RuntimeIdentifier::LinuxMuslArm64);
+        if is_musl() {
+            assert_eq!(
+                get_runtime_identifier(Os::Linux, Arch::Arm64),
+                RuntimeIdentifier::LinuxMuslArm64
+            );
         }
     }
 
     #[test]
     fn test_get_dotnet_rid_osx_x64() {
-        if OS == "macos" && ARCH == "x86_64" {
-            assert_eq!(get_runtime_identifier(), RuntimeIdentifier::OsxX64);
-        }
+        assert_eq!(
+            get_runtime_identifier(Os::Darwin, Arch::Amd64),
+            RuntimeIdentifier::OsxX64
+        );
     }
 
     #[test]
     fn test_get_dotnet_rid_osx_arm64() {
-        if OS == "macos" && ARCH == "aarch64" {
-            assert_eq!(get_runtime_identifier(), RuntimeIdentifier::OsxArm64);
-        }
-    }
-
-    #[test]
-    fn test_get_dotnet_rid_unknown() {
-        if OS != "linux" && OS != "macos" {
-            assert_eq!(get_runtime_identifier(), RuntimeIdentifier::Unknown);
-        }
+        assert_eq!(
+            get_runtime_identifier(Os::Darwin, Arch::Arm64),
+            RuntimeIdentifier::OsxArm64
+        );
     }
 }
