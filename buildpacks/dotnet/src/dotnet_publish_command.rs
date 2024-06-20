@@ -1,4 +1,4 @@
-use crate::dotnet::dotnet_runtime_identifier::RuntimeIdentifier;
+use crate::dotnet::runtime_identifier::RuntimeIdentifier;
 use std::fmt;
 use std::path::PathBuf;
 use std::process::Command;

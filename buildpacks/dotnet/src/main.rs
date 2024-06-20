@@ -7,9 +7,9 @@ mod layers;
 mod tfm;
 mod utils;
 
-use crate::dotnet::dotnet_runtime_identifier;
 use crate::dotnet::global_json::GlobalJson;
 use crate::dotnet::project::{self, Project};
+use crate::dotnet::runtime_identifier;
 use crate::dotnet::solution::{self, Solution};
 use crate::dotnet_publish_command::{DotnetPublishCommand, VerbosityLevel};
 use crate::launch_process::LaunchProcessDetectionError;
@@ -87,8 +87,7 @@ impl Buildpack for DotnetBuildpack {
 
         log_header("Publish");
         let build_configuration = String::from("Release");
-        let runtime_identifier =
-            dotnet_runtime_identifier::get_runtime_identifier(target_os, target_arch);
+        let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
             libcnb::layer_env::ModificationBehavior::Override,
