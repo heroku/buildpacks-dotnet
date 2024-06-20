@@ -10,7 +10,7 @@ use crate::dotnet::global_json::GlobalJson;
 use crate::dotnet::project::{self, Project};
 use crate::dotnet::runtime_identifier;
 use crate::dotnet::solution::{self, Solution};
-use crate::dotnet::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
+use crate::dotnet::target_framework_moniker::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::dotnet_publish_command::{DotnetPublishCommand, VerbosityLevel};
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
