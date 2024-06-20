@@ -3,16 +3,15 @@ mod dotnet;
 mod dotnet_layer_env;
 mod dotnet_publish_command;
 mod dotnet_runtime_identifier;
-mod global_json;
 mod launch_process;
 mod layers;
 mod tfm;
 mod utils;
 
+use crate::dotnet::global_json::GlobalJson;
 use crate::dotnet::project::{self, Project};
 use crate::dotnet::solution::{self, Solution};
 use crate::dotnet_publish_command::{DotnetPublishCommand, VerbosityLevel};
-use crate::global_json::GlobalJson;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use crate::tfm::{ParseTargetFrameworkError, TargetFrameworkMoniker};
