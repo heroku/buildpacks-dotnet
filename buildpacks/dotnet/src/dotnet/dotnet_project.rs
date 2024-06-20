@@ -7,6 +7,7 @@ use thiserror::Error;
 pub(crate) struct Project {
     pub(crate) path: PathBuf,
     pub(crate) target_framework: String,
+    #[allow(clippy::struct_field_names)]
     pub(crate) project_type: ProjectType,
     pub(crate) assembly_name: String,
 }
