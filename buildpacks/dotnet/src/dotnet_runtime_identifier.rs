@@ -25,16 +25,6 @@ impl fmt::Display for RuntimeIdentifier {
     }
 }
 
-/// This function returns the .NET Runtime Identifier (RID)
-/// based on the specified operating system and architecture.
-///
-/// It supports the following RIDs:
-/// - `linux-x64`
-/// - `linux-arm64`
-/// - `linux-musl-x64`
-/// - `linux-musl-arm64`
-/// - `osx-x64`
-/// - `osx-arm64`
 pub(crate) fn get_runtime_identifier(os: Os, arch: Arch) -> RuntimeIdentifier {
     match (os, arch) {
         (Os::Linux, Arch::Amd64) => {
