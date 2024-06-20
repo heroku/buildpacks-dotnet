@@ -9,7 +9,7 @@ mod layers;
 mod tfm;
 mod utils;
 
-use crate::dotnet::dotnet_solution::{self, DotnetSolution};
+use crate::dotnet::dotnet_solution::{self, Solution};
 use crate::dotnet::project::{self, Project};
 use crate::dotnet_publish_command::{DotnetPublishCommand, VerbosityLevel};
 use crate::global_json::GlobalJson;
@@ -128,7 +128,7 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
-fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuildpackError> {
+fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackError> {
     let solution_file_paths =
         detect::solution_file_paths(app_dir).expect("function to pass after detection");
     if let Some(solution_file) = solution_file_paths.first() {
@@ -145,7 +145,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
                 ),
             );
         }
-        return DotnetSolution::load_from_path(solution_file)
+        return Solution::load_from_path(solution_file)
             .map_err(DotnetBuildpackError::LoadDotnetSolutionFile);
     }
 
@@ -164,7 +164,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
                     .join(", "),
             ));
         }
-        return Ok(DotnetSolution::ephemeral(
+        return Ok(Solution::ephemeral(
             Project::load_from_path(project_file)
                 .map_err(DotnetBuildpackError::LoadDotnetProjectFile)?,
         ));
@@ -174,7 +174,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
 }
 
 fn get_solution_sdk_version_requirement(
-    solution: &DotnetSolution,
+    solution: &Solution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
     let mut target_framework_monikers = solution
         .projects

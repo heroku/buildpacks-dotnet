@@ -5,12 +5,12 @@ use std::io::{self};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
-pub(crate) struct DotnetSolution {
+pub(crate) struct Solution {
     pub(crate) path: PathBuf,
     pub(crate) projects: Vec<Project>,
 }
 
-impl DotnetSolution {
+impl Solution {
     pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadSolutionError> {
         Ok(Self {
             path: path.to_path_buf(),
