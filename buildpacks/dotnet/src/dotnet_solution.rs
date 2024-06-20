@@ -1,4 +1,4 @@
-use crate::dotnet::dotnet_project::{DotnetProject, LoadProjectError};
+use crate::dotnet::dotnet_project::{LoadProjectError, Project};
 use regex::Regex;
 use std::fs::{self};
 use std::io::{self};
@@ -7,7 +7,7 @@ use thiserror::Error;
 
 pub(crate) struct DotnetSolution {
     pub(crate) path: PathBuf,
-    pub(crate) projects: Vec<DotnetProject>,
+    pub(crate) projects: Vec<Project>,
 }
 
 impl DotnetSolution {
@@ -20,7 +20,7 @@ impl DotnetSolution {
             .into_iter()
             .filter_map(|project_path| {
                 path.parent().map(|dir| {
-                    DotnetProject::load_from_path(&dir.join(project_path))
+                    Project::load_from_path(&dir.join(project_path))
                         .map_err(LoadSolutionError::LoadProject)
                 })
             })
@@ -28,7 +28,7 @@ impl DotnetSolution {
         })
     }
 
-    pub(crate) fn ephemeral(project: DotnetProject) -> Self {
+    pub(crate) fn ephemeral(project: Project) -> Self {
         Self {
             path: project.path.clone(),
             projects: vec![project],

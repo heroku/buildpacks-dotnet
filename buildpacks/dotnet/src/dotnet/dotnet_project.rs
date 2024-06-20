@@ -4,14 +4,14 @@ use std::{fs, io};
 use thiserror::Error;
 
 #[derive(Debug)]
-pub(crate) struct DotnetProject {
+pub(crate) struct Project {
     pub(crate) path: PathBuf,
     pub(crate) target_framework: String,
     pub(crate) project_type: ProjectType,
     pub(crate) assembly_name: String,
 }
 
-impl DotnetProject {
+impl Project {
     pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadProjectError> {
         let content = fs::read_to_string(path).map_err(LoadProjectError::ReadProjectFile)?;
         let metadata = parse_dotnet_project_metadata(

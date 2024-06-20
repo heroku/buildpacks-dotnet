@@ -10,7 +10,7 @@ mod layers;
 mod tfm;
 mod utils;
 
-use crate::dotnet::dotnet_project::{self, DotnetProject};
+use crate::dotnet::dotnet_project::{self, Project};
 use crate::dotnet_publish_command::{DotnetPublishCommand, VerbosityLevel};
 use crate::dotnet_solution::DotnetSolution;
 use crate::global_json::GlobalJson;
@@ -166,7 +166,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<DotnetSolution, DotnetBuild
             ));
         }
         return Ok(DotnetSolution::ephemeral(
-            DotnetProject::load_from_path(project_file)
+            Project::load_from_path(project_file)
                 .map_err(DotnetBuildpackError::LoadDotnetProjectFile)?,
         ));
     }
