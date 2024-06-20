@@ -7,9 +7,9 @@ mod layers;
 mod utils;
 
 use crate::dotnet::global_json::GlobalJson;
-use crate::dotnet::project::{self, Project};
+use crate::dotnet::project::Project;
 use crate::dotnet::runtime_identifier;
-use crate::dotnet::solution::{self, Solution};
+use crate::dotnet::solution::Solution;
 use crate::dotnet::target_framework_moniker::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::dotnet_publish_command::{DotnetPublishCommand, VerbosityLevel};
 use crate::launch_process::LaunchProcessDetectionError;
@@ -227,9 +227,9 @@ enum DotnetBuildpackError {
     #[error("Multiple .NET project files found in root directory: {0}")]
     MultipleProjectFiles(String),
     #[error("Error loading .NET solution file")]
-    LoadDotnetSolutionFile(solution::LoadError),
+    LoadDotnetSolutionFile(dotnet::solution::LoadError),
     #[error("Error loading .NET project file")]
-    LoadDotnetProjectFile(project::LoadError),
+    LoadDotnetProjectFile(dotnet::project::LoadError),
     #[error("Error parsing target framework moniker: {0}")]
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     #[error("Error reading global.json file")]
