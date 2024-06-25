@@ -10,6 +10,7 @@ default-members = ["buildpacks/dotnet"]
 [workspace.package]
 rust-version = "1.79"
 edition = "2021"
+license = "BSD-3-Clause"
 
 [workspace.lints.rust]
 unreachable_pub = "warn"

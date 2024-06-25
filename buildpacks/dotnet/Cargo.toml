@@ -2,6 +2,7 @@
 name = "buildpack-heroku-dotnet"
 rust-version.workspace = true
 edition.workspace = true
+license.workspace = true
 # Disable automatic integration test discovery, since we import them in main.rs (see comment there).
 autotests = false
 
