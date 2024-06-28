@@ -1,7 +1,7 @@
 use inventory::artifact::{Arch, Artifact, Os};
 use inventory::checksum::Checksum;
 use inventory::inventory::Inventory;
-use keep_a_changelog::{ChangeGroup, Changelog};
+use keep_a_changelog_file::{ChangeGroup, Changelog};
 use semver::Version;
 use serde::Deserialize;
 use sha2::Sha512;

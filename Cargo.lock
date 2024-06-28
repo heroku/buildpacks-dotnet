@@ -475,7 +475,7 @@ name = "inventory-updater"
 version = "0.0.0"
 dependencies = [
  "inventory",
- "keep_a_changelog",
+ "keep_a_changelog_file",
  "semver",
  "serde",
  "sha2",
@@ -499,9 +499,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "keep_a_changelog"
+name = "keep_a_changelog_file"
 version = "0.1.0"
-source = "git+https://github.com/heroku/keep_a_changelog?rev=f92ec48c9257ff8d67df1eb8e942a2c25cf2ba91#f92ec48c9257ff8d67df1eb8e942a2c25cf2ba91"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "516dcf9845c0228e8accdc2c61de18e68a701fcbe045085d96db097bad19d1cc"
 dependencies = [
  "chrono",
  "indexmap",

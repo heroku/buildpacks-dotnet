@@ -9,7 +9,7 @@ workspace = true
 
 [dependencies]
 inventory = { git = "https://github.com/malax/inventory", features = ["sha2", "semver"]}
-keep_a_changelog = { git = "https://github.com/heroku/keep_a_changelog", rev = "f92ec48c9257ff8d67df1eb8e942a2c25cf2ba91" }
+keep_a_changelog_file = "0.1"
 semver = "1.0"
 serde = "1"
 sha2 = "0.10"
