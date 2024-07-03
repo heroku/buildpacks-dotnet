@@ -1,0 +1,17 @@
+[package]
+name = "inventory-updater"
+rust-version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+inventory = { git = "https://github.com/malax/inventory", features = ["sha2", "semver"]}
+keep_a_changelog_file = "0.1"
+semver = "1.0"
+serde = "1"
+sha2 = "0.10"
+toml = "0.8"
+ureq = { version = "2", features = ["json"] }

@@ -1,0 +1,14 @@
+# Default to requesting pull request reviews from the Heroku Languages team.
+# Uncomment when the buildpack is out of development.
+#* @heroku/languages
+
+# Except for automation that:
+# - updates binary inventories
+# - updates project dependencies
+# - prepares releases
+# Only .NET language owners should be the requested reviewers here
+CHANGELOG.md @runesoerensen
+inventory.toml @runesoerensen
+Cargo.toml @runesoerensen
+Cargo.lock @runesoerensen
+buildpack.toml @runesoerensen
