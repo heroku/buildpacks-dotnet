@@ -38,7 +38,14 @@ impl Buildpack for DotnetBuildpack {
     type Error = DotnetBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
-        if detect::any_dotnet_files(&context.app_dir)? {
+        let contains_dotnet_files = detect::get_files_with_extensions(
+            &context.app_dir,
+            &["sln", "csproj", "vbproj", "fsproj"],
+        )
+        .map(|paths| !paths.is_empty())
+        .map_err(DotnetBuildpackError::BuildpackDetection)?;
+
+        if contains_dotnet_files {
             DetectResultBuilder::pass().build()
         } else {
             log_info(

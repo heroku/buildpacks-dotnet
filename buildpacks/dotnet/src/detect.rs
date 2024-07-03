@@ -1,4 +1,3 @@
-use crate::DotnetBuildpackError;
 use std::fs::{self};
 use std::io;
 use std::path::{Path, PathBuf};
@@ -11,16 +10,10 @@ pub(crate) fn solution_file_paths<P: AsRef<Path>>(dir: P) -> io::Result<Vec<Path
     get_files_with_extensions(dir.as_ref(), &["sln"])
 }
 
-pub(crate) fn any_dotnet_files(dir: &Path) -> Result<bool, DotnetBuildpackError> {
-    Ok(!solution_file_paths(dir)
-        .map_err(DotnetBuildpackError::BuildpackDetection)?
-        .is_empty()
-        || !project_file_paths(dir)
-            .map_err(DotnetBuildpackError::BuildpackDetection)?
-            .is_empty())
-}
-
-fn get_files_with_extensions(dir: &Path, extensions: &[&str]) -> Result<Vec<PathBuf>, io::Error> {
+pub(crate) fn get_files_with_extensions(
+    dir: &Path,
+    extensions: &[&str],
+) -> Result<Vec<PathBuf>, io::Error> {
     let project_files = fs::read_dir(dir)?
         .filter_map(Result::ok)
         .map(|entry| entry.path())
