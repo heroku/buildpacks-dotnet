@@ -57,7 +57,7 @@ impl Buildpack for DotnetBuildpack {
 
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         log_header("Determining .NET version");
-        let solution = get_solution_to_publish(&context.app_dir)?; // Solution may be an "ephemeral" solution when only a project file is found in the root directory.
+        let solution = get_solution_to_publish(&context.app_dir)?;
         log_info(format!(
             "Detected .NET file to publish: {}",
             solution.path.to_string_lossy()
