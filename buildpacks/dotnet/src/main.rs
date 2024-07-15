@@ -230,7 +230,7 @@ fn detect_global_json_sdk_version_requirement(
 
 #[derive(thiserror::Error, Debug)]
 enum DotnetBuildpackError {
-    #[error("Error when performing buildpack detection")]
+    #[error(transparent)]
     BuildpackDetection(io::Error),
     #[error("No .NET solution or project files found")]
     NoDotnetFiles,
@@ -242,7 +242,7 @@ enum DotnetBuildpackError {
     LoadDotnetSolutionFile(dotnet::solution::LoadError),
     #[error("Error loading .NET project file")]
     LoadDotnetProjectFile(dotnet::project::LoadError),
-    #[error("Error parsing target framework moniker: {0}")]
+    #[error("Error parsing target framework moniker")]
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     #[error("Error reading global.json file")]
     ReadGlobalJsonFile(io::Error),
