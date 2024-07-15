@@ -2,6 +2,7 @@ mod detect;
 mod dotnet;
 mod dotnet_layer_env;
 mod dotnet_publish_command;
+mod errors;
 mod launch_process;
 mod layers;
 mod utils;
@@ -129,6 +130,10 @@ impl Buildpack for DotnetBuildpack {
                     .build(),
             )
             .build()
+    }
+
+    fn on_error(&self, error: libcnb::Error<Self::Error>) {
+        errors::on_error(error);
     }
 }
 
