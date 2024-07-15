@@ -1,6 +1,7 @@
 use crate::DotnetBuildpackError;
 use indoc::formatdoc;
 use libherokubuildpack::log::log_error;
+use std::io;
 
 pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
     match error {
@@ -21,4 +22,15 @@ pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
 
 fn on_buildpack_error(error: &DotnetBuildpackError) {
     log_error("A buildpack error occurred", error.to_string());
+}
+
+fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
+    log_error(
+        header,
+        formatdoc! {"
+            An unexpected I/O error occurred while {occurred_while}.
+            
+            Details: {io_error}
+        "},
+    );
 }
