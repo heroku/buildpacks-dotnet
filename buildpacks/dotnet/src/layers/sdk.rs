@@ -115,17 +115,12 @@ where
     }
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(Debug)]
 pub(crate) enum SdkLayerError {
-    #[error("Couldn't download .NET SDK: {0}")]
     DownloadSdk(libherokubuildpack::download::DownloadError),
-    #[error("Couldn't decompress .NET SDK: {0}")]
     UntarSdk(std::io::Error),
-    #[error("Error verifying checksum")]
     VerifyChecksum,
-    #[error("Couldn't open tempfile for .NET SDK: {0}")]
     OpenTempFile(std::io::Error),
-    #[error("Couldn't read tempfile for .NET SDK: {0}")]
     ReadTempFile(std::io::Error),
 }
 
