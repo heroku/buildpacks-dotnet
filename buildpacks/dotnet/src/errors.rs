@@ -28,16 +28,16 @@ pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
 #[allow(clippy::too_many_lines)]
 fn on_buildpack_error(error: &DotnetBuildpackError) {
     match error {
-        DotnetBuildpackError::BuildpackDetection(error) => log_io_error(
+        DotnetBuildpackError::BuildpackDetection(io_error) => log_io_error(
             "Unable to complete buildpack detection",
             "determining if the .NET buildpack should be run for this application",
-            error,
+            io_error,
         ),
         DotnetBuildpackError::NoDotnetFiles => log_error(
             "No .NET solution or project files found",
             formatdoc! {"
                 While determining the .NET file to publish, neither a solution or project file was found.
-                This should ever occur, as the detect phase should only succeed if a publishable .NET file
+                This should never occur, as the detect phase should only succeed if a publishable .NET file
                 was found.
 
                 If you see this error, please file an issue:
@@ -53,14 +53,14 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 The root directory contains multiple .NET project files: {message}"
             },
         ),
-        DotnetBuildpackError::LoadDotnetSolutionFile(load_error) => match load_error {
+        DotnetBuildpackError::LoadDotnetSolutionFile(error) => match error {
             solution::LoadError::ReadSolutionFile(io_error) => log_io_error(
                 "Unable to load solution file",
                 "reading solution file",
                 io_error,
             ),
-            solution::LoadError::LoadProject(error) => {
-                on_load_dotnet_project_error(error, "reading solution project files");
+            solution::LoadError::LoadProject(load_project_error) => {
+                on_load_dotnet_project_error(load_project_error, "reading solution project files");
             }
         },
         DotnetBuildpackError::LoadDotnetProjectFile(error) => {
@@ -100,7 +100,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             "},
         ),
         DotnetBuildpackError::ParseInventory(error) => log_error(
-            "Invalid Inventory File",
+            "Invalid inventory.toml file",
             formatdoc! {"
                 The inventory of .NET SDK releases could not be parsed. This error should
                 never occur to users of this buildpack and is almost always a buildpack bug.
@@ -119,12 +119,10 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 Details: {error}
             "},
         ),
-        DotnetBuildpackError::ResolveSdkVersion(error) => log_error(
+        DotnetBuildpackError::ResolveSdkVersion(version_req) => log_error(
             "Unsupported .NET SDK version",
             formatdoc! {"
-                A compatible .NET SDK release could not be resolved from the detected version requirement.
-    
-                Details: {error}
+                A compatible .NET SDK release could not be resolved from the detected version requirement ({version_req}).
             "},
         ),
         DotnetBuildpackError::SdkLayer(error) => match error {
@@ -134,27 +132,36 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     Details: {error}
                 "},
             ),
-            SdkLayerError::ReadTempFile(error) => {
-                log_io_error("Couldn't read tempfile", "reading .NET SDK tempfile", error);
+            SdkLayerError::ReadTempFile(io_error) => {
+                log_io_error(
+                    "Couldn't read tempfile",
+                    "reading .NET SDK tempfile",
+                    io_error,
+                );
             }
+            // TODO: Log expected and actual checksums
             SdkLayerError::VerifyChecksum => log_error(
-                "Error verifying checksum",
-                "The downloaded SDK archive's checksum does not match the expected value",
+                "Corrupted .NET SDK download",
+                "The validation of the downloaded .NET SDK failed due to a checksum mismatch.",
             ),
-            SdkLayerError::OpenTempFile(error) => {
-                log_io_error("Couldn't open tempfile", "opening .NET SDK tempfile", error);
+            SdkLayerError::OpenTempFile(io_error) => {
+                log_io_error(
+                    "Couldn't open tempfile",
+                    "opening .NET SDK tempfile",
+                    io_error,
+                );
             }
-            SdkLayerError::UntarSdk(error) => log_io_error(
+            SdkLayerError::UntarSdk(io_error) => log_io_error(
                 "Couldn't decompress .NET SDK",
                 "untarring .NET SDK archive",
-                error,
+                io_error,
             ),
         },
         DotnetBuildpackError::PublishCommand(error) => match error {
-            StreamedCommandError::Io(error) => log_io_error(
+            StreamedCommandError::Io(io_error) => log_io_error(
                 "Unable to publish .NET file",
                 "running the command to publish .NET file",
-                error,
+                io_error,
             ),
             StreamedCommandError::NonZeroExitStatus(exit_status) => log_error(
                 "Unable to publish .NET file",
@@ -168,10 +175,10 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 "},
             ),
         },
-        DotnetBuildpackError::CopyRuntimeFilesToRuntimeLayer(error) => log_io_error(
+        DotnetBuildpackError::CopyRuntimeFilesToRuntimeLayer(io_error) => log_io_error(
             "Error copying .NET runtime files",
             "copying .NET runtime files from the sdk layer to the runtime layer",
-            error,
+            io_error,
         ),
         DotnetBuildpackError::LaunchProcessDetection(error) => match error {
             LaunchProcessDetectionError::ProcessType(process_type_error) => {
