@@ -3,7 +3,6 @@ use regex::Regex;
 use std::fs::{self};
 use std::io::{self};
 use std::path::{Path, PathBuf};
-use thiserror::Error;
 
 pub(crate) struct Solution {
     pub(crate) path: PathBuf,
@@ -35,11 +34,9 @@ impl Solution {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub(crate) enum LoadError {
-    #[error("Error reading solution file")]
     ReadSolutionFile(io::Error),
-    #[error("Error loading .NET project")]
     LoadProject(project::LoadError),
 }
 

@@ -5,9 +5,8 @@ use libcnb::data::launch::{
     Process, ProcessBuilder, ProcessType, ProcessTypeError, WorkingDirectory,
 };
 
-#[derive(thiserror::Error, Debug)]
+#[derive(Debug)]
 pub(crate) enum LaunchProcessDetectionError {
-    #[error("Project has an invalid process type name: {0}")]
     ProcessType(ProcessTypeError),
 }
 

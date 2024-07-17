@@ -2,6 +2,7 @@ mod detect;
 mod dotnet;
 mod dotnet_layer_env;
 mod dotnet_publish_command;
+mod errors;
 mod launch_process;
 mod layers;
 mod utils;
@@ -130,6 +131,10 @@ impl Buildpack for DotnetBuildpack {
             )
             .build()
     }
+
+    fn on_error(&self, error: libcnb::Error<Self::Error>) {
+        errors::on_error(error);
+    }
 }
 
 fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackError> {
@@ -223,41 +228,24 @@ fn detect_global_json_sdk_version_requirement(
     })
 }
 
-#[derive(thiserror::Error, Debug)]
+#[derive(Debug)]
 enum DotnetBuildpackError {
-    #[error("Error when performing buildpack detection")]
     BuildpackDetection(io::Error),
-    #[error("No .NET solution or project files found")]
     NoDotnetFiles,
-    #[error("No project references found in solution")]
     NoSolutionProjects,
-    #[error("Multiple .NET project files found in root directory: {0}")]
     MultipleProjectFiles(String),
-    #[error("Error loading .NET solution file")]
     LoadDotnetSolutionFile(dotnet::solution::LoadError),
-    #[error("Error loading .NET project file")]
     LoadDotnetProjectFile(dotnet::project::LoadError),
-    #[error("Error parsing target framework moniker: {0}")]
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
-    #[error("Error reading global.json file")]
     ReadGlobalJsonFile(io::Error),
-    #[error("Error parsing global.json: {0}")]
     ParseGlobalJson(serde_json::Error),
-    #[error("Error parsing global.json version requirement: {0}")]
     ParseGlobalJsonVersionRequirement(semver::Error),
-    #[error("Couldn't parse .NET SDK inventory: {0}")]
     ParseInventory(ParseInventoryError),
-    #[error("Invalid target framework version: {0}")]
     ParseVersionRequirement(semver::Error),
-    #[error("Couldn't resolve .NET SDK version: {0}")]
     ResolveSdkVersion(VersionReq),
-    #[error(transparent)]
-    SdkLayer(#[from] SdkLayerError),
-    #[error("Error executing publish task")]
-    PublishCommand(#[from] StreamedCommandError),
-    #[error("Error copying runtime files {0}")]
+    SdkLayer(SdkLayerError),
+    PublishCommand(StreamedCommandError),
     CopyRuntimeFilesToRuntimeLayer(io::Error),
-    #[error("Launch process detection error: {0}")]
     LaunchProcessDetection(LaunchProcessDetectionError),
 }
 

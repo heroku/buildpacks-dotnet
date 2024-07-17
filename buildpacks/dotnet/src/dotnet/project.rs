@@ -1,7 +1,6 @@
 use roxmltree::Document;
 use std::path::{Path, PathBuf};
 use std::{fs, io};
-use thiserror::Error;
 
 #[derive(Debug)]
 pub(crate) struct Project {
@@ -56,13 +55,10 @@ pub(crate) enum ProjectType {
     Unknown,
 }
 
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub(crate) enum LoadError {
-    #[error("Error reading project file")]
     ReadProjectFile(io::Error),
-    #[error("Error parsing XML")]
-    XmlParseError(#[from] roxmltree::Error),
-    #[error("Missing TargetFramework")]
+    XmlParseError(roxmltree::Error),
     MissingTargetFramework,
 }
 

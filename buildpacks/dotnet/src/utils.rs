@@ -36,11 +36,9 @@ pub(crate) fn copy_recursively<P: AsRef<Path>>(src: P, dst: P) -> std::io::Resul
 }
 
 /// Errors that can occur when running an external process using `run_command_and_stream_output`.
-#[derive(thiserror::Error, Debug)]
+#[derive(Debug)]
 pub(crate) enum StreamedCommandError {
-    #[error("An IO error ocurred: {0}")]
     Io(io::Error),
-    #[error("Command exited with a non-zero exit code: {0}")]
     NonZeroExitStatus(ExitStatus),
 }
 
