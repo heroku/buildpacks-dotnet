@@ -203,9 +203,9 @@ fn on_load_dotnet_project_error(error: &project::LoadError, occurred_while: &str
         project::LoadError::XmlParseError(error) => log_error(
             "Unable to parse project file",
             formatdoc! {"
-                    The project file XML content could not be parsed. This usually indicates an error in the project file.
+                The project file XML content could not be parsed. This usually indicates an error in the project file.
                     
-                    Details: {error}"},
+                Details: {error}"},
         ),
         project::LoadError::MissingTargetFramework => {
             log_error("Project file is missing TargetFramework", String::new());
