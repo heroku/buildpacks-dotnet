@@ -132,10 +132,10 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     Details: {error}
                 "},
             ),
-            SdkLayerError::ReadTempFile(io_error) => {
+            SdkLayerError::ReadSdkArchive(io_error) => {
                 log_io_error(
-                    "Couldn't read tempfile",
-                    "reading .NET SDK tempfile",
+                    "Couldn't read .NET SDK archive",
+                    "reading downloaded .NET SDK archive",
                     io_error,
                 );
             }
@@ -144,10 +144,10 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 "Corrupted .NET SDK download",
                 "The validation of the downloaded .NET SDK failed due to a checksum mismatch.",
             ),
-            SdkLayerError::OpenTempFile(io_error) => {
+            SdkLayerError::OpenSdkArchive(io_error) => {
                 log_io_error(
-                    "Couldn't open tempfile",
-                    "opening .NET SDK tempfile",
+                    "Couldn't open .NET SDK archive",
+                    "opening downloaded .NET SDK archive",
                     io_error,
                 );
             }

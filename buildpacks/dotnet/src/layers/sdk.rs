@@ -85,7 +85,7 @@ pub(crate) fn handle(
 
             log_info("Installing .NET SDK");
             decompress_tarball(
-                &mut File::open(path.clone()).map_err(SdkLayerError::OpenTempFile)?,
+                &mut File::open(path.clone()).map_err(SdkLayerError::OpenSdkArchive)?,
                 sdk_layer.path(),
             )
             .map_err(SdkLayerError::UntarSdk)?;
@@ -106,7 +106,7 @@ where
 {
     let calculated_checksum = fs::read(path.as_ref())
         .map(|data| D::digest(data).to_vec())
-        .map_err(SdkLayerError::ReadTempFile)?;
+        .map_err(SdkLayerError::ReadSdkArchive)?;
 
     if calculated_checksum == checksum.value {
         Ok(())
@@ -120,8 +120,8 @@ pub(crate) enum SdkLayerError {
     DownloadSdk(libherokubuildpack::download::DownloadError),
     UntarSdk(std::io::Error),
     VerifyChecksum,
-    OpenTempFile(std::io::Error),
-    ReadTempFile(std::io::Error),
+    OpenSdkArchive(std::io::Error),
+    ReadSdkArchive(std::io::Error),
 }
 
 impl From<SdkLayerError> for libcnb::Error<DotnetBuildpackError> {
