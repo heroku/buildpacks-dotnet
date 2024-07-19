@@ -30,7 +30,7 @@ fn detect_msbuild_verbosity_level(
                 "m" | "minimal" => Ok(VerbosityLevel::Minimal),
                 "n" | "normal" => Ok(VerbosityLevel::Normal),
                 "d" | "detailed" => Ok(VerbosityLevel::Detailed),
-                "diag" | "diagnostics" => Ok(VerbosityLevel::Diagnostic),
+                "diag" | "diagnostic" => Ok(VerbosityLevel::Diagnostic),
                 _ => Err(
                     DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(
                         value.to_string(),
