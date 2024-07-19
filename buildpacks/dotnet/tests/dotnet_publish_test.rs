@@ -10,8 +10,6 @@ fn test_dotnet_publish_with_rid() {
           .env("MSBUILD_VERBOSITY_LEVEL", "normal"),
         |context| {
             assert_empty!(context.pack_stderr);
-            // TODO: Find a more elegant approach to testing MSBuild logs (and/or just reduce MSbuild verbosity level)
-
             #[cfg(target_arch = "x86_64")]
             let arch = "x64";
             #[cfg(target_arch = "aarch64")]
