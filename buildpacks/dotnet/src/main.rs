@@ -109,12 +109,14 @@ impl Buildpack for DotnetBuildpack {
         )
         .map_err(DotnetBuildpackError::LaunchProcessDetection);
 
+        let verbosity_level = detect_msbuild_verbosity_level(&Env::from_current())?;
+
         utils::run_command_and_stream_output(
             Command::from(DotnetPublishCommand {
                 path: solution.path,
                 configuration: build_configuration,
                 runtime_identifier,
-                verbosity_level: VerbosityLevel::Normal,
+                verbosity_level,
             })
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current())),
@@ -228,6 +230,23 @@ fn detect_global_json_sdk_version_requirement(
     })
 }
 
+fn detect_msbuild_verbosity_level(env: &Env) -> Result<VerbosityLevel, DotnetBuildpackError> {
+    env.get("MSBUILD_VERBOSITY_LEVEL")
+        .map(|value| value.to_string_lossy())
+        .map_or(Ok(VerbosityLevel::Normal), |value| {
+            match value.to_lowercase().as_str() {
+                "q" | "quiet" => Ok(VerbosityLevel::Quiet),
+                "m" | "minimal" => Ok(VerbosityLevel::Minimal),
+                "n" | "normal" => Ok(VerbosityLevel::Normal),
+                "d" | "detailed" => Ok(VerbosityLevel::Detailed),
+                "diag" | "diagnostics" => Ok(VerbosityLevel::Diagnostic),
+                _ => Err(DotnetBuildpackError::CustomMsBuildVerbosityLevel(
+                    value.to_string(),
+                )),
+            }
+        })
+}
+
 #[derive(Debug)]
 enum DotnetBuildpackError {
     BuildpackDetection(io::Error),
@@ -244,6 +263,7 @@ enum DotnetBuildpackError {
     ParseVersionRequirement(semver::Error),
     ResolveSdkVersion(VersionReq),
     SdkLayer(SdkLayerError),
+    CustomMsBuildVerbosityLevel(String),
     PublishCommand(StreamedCommandError),
     CopyRuntimeFilesToRuntimeLayer(io::Error),
     LaunchProcessDetection(LaunchProcessDetectionError),

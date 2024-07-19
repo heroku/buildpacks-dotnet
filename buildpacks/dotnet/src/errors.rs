@@ -157,6 +157,23 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 io_error,
             ),
         },
+        DotnetBuildpackError::CustomMsBuildVerbosityLevel(verbosity_level) => log_error(
+            "Unsupported MSBuild logging verbosity level",
+            formatdoc! {"
+                The '{verbosity_level}' value of the 'MSBUILD_VERBOSITY_LEVEL' environment variable could not be parsed. Did you mean one of the following?
+
+                d
+                detailed
+                diag
+                diagnostic
+                m
+                minimal
+                n
+                normal
+                q
+                quiet
+            "},
+        ),
         DotnetBuildpackError::PublishCommand(error) => match error {
             StreamedCommandError::Io(io_error) => log_io_error(
                 "Unable to publish .NET file",
