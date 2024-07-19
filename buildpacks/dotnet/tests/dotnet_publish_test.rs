@@ -88,3 +88,34 @@ fn test_dotnet_publish_with_rid() {
         },
     );
 }
+
+#[test]
+#[ignore = "integration test"]
+fn test_dotnet_publish_with_debug_configuration() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/basic_web_8.0_with_global_json")
+            .env("BUILD_CONFIGURATION", "Debug"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            #[cfg(target_arch = "x86_64")]
+            let arch = "x64";
+            #[cfg(target_arch = "aarch64")]
+            let arch = "arm64";
+
+            let rid = format!("linux-{arch}");
+
+            assert_contains!(
+                replace_msbuild_log_patterns_with_placeholder(
+                    &context.pack_stdout,
+                    "<PLACEHOLDER>"
+                ),
+                &formatdoc! {r#"
+                  MSBuild version 17.8.3+195e7f5a3 for .NET
+                    Determining projects to restore...
+                    Restored /workspace/foo.csproj <PLACEHOLDER>.
+                    foo -> /workspace/bin/Debug/net8.0/{rid}/foo.dll
+                    foo -> /workspace/bin/Debug/net8.0/{rid}/publish/"#}
+            );
+        },
+    );
+}
