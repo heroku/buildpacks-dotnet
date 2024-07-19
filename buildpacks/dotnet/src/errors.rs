@@ -188,7 +188,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             StreamedCommandError::NonZeroExitStatus(exit_status) => log_error(
                 "Unable to publish .NET file",
                 formatdoc! {"
-                    The command to install pip, setuptools and wheel did not exit successfully ({exit_status}).
+                    The 'dotnet publish' command did not exit successfully ({exit_status}).
                     
                     See the log output above for more information.
                     
