@@ -10,12 +10,9 @@ fn test_dotnet_publish_with_rid() {
           .env("MSBUILD_VERBOSITY_LEVEL", "normal"),
         |context| {
             assert_empty!(context.pack_stderr);
-            #[cfg(target_arch = "x86_64")]
-            let arch = "x64";
-            #[cfg(target_arch = "aarch64")]
-            let arch = "arm64";
 
-            let rid = format!("linux-{arch}");
+            let arch = get_dotnet_arch();
+            let rid = get_rid();
 
             assert_contains!(
                 replace_msbuild_log_patterns_with_placeholder(&context.pack_stdout, "<PLACEHOLDER>"), 
@@ -97,13 +94,8 @@ fn test_dotnet_publish_with_debug_configuration() {
             .env("BUILD_CONFIGURATION", "Debug"),
         |context| {
             assert_empty!(context.pack_stderr);
-            #[cfg(target_arch = "x86_64")]
-            let arch = "x64";
-            #[cfg(target_arch = "aarch64")]
-            let arch = "arm64";
 
-            let rid = format!("linux-{arch}");
-
+            let rid = get_rid();
             assert_contains!(
                 replace_msbuild_log_patterns_with_placeholder(
                     &context.pack_stdout,
@@ -118,4 +110,17 @@ fn test_dotnet_publish_with_debug_configuration() {
             );
         },
     );
+}
+
+fn get_rid() -> String {
+    format!("linux-{}", get_dotnet_arch())
+}
+
+fn get_dotnet_arch() -> String {
+    #[cfg(target_arch = "x86_64")]
+    let arch = "x64";
+    #[cfg(target_arch = "aarch64")]
+    let arch = "arm64";
+
+    arch.to_string()
 }
