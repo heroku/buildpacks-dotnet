@@ -161,21 +161,21 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         DotnetBuildpackError::ParseDotnetBuildpackConfigurationError(error) => match error {
             DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(verbosity_level) => {
                 log_error(
-                    "Invalid MSBuild logging verbosity level",
+                    "Invalid MSBuild verbosity level",
                     formatdoc! {"
-                    The 'MSBUILD_VERBOSITY_LEVEL' environment variable value ('{verbosity_level}') could not be parsed. Did you mean one of the following?
-    
-                    d
-                    detailed
-                    diag
-                    diagnostic
-                    m
-                    minimal
-                    n
-                    normal
-                    q
-                    quiet
-                "},
+                        The 'MSBUILD_VERBOSITY_LEVEL' environment variable value ('{verbosity_level}') could not be parsed. Did you mean one of the following?
+
+                        d
+                        detailed
+                        diag
+                        diagnostic
+                        m
+                        minimal
+                        n
+                        normal
+                        q
+                        quiet
+                    "},
                 );
             }
         },
