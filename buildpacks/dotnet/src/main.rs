@@ -233,7 +233,7 @@ fn detect_global_json_sdk_version_requirement(
 fn detect_msbuild_verbosity_level(env: &Env) -> Result<VerbosityLevel, DotnetBuildpackError> {
     env.get("MSBUILD_VERBOSITY_LEVEL")
         .map(|value| value.to_string_lossy())
-        .map_or(Ok(VerbosityLevel::Normal), |value| {
+        .map_or(Ok(VerbosityLevel::Minimal), |value| {
             match value.to_lowercase().as_str() {
                 "q" | "quiet" => Ok(VerbosityLevel::Quiet),
                 "m" | "minimal" => Ok(VerbosityLevel::Minimal),

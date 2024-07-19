@@ -6,7 +6,8 @@ use libcnb_test::{assert_contains, assert_empty, TestRunner};
 #[ignore = "integration test"]
 fn test_nuget_restore_and_cache() {
     TestRunner::default().build(
-        default_build_config("tests/fixtures/console_with_nuget_package"),
+        default_build_config("tests/fixtures/console_with_nuget_package")
+          .env("MSBUILD_VERBOSITY_LEVEL", "normal"),
         |context| {
             assert_empty!(context.pack_stderr);
             assert_contains!(
