@@ -97,7 +97,6 @@ impl Buildpack for DotnetBuildpack {
         let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
 
         log_header("Publish");
-        let build_configuration = String::from("Release");
         let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
@@ -106,20 +105,19 @@ impl Buildpack for DotnetBuildpack {
             nuget_cache_layer.path(),
         );
 
+        let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
+            .map_err(DotnetBuildpackError::ParseDotnetBuildpackConfigurationError)?;
         let launch_processes_result = launch_process::detect_solution_processes(
             &solution,
-            &build_configuration,
+            &buildpack_configuration.build_configuration,
             &runtime_identifier,
         )
         .map_err(DotnetBuildpackError::LaunchProcessDetection);
 
-        let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
-            .map_err(DotnetBuildpackError::ParseDotnetBuildpackConfigurationError)?;
-
         utils::run_command_and_stream_output(
             Command::from(DotnetPublishCommand {
                 path: solution.path,
-                configuration: build_configuration,
+                configuration: buildpack_configuration.build_configuration,
                 runtime_identifier,
                 verbosity_level: buildpack_configuration.msbuild_verbosity_level,
             })

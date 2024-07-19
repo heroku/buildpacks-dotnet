@@ -1,6 +1,7 @@
 use crate::dotnet_publish_command::VerbosityLevel;
 
 pub(crate) struct DotnetBuildpackConfiguration {
+    pub(crate) build_configuration: String,
     pub(crate) msbuild_verbosity_level: VerbosityLevel,
 }
 
@@ -14,6 +15,7 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
 
     fn try_from(env: &libcnb::Env) -> Result<Self, Self::Error> {
         Ok(Self {
+            build_configuration: String::from("Release"),
             msbuild_verbosity_level: detect_msbuild_verbosity_level(env)?,
         })
     }
