@@ -4,7 +4,7 @@ pub(crate) struct DotnetBuildpackConfiguration {
     pub(crate) msbuild_verbosity_level: VerbosityLevel,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum DotnetBuildpackConfigurationError {
     InvalidMsbuildVerbosityLevel(String),
 }
@@ -38,4 +38,52 @@ fn detect_msbuild_verbosity_level(
                 ),
             }
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use libcnb::Env;
+
+    fn create_env(variables: &[(&str, &str)]) -> Env {
+        let mut env = Env::new();
+        for &(key, value) in variables {
+            env.insert(key, value);
+        }
+        env
+    }
+
+    #[test]
+    fn test_detect_msbuild_verbosity_level() {
+        let cases = [
+            (Some("quiet"), Ok(VerbosityLevel::Quiet)),
+            (Some("q"), Ok(VerbosityLevel::Quiet)),
+            (Some("minimal"), Ok(VerbosityLevel::Minimal)),
+            (Some("m"), Ok(VerbosityLevel::Minimal)),
+            (Some("normal"), Ok(VerbosityLevel::Normal)),
+            (Some("n"), Ok(VerbosityLevel::Normal)),
+            (Some("detailed"), Ok(VerbosityLevel::Detailed)),
+            (Some("d"), Ok(VerbosityLevel::Detailed)),
+            (Some("diagnostic"), Ok(VerbosityLevel::Diagnostic)),
+            (Some("diag"), Ok(VerbosityLevel::Diagnostic)),
+            (
+                Some("invalid"),
+                Err(
+                    DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(
+                        "invalid".to_string(),
+                    ),
+                ),
+            ),
+            (None, Ok(VerbosityLevel::Minimal)),
+        ];
+
+        for (input, expected) in &cases {
+            let env = match input {
+                Some(value) => create_env(&[("MSBUILD_VERBOSITY_LEVEL", value)]),
+                None => Env::new(),
+            };
+            let result = detect_msbuild_verbosity_level(&env);
+            assert_eq!(result, *expected);
+        }
+    }
 }
