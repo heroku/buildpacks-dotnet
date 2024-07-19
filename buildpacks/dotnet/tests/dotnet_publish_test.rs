@@ -6,11 +6,10 @@ use libcnb_test::{assert_contains, assert_empty, TestRunner};
 #[ignore = "integration test"]
 fn test_dotnet_publish_with_rid() {
     TestRunner::default().build(
-        default_build_config("tests/fixtures/basic_web_8.0_with_global_json"),
+        default_build_config("tests/fixtures/basic_web_8.0_with_global_json")
+          .env("MSBUILD_VERBOSITY_LEVEL", "normal"),
         |context| {
             assert_empty!(context.pack_stderr);
-            // TODO: Find a more elegant approach to testing MSBuild logs (and/or just reduce MSbuild verbosity level)
-
             #[cfg(target_arch = "x86_64")]
             let arch = "x64";
             #[cfg(target_arch = "aarch64")]

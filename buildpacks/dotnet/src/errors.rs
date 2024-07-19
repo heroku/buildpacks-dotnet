@@ -1,5 +1,6 @@
 use crate::dotnet::target_framework_moniker::ParseTargetFrameworkError;
 use crate::dotnet::{project, solution};
+use crate::dotnet_buildpack_configuration::DotnetBuildpackConfigurationError;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use crate::utils::StreamedCommandError;
@@ -156,6 +157,27 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 "untarring .NET SDK archive",
                 io_error,
             ),
+        },
+        DotnetBuildpackError::ParseDotnetBuildpackConfigurationError(error) => match error {
+            DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(verbosity_level) => {
+                log_error(
+                    "Invalid MSBuild verbosity level",
+                    formatdoc! {"
+                        The 'MSBUILD_VERBOSITY_LEVEL' environment variable value ('{verbosity_level}') could not be parsed. Did you mean one of the following?
+
+                        d
+                        detailed
+                        diag
+                        diagnostic
+                        m
+                        minimal
+                        n
+                        normal
+                        q
+                        quiet
+                    "},
+                );
+            }
         },
         DotnetBuildpackError::PublishCommand(error) => match error {
             StreamedCommandError::Io(io_error) => log_io_error(

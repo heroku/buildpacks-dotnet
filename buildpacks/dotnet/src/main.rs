@@ -1,5 +1,6 @@
 mod detect;
 mod dotnet;
+mod dotnet_buildpack_configuration;
 mod dotnet_layer_env;
 mod dotnet_publish_command;
 mod errors;
@@ -12,7 +13,10 @@ use crate::dotnet::project::Project;
 use crate::dotnet::runtime_identifier;
 use crate::dotnet::solution::Solution;
 use crate::dotnet::target_framework_moniker::{ParseTargetFrameworkError, TargetFrameworkMoniker};
-use crate::dotnet_publish_command::{DotnetPublishCommand, VerbosityLevel};
+use crate::dotnet_buildpack_configuration::{
+    DotnetBuildpackConfiguration, DotnetBuildpackConfigurationError,
+};
+use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use crate::utils::StreamedCommandError;
@@ -109,12 +113,15 @@ impl Buildpack for DotnetBuildpack {
         )
         .map_err(DotnetBuildpackError::LaunchProcessDetection);
 
+        let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
+            .map_err(DotnetBuildpackError::ParseDotnetBuildpackConfigurationError)?;
+
         utils::run_command_and_stream_output(
             Command::from(DotnetPublishCommand {
                 path: solution.path,
                 configuration: build_configuration,
                 runtime_identifier,
-                verbosity_level: VerbosityLevel::Normal,
+                verbosity_level: buildpack_configuration.msbuild_verbosity_level,
             })
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current())),
@@ -244,6 +251,7 @@ enum DotnetBuildpackError {
     ParseVersionRequirement(semver::Error),
     ResolveSdkVersion(VersionReq),
     SdkLayer(SdkLayerError),
+    ParseDotnetBuildpackConfigurationError(DotnetBuildpackConfigurationError),
     PublishCommand(StreamedCommandError),
     CopyRuntimeFilesToRuntimeLayer(io::Error),
     LaunchProcessDetection(LaunchProcessDetectionError),

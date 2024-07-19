@@ -27,8 +27,7 @@ impl From<DotnetPublishCommand> for Command {
     }
 }
 
-#[derive(Clone, Copy)]
-#[allow(dead_code)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum VerbosityLevel {
     Quiet,
     Minimal,
