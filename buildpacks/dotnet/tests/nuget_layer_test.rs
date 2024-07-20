@@ -1,5 +1,4 @@
 use crate::tests::default_build_config;
-use indoc::indoc;
 use libcnb_test::{assert_contains, assert_empty, assert_not_contains, TestRunner};
 
 #[test]
