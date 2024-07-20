@@ -23,8 +23,6 @@ fn replace_msbuild_log_patterns_with_placeholder(input: &str, placeholder: &str)
     let patterns = vec![
         // Date-time pattern
         r"\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2}",
-        // URL date-time pattern (in NuGet vulnerability URLs)
-        r"\d{4}\.\d{2}\.\d{2}\.\d{2}\.\d{2}\.\d{2}",
         // Elapsed time pattern
         r"\d{2}:\d{2}:\d{2}\.\d{2}",
         // Server message with UUID pattern
