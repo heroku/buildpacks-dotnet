@@ -111,7 +111,10 @@ where
     if calculated_checksum == checksum.value {
         Ok(())
     } else {
-        Err(SdkLayerError::VerifyChecksum)
+        Err(SdkLayerError::VerifyChecksum {
+            expected: checksum.value.clone(),
+            actual: calculated_checksum,
+        })
     }
 }
 
@@ -119,7 +122,7 @@ where
 pub(crate) enum SdkLayerError {
     DownloadSdk(libherokubuildpack::download::DownloadError),
     UntarSdk(std::io::Error),
-    VerifyChecksum,
+    VerifyChecksum { expected: Vec<u8>, actual: Vec<u8> },
     OpenSdkArchive(std::io::Error),
     ReadSdkArchive(std::io::Error),
 }
