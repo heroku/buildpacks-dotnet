@@ -140,10 +140,14 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     io_error,
                 );
             }
-            // TODO: Log expected and actual checksums
-            SdkLayerError::VerifyChecksum => log_error(
+            SdkLayerError::VerifyChecksum { expected, actual } => log_error(
                 "Corrupted .NET SDK download",
-                "The validation of the downloaded .NET SDK failed due to a checksum mismatch.",
+                formatdoc! {"
+                    Validation of the downloaded .NET SDK failed due to a checksum mismatch.
+
+                    Expected: {expected}
+                    Actual: {actual}
+                ", expected = hex::encode(expected), actual = hex::encode(actual) },
             ),
             SdkLayerError::OpenSdkArchive(io_error) => {
                 log_io_error(
