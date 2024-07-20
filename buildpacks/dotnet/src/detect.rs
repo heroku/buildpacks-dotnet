@@ -46,11 +46,11 @@ pub(crate) fn global_json_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
 mod tests {
     use super::*;
     use std::fs::File;
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     #[test]
     fn test_find_project_files() {
-        let temp_dir = TempDir::new("dotnet-test").unwrap();
+        let temp_dir = TempDir::new().unwrap();
         let base_path = temp_dir.path();
 
         File::create(base_path.join("test1.csproj")).unwrap();
@@ -65,7 +65,7 @@ mod tests {
 
     #[test]
     fn test_find_solution_files() {
-        let temp_dir = TempDir::new("dotnet-test").unwrap();
+        let temp_dir = TempDir::new().unwrap();
         let base_path = temp_dir.path();
 
         File::create(base_path.join("test1.sln")).unwrap();
@@ -79,7 +79,7 @@ mod tests {
 
     #[test]
     fn test_global_json_file_exists() {
-        let temp_dir = TempDir::new("test_global_json").unwrap();
+        let temp_dir = TempDir::new().unwrap();
         let global_json_path = temp_dir.path().join("global.json");
 
         File::create(&global_json_path).unwrap();
@@ -90,14 +90,14 @@ mod tests {
 
     #[test]
     fn test_global_json_file_does_not_exist() {
-        let temp_dir = TempDir::new("test_dir_not_exists").unwrap();
+        let temp_dir = TempDir::new().unwrap();
         let result = global_json_file(temp_dir.path());
         assert_eq!(result, None);
     }
 
     #[test]
     fn test_global_json_file_is_directory() {
-        let temp_dir = TempDir::new("test_dir_is_directory").unwrap();
+        let temp_dir = TempDir::new().unwrap();
         let global_json_path = temp_dir.path().join("global.json");
         fs::create_dir(global_json_path).unwrap();
 
