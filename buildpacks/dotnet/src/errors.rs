@@ -201,7 +201,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 "},
             ),
         },
-        DotnetBuildpackError::CopyRuntimeFilesToRuntimeLayer(io_error) => log_io_error(
+        DotnetBuildpackError::CopyRuntimeFiles(io_error) => log_io_error(
             "Error copying .NET runtime files",
             "copying .NET runtime files from the sdk layer to the runtime layer",
             io_error,

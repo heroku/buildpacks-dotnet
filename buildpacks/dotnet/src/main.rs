@@ -251,7 +251,7 @@ enum DotnetBuildpackError {
     SdkLayer(SdkLayerError),
     ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),
     PublishCommand(StreamedCommandError),
-    CopyRuntimeFilesToRuntimeLayer(io::Error),
+    CopyRuntimeFiles(io::Error),
     LaunchProcessDetection(LaunchProcessDetectionError),
 }
 
