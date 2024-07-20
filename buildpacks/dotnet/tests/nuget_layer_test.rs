@@ -16,10 +16,10 @@ fn test_nuget_restore_and_cache() {
 
             // Verify NuGet package layer caching behavior
             let config = context.config.clone();
-            context.rebuild(config, |ctx| {
-                assert_not_contains!(&ctx.pack_stdout, "Created NuGet package cache");
-                assert_not_contains!(&ctx.pack_stdout, "Installed Newtonsoft.Json 13.0.3");
-                assert_contains!(&ctx.pack_stdout, "Restored /workspace/consoleapp.csproj");
+            context.rebuild(config, |rebuild_context| {
+                assert_not_contains!(&rebuild_context.pack_stdout, "Created NuGet package cache");
+                assert_not_contains!(&rebuild_context.pack_stdout, "Installed Newtonsoft.Json 13.0.3");
+                assert_contains!(&rebuild_context.pack_stdout, "Restored /workspace/consoleapp.csproj");
             });
         });
 }
