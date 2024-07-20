@@ -162,7 +162,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 io_error,
             ),
         },
-        DotnetBuildpackError::ParseDotnetBuildpackConfigurationError(error) => match error {
+        DotnetBuildpackError::ParseDotnetBuildpackConfiguration(error) => match error {
             DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(verbosity_level) => {
                 log_error(
                     "Invalid MSBuild verbosity level",

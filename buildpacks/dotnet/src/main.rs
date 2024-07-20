@@ -62,7 +62,7 @@ impl Buildpack for DotnetBuildpack {
 
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
-            .map_err(DotnetBuildpackError::ParseDotnetBuildpackConfigurationError)?;
+            .map_err(DotnetBuildpackError::ParseDotnetBuildpackConfiguration)?;
 
         log_header("Determining .NET version");
         let solution = get_solution_to_publish(&context.app_dir)?;
@@ -250,7 +250,7 @@ enum DotnetBuildpackError {
     ParseVersionRequirement(semver::Error),
     ResolveSdkVersion(VersionReq),
     SdkLayer(SdkLayerError),
-    ParseDotnetBuildpackConfigurationError(DotnetBuildpackConfigurationError),
+    ParseDotnetBuildpackConfiguration(DotnetBuildpackConfigurationError),
     PublishCommand(StreamedCommandError),
     CopyRuntimeFilesToRuntimeLayer(io::Error),
     LaunchProcessDetection(LaunchProcessDetectionError),
