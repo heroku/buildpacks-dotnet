@@ -166,25 +166,23 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
 
     let project_file_paths =
         detect::project_file_paths(app_dir).expect("function to pass after detection");
-    if let Some(project_file) = detect::project_file_paths(app_dir)
-        .expect("function to pass after detection")
-        .first()
-    {
-        if project_file_paths.len() > 1 {
-            return Err(DotnetBuildpackError::MultipleProjectFiles(
-                project_file_paths
-                    .iter()
-                    .map(|f| f.to_string_lossy().to_string())
-                    .collect::<Vec<String>>()
-                    .join(", "),
-            ));
-        }
-        return Ok(Solution::ephemeral(
-            Project::load_from_path(project_file).map_err(DotnetBuildpackError::LoadProjectFile)?,
+    if project_file_paths.len() > 1 {
+        return Err(DotnetBuildpackError::MultipleProjectFiles(
+            project_file_paths
+                .iter()
+                .map(|f| f.to_string_lossy().to_string())
+                .collect::<Vec<String>>()
+                .join(", "),
         ));
     }
-
-    Err(DotnetBuildpackError::NoDotnetFiles)
+    Ok(Solution::ephemeral(
+        Project::load_from_path(
+            project_file_paths
+                .first()
+                .expect("A project file to be present"),
+        )
+        .map_err(DotnetBuildpackError::LoadProjectFile)?,
+    ))
 }
 
 fn get_solution_sdk_version_requirement(
@@ -236,7 +234,6 @@ fn detect_global_json_sdk_version_requirement(
 #[derive(Debug)]
 enum DotnetBuildpackError {
     BuildpackDetection(io::Error),
-    NoDotnetFiles,
     NoSolutionProjects,
     MultipleProjectFiles(String),
     LoadSolutionFile(dotnet::solution::LoadError),

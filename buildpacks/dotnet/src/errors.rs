@@ -34,17 +34,6 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             "determining if the .NET buildpack should be run for this application",
             io_error,
         ),
-        DotnetBuildpackError::NoDotnetFiles => log_error(
-            "No .NET solution or project files found",
-            formatdoc! {"
-                While determining the .NET file to publish, neither a solution or project file was found.
-                This should never occur, as the detect phase should only succeed if a publishable .NET file
-                was found.
-
-                If you see this error, please file an issue:
-                https://github.com/heroku/buildpacks-dotnet/issues/new
-            "},
-        ),
         DotnetBuildpackError::NoSolutionProjects => {
             log_error("No project references found in solution", String::new());
         }
