@@ -62,7 +62,7 @@ impl Buildpack for DotnetBuildpack {
 
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
-            .map_err(DotnetBuildpackError::ParseDotnetBuildpackConfiguration)?;
+            .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
 
         log_header("Determining .NET version");
         let solution = get_solution_to_publish(&context.app_dir)?;
@@ -161,7 +161,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
             );
         }
         return Solution::load_from_path(solution_file)
-            .map_err(DotnetBuildpackError::LoadDotnetSolutionFile);
+            .map_err(DotnetBuildpackError::LoadSolutionFile);
     }
 
     let project_file_paths =
@@ -180,8 +180,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
             ));
         }
         return Ok(Solution::ephemeral(
-            Project::load_from_path(project_file)
-                .map_err(DotnetBuildpackError::LoadDotnetProjectFile)?,
+            Project::load_from_path(project_file).map_err(DotnetBuildpackError::LoadProjectFile)?,
         ));
     }
 
@@ -240,8 +239,8 @@ enum DotnetBuildpackError {
     NoDotnetFiles,
     NoSolutionProjects,
     MultipleProjectFiles(String),
-    LoadDotnetSolutionFile(dotnet::solution::LoadError),
-    LoadDotnetProjectFile(dotnet::project::LoadError),
+    LoadSolutionFile(dotnet::solution::LoadError),
+    LoadProjectFile(dotnet::project::LoadError),
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     ReadGlobalJsonFile(io::Error),
     ParseGlobalJson(serde_json::Error),
@@ -250,7 +249,7 @@ enum DotnetBuildpackError {
     ParseVersionRequirement(semver::Error),
     ResolveSdkVersion(VersionReq),
     SdkLayer(SdkLayerError),
-    ParseDotnetBuildpackConfiguration(DotnetBuildpackConfigurationError),
+    ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),
     PublishCommand(StreamedCommandError),
     CopyRuntimeFilesToRuntimeLayer(io::Error),
     LaunchProcessDetection(LaunchProcessDetectionError),

@@ -54,7 +54,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 The root directory contains multiple .NET project files: {message}"
             },
         ),
-        DotnetBuildpackError::LoadDotnetSolutionFile(error) => match error {
+        DotnetBuildpackError::LoadSolutionFile(error) => match error {
             solution::LoadError::ReadSolutionFile(io_error) => log_io_error(
                 "Unable to load solution file",
                 "reading solution file",
@@ -64,7 +64,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 on_load_dotnet_project_error(load_project_error, "reading solution project files");
             }
         },
-        DotnetBuildpackError::LoadDotnetProjectFile(error) => {
+        DotnetBuildpackError::LoadProjectFile(error) => {
             on_load_dotnet_project_error(error, "reading root project file");
         }
         // TODO: Add the erroneous input values to these error messages
@@ -162,7 +162,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 io_error,
             ),
         },
-        DotnetBuildpackError::ParseDotnetBuildpackConfiguration(error) => match error {
+        DotnetBuildpackError::ParseBuildpackConfiguration(error) => match error {
             DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(verbosity_level) => {
                 log_error(
                     "Invalid MSBuild verbosity level",
