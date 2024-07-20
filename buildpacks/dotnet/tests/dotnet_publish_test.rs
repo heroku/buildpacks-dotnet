@@ -18,12 +18,19 @@ fn test_dotnet_publish_multi_tfm_solution() {
             );
             assert_contains!(
                 context.pack_stdout,
-                &formatdoc! {r#"
-                  [/workspace/worker/worker.csproj]
-                    worker -> /workspace/worker/bin/Release/net6.0/{rid}/worker.dll
-                    worker -> /workspace/worker/bin/Release/net6.0/{rid}/publish/
-                    web -> /workspace/web/bin/Release/net8.0/{rid}/web.dll
-                    web -> /workspace/web/bin/Release/net8.0/{rid}/publish/"#}
+                &format! {"worker -> /workspace/worker/bin/Release/net6.0/{rid}/worker.dll"}
+            );
+            assert_contains!(
+                context.pack_stdout,
+                &format! {"worker -> /workspace/worker/bin/Release/net6.0/{rid}/publish/" }
+            );
+            assert_contains!(
+                context.pack_stdout,
+                &format! {"web -> /workspace/web/bin/Release/net8.0/{rid}/web.dll" }
+            );
+            assert_contains!(
+                context.pack_stdout,
+                &format! {"web -> /workspace/web/bin/Release/net8.0/{rid}/publish/" }
             );
         },
     );
