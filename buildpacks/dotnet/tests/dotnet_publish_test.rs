@@ -57,7 +57,7 @@ fn test_dotnet_publish_with_debug_configuration() {
 
 #[test]
 #[ignore = "integration test"]
-fn test_dotnet_publish_with_rid() {
+fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/basic_web_8.0_with_global_json")
           .env("MSBUILD_VERBOSITY_LEVEL", "normal"),
