@@ -215,7 +215,7 @@ fn get_solution_sdk_version_requirement(
             .last()
             .ok_or(DotnetBuildpackError::NoSolutionProjects)?,
     )
-    .map_err(DotnetBuildpackError::ParseVersionRequirement)
+    .map_err(DotnetBuildpackError::ParseSolutionVersionRequirement)
 }
 
 fn detect_global_json_sdk_version_requirement(
@@ -246,7 +246,7 @@ enum DotnetBuildpackError {
     ParseGlobalJson(serde_json::Error),
     ParseGlobalJsonVersionRequirement(semver::Error),
     ParseInventory(ParseInventoryError),
-    ParseVersionRequirement(semver::Error),
+    ParseSolutionVersionRequirement(semver::Error),
     ResolveSdkVersion(VersionReq),
     SdkLayer(SdkLayerError),
     ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),

@@ -112,7 +112,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 Details: {error}
             "},
         ),
-        DotnetBuildpackError::ParseVersionRequirement(error) => log_error(
+        DotnetBuildpackError::ParseSolutionVersionRequirement(error) => log_error(
             "Invalid .NET SDK version requirement",
             formatdoc! {"
                 The inferred .NET SDK version requirement could not be parsed.
