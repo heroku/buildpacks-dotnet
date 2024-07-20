@@ -192,10 +192,6 @@ fn get_solution_sdk_version_requirement(
         .projects
         .iter()
         .map(|project| {
-            log_info(format!(
-                "Parsing target framework moniker for project: {0}",
-                project.path.to_string_lossy()
-            ));
             project
                 .target_framework
                 .parse::<TargetFrameworkMoniker>()
