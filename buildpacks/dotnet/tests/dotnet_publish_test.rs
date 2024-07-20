@@ -16,8 +16,8 @@ fn test_dotnet_publish_with_rid() {
             let rid = get_rid();
 
             assert_contains!(
-                replace_msbuild_log_patterns_with_placeholder(&context.pack_stdout, "<PLACEHOLDER>"), 
-                &formatdoc! {r#"
+              replace_msbuild_log_patterns_with_placeholder(&context.pack_stdout, "<PLACEHOLDER>"), 
+              &formatdoc! {r#"
                 Created NuGet package cache
 
                 [Publish]
@@ -81,7 +81,7 @@ fn test_dotnet_publish_with_rid() {
                   0 Error(s)
               
               Time Elapsed <PLACEHOLDER>"#}
-          );
+            );
         },
     );
 }
