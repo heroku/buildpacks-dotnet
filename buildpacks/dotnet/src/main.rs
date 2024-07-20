@@ -61,6 +61,9 @@ impl Buildpack for DotnetBuildpack {
     }
 
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
+        let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
+            .map_err(DotnetBuildpackError::ParseDotnetBuildpackConfigurationError)?;
+
         log_header("Determining .NET version");
         let solution = get_solution_to_publish(&context.app_dir)?;
         log_info(format!(
@@ -105,8 +108,6 @@ impl Buildpack for DotnetBuildpack {
             nuget_cache_layer.path(),
         );
 
-        let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
-            .map_err(DotnetBuildpackError::ParseDotnetBuildpackConfigurationError)?;
         let launch_processes_result = launch_process::detect_solution_processes(
             &solution,
             &buildpack_configuration.build_configuration,
