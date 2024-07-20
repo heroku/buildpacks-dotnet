@@ -78,17 +78,17 @@ pub(crate) fn handle(
             ));
 
             let path = temp_dir().as_path().join("dotnetsdk.tar.gz");
-            download_file(&artifact.url, path.clone()).map_err(SdkLayerError::DownloadSdk)?;
+            download_file(&artifact.url, path.clone()).map_err(SdkLayerError::DownloadArchive)?;
 
             log_info("Verifying checksum");
             verify_checksum(&artifact.checksum, path.clone())?;
 
             log_info("Installing .NET SDK");
             decompress_tarball(
-                &mut File::open(path.clone()).map_err(SdkLayerError::OpenSdkArchive)?,
+                &mut File::open(path.clone()).map_err(SdkLayerError::OpenArchive)?,
                 sdk_layer.path(),
             )
-            .map_err(SdkLayerError::UntarSdk)?;
+            .map_err(SdkLayerError::DecompressArchive)?;
 
             sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
                 sdk_layer.path().as_path(),
@@ -106,12 +106,12 @@ where
 {
     let calculated_checksum = fs::read(path.as_ref())
         .map(|data| D::digest(data).to_vec())
-        .map_err(SdkLayerError::ReadSdkArchive)?;
+        .map_err(SdkLayerError::ReadArchive)?;
 
     if calculated_checksum == checksum.value {
         Ok(())
     } else {
-        Err(SdkLayerError::VerifyChecksum {
+        Err(SdkLayerError::VerifyArchiveChecksum {
             expected: checksum.value.clone(),
             actual: calculated_checksum,
         })
@@ -120,11 +120,11 @@ where
 
 #[derive(Debug)]
 pub(crate) enum SdkLayerError {
-    DownloadSdk(libherokubuildpack::download::DownloadError),
-    UntarSdk(std::io::Error),
-    VerifyChecksum { expected: Vec<u8>, actual: Vec<u8> },
-    OpenSdkArchive(std::io::Error),
-    ReadSdkArchive(std::io::Error),
+    DownloadArchive(libherokubuildpack::download::DownloadError),
+    DecompressArchive(std::io::Error),
+    VerifyArchiveChecksum { expected: Vec<u8>, actual: Vec<u8> },
+    OpenArchive(std::io::Error),
+    ReadArchive(std::io::Error),
 }
 
 impl From<SdkLayerError> for libcnb::Error<DotnetBuildpackError> {

@@ -127,20 +127,20 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             "},
         ),
         DotnetBuildpackError::SdkLayer(error) => match error {
-            SdkLayerError::DownloadSdk(error) => log_error(
+            SdkLayerError::DownloadArchive(error) => log_error(
                 "Couldn't download .NET SDK",
                 formatdoc! {"
                     Details: {error}
                 "},
             ),
-            SdkLayerError::ReadSdkArchive(io_error) => {
+            SdkLayerError::ReadArchive(io_error) => {
                 log_io_error(
                     "Couldn't read .NET SDK archive",
                     "reading downloaded .NET SDK archive",
                     io_error,
                 );
             }
-            SdkLayerError::VerifyChecksum { expected, actual } => log_error(
+            SdkLayerError::VerifyArchiveChecksum { expected, actual } => log_error(
                 "Corrupted .NET SDK download",
                 formatdoc! {"
                     Validation of the downloaded .NET SDK failed due to a checksum mismatch.
@@ -149,14 +149,14 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     Actual: {actual}
                 ", expected = hex::encode(expected), actual = hex::encode(actual) },
             ),
-            SdkLayerError::OpenSdkArchive(io_error) => {
+            SdkLayerError::OpenArchive(io_error) => {
                 log_io_error(
                     "Couldn't open .NET SDK archive",
                     "opening downloaded .NET SDK archive",
                     io_error,
                 );
             }
-            SdkLayerError::UntarSdk(io_error) => log_io_error(
+            SdkLayerError::DecompressArchive(io_error) => log_io_error(
                 "Couldn't decompress .NET SDK",
                 "untarring .NET SDK archive",
                 io_error,
