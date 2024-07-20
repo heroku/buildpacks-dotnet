@@ -32,7 +32,7 @@ pub(crate) fn handle(
 
     for path in RUNTIME_PATHS {
         utils::copy_recursively(sdk_layer_path.join(path), runtime_layer.path().join(path))
-            .map_err(DotnetBuildpackError::CopyRuntimeFilesToRuntimeLayer)?;
+            .map_err(DotnetBuildpackError::CopyRuntimeFiles)?;
     }
 
     Ok(())

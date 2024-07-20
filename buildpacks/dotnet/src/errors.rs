@@ -34,17 +34,6 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             "determining if the .NET buildpack should be run for this application",
             io_error,
         ),
-        DotnetBuildpackError::NoDotnetFiles => log_error(
-            "No .NET solution or project files found",
-            formatdoc! {"
-                While determining the .NET file to publish, neither a solution or project file was found.
-                This should never occur, as the detect phase should only succeed if a publishable .NET file
-                was found.
-
-                If you see this error, please file an issue:
-                https://github.com/heroku/buildpacks-dotnet/issues/new
-            "},
-        ),
         DotnetBuildpackError::NoSolutionProjects => {
             log_error("No project references found in solution", String::new());
         }
@@ -54,7 +43,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 The root directory contains multiple .NET project files: {message}"
             },
         ),
-        DotnetBuildpackError::LoadDotnetSolutionFile(error) => match error {
+        DotnetBuildpackError::LoadSolutionFile(error) => match error {
             solution::LoadError::ReadSolutionFile(io_error) => log_io_error(
                 "Unable to load solution file",
                 "reading solution file",
@@ -64,7 +53,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 on_load_dotnet_project_error(load_project_error, "reading solution project files");
             }
         },
-        DotnetBuildpackError::LoadDotnetProjectFile(error) => {
+        DotnetBuildpackError::LoadProjectFile(error) => {
             on_load_dotnet_project_error(error, "reading root project file");
         }
         // TODO: Add the erroneous input values to these error messages
@@ -112,7 +101,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 Details: {error}
             "},
         ),
-        DotnetBuildpackError::ParseVersionRequirement(error) => log_error(
+        DotnetBuildpackError::ParseSolutionVersionRequirement(error) => log_error(
             "Invalid .NET SDK version requirement",
             formatdoc! {"
                 The inferred .NET SDK version requirement could not be parsed.
@@ -127,20 +116,20 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             "},
         ),
         DotnetBuildpackError::SdkLayer(error) => match error {
-            SdkLayerError::DownloadSdk(error) => log_error(
+            SdkLayerError::DownloadArchive(error) => log_error(
                 "Couldn't download .NET SDK",
                 formatdoc! {"
                     Details: {error}
                 "},
             ),
-            SdkLayerError::ReadSdkArchive(io_error) => {
+            SdkLayerError::ReadArchive(io_error) => {
                 log_io_error(
                     "Couldn't read .NET SDK archive",
                     "reading downloaded .NET SDK archive",
                     io_error,
                 );
             }
-            SdkLayerError::VerifyChecksum { expected, actual } => log_error(
+            SdkLayerError::VerifyArchiveChecksum { expected, actual } => log_error(
                 "Corrupted .NET SDK download",
                 formatdoc! {"
                     Validation of the downloaded .NET SDK failed due to a checksum mismatch.
@@ -149,20 +138,20 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     Actual: {actual}
                 ", expected = hex::encode(expected), actual = hex::encode(actual) },
             ),
-            SdkLayerError::OpenSdkArchive(io_error) => {
+            SdkLayerError::OpenArchive(io_error) => {
                 log_io_error(
                     "Couldn't open .NET SDK archive",
                     "opening downloaded .NET SDK archive",
                     io_error,
                 );
             }
-            SdkLayerError::UntarSdk(io_error) => log_io_error(
+            SdkLayerError::DecompressArchive(io_error) => log_io_error(
                 "Couldn't decompress .NET SDK",
                 "untarring .NET SDK archive",
                 io_error,
             ),
         },
-        DotnetBuildpackError::ParseDotnetBuildpackConfigurationError(error) => match error {
+        DotnetBuildpackError::ParseBuildpackConfiguration(error) => match error {
             DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(verbosity_level) => {
                 log_error(
                     "Invalid MSBuild verbosity level",
@@ -201,7 +190,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 "},
             ),
         },
-        DotnetBuildpackError::CopyRuntimeFilesToRuntimeLayer(io_error) => log_io_error(
+        DotnetBuildpackError::CopyRuntimeFiles(io_error) => log_io_error(
             "Error copying .NET runtime files",
             "copying .NET runtime files from the sdk layer to the runtime layer",
             io_error,

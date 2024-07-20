@@ -62,7 +62,7 @@ impl Buildpack for DotnetBuildpack {
 
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
-            .map_err(DotnetBuildpackError::ParseDotnetBuildpackConfigurationError)?;
+            .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
 
         log_header("Determining .NET version");
         let solution = get_solution_to_publish(&context.app_dir)?;
@@ -161,31 +161,28 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
             );
         }
         return Solution::load_from_path(solution_file)
-            .map_err(DotnetBuildpackError::LoadDotnetSolutionFile);
+            .map_err(DotnetBuildpackError::LoadSolutionFile);
     }
 
     let project_file_paths =
         detect::project_file_paths(app_dir).expect("function to pass after detection");
-    if let Some(project_file) = detect::project_file_paths(app_dir)
-        .expect("function to pass after detection")
-        .first()
-    {
-        if project_file_paths.len() > 1 {
-            return Err(DotnetBuildpackError::MultipleProjectFiles(
-                project_file_paths
-                    .iter()
-                    .map(|f| f.to_string_lossy().to_string())
-                    .collect::<Vec<String>>()
-                    .join(", "),
-            ));
-        }
-        return Ok(Solution::ephemeral(
-            Project::load_from_path(project_file)
-                .map_err(DotnetBuildpackError::LoadDotnetProjectFile)?,
+    if project_file_paths.len() > 1 {
+        return Err(DotnetBuildpackError::MultipleProjectFiles(
+            project_file_paths
+                .iter()
+                .map(|f| f.to_string_lossy().to_string())
+                .collect::<Vec<String>>()
+                .join(", "),
         ));
     }
-
-    Err(DotnetBuildpackError::NoDotnetFiles)
+    Ok(Solution::ephemeral(
+        Project::load_from_path(
+            project_file_paths
+                .first()
+                .expect("A project file to be present"),
+        )
+        .map_err(DotnetBuildpackError::LoadProjectFile)?,
+    ))
 }
 
 fn get_solution_sdk_version_requirement(
@@ -216,7 +213,7 @@ fn get_solution_sdk_version_requirement(
             .last()
             .ok_or(DotnetBuildpackError::NoSolutionProjects)?,
     )
-    .map_err(DotnetBuildpackError::ParseVersionRequirement)
+    .map_err(DotnetBuildpackError::ParseSolutionVersionRequirement)
 }
 
 fn detect_global_json_sdk_version_requirement(
@@ -237,22 +234,21 @@ fn detect_global_json_sdk_version_requirement(
 #[derive(Debug)]
 enum DotnetBuildpackError {
     BuildpackDetection(io::Error),
-    NoDotnetFiles,
     NoSolutionProjects,
     MultipleProjectFiles(String),
-    LoadDotnetSolutionFile(dotnet::solution::LoadError),
-    LoadDotnetProjectFile(dotnet::project::LoadError),
+    LoadSolutionFile(dotnet::solution::LoadError),
+    LoadProjectFile(dotnet::project::LoadError),
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     ReadGlobalJsonFile(io::Error),
     ParseGlobalJson(serde_json::Error),
     ParseGlobalJsonVersionRequirement(semver::Error),
     ParseInventory(ParseInventoryError),
-    ParseVersionRequirement(semver::Error),
+    ParseSolutionVersionRequirement(semver::Error),
     ResolveSdkVersion(VersionReq),
     SdkLayer(SdkLayerError),
-    ParseDotnetBuildpackConfigurationError(DotnetBuildpackConfigurationError),
+    ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),
     PublishCommand(StreamedCommandError),
-    CopyRuntimeFilesToRuntimeLayer(io::Error),
+    CopyRuntimeFiles(io::Error),
     LaunchProcessDetection(LaunchProcessDetectionError),
 }
 
