@@ -5,6 +5,32 @@ use regex::Regex;
 
 #[test]
 #[ignore = "integration test"]
+fn test_dotnet_publish_multi_tfm_solution() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/solution_with_web_and_console_projects"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+
+            let rid = get_rid();
+            assert_contains!(
+                context.pack_stdout,
+                "Inferred SDK version requirement: ^8.0"
+            );
+            assert_contains!(
+                context.pack_stdout,
+                &formatdoc! {r#"
+                  [/workspace/worker/worker.csproj]
+                    worker -> /workspace/worker/bin/Release/net6.0/{rid}/worker.dll
+                    worker -> /workspace/worker/bin/Release/net6.0/{rid}/publish/
+                    web -> /workspace/web/bin/Release/net8.0/{rid}/web.dll
+                    web -> /workspace/web/bin/Release/net8.0/{rid}/publish/"#}
+            );
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
 fn test_dotnet_publish_with_rid() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/basic_web_8.0_with_global_json")
