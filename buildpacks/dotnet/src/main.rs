@@ -108,9 +108,13 @@ impl Buildpack for DotnetBuildpack {
             nuget_cache_layer.path(),
         );
 
+        let build_configuration = buildpack_configuration
+            .build_configuration
+            .unwrap_or_else(|| String::from("Release"));
+
         let launch_processes_result = launch_process::detect_solution_processes(
             &solution,
-            &buildpack_configuration.build_configuration,
+            &build_configuration,
             &runtime_identifier,
         )
         .map_err(DotnetBuildpackError::LaunchProcessDetection);
@@ -118,7 +122,7 @@ impl Buildpack for DotnetBuildpack {
         utils::run_command_and_stream_output(
             Command::from(DotnetPublishCommand {
                 path: solution.path,
-                configuration: buildpack_configuration.build_configuration,
+                configuration: build_configuration,
                 runtime_identifier,
                 verbosity_level: buildpack_configuration.msbuild_verbosity_level,
             })

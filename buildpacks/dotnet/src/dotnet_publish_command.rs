@@ -7,7 +7,7 @@ pub(crate) struct DotnetPublishCommand {
     pub(crate) path: PathBuf,
     pub(crate) configuration: String,
     pub(crate) runtime_identifier: RuntimeIdentifier,
-    pub(crate) verbosity_level: VerbosityLevel,
+    pub(crate) verbosity_level: Option<VerbosityLevel>,
 }
 
 impl From<DotnetPublishCommand> for Command {
@@ -20,9 +20,11 @@ impl From<DotnetPublishCommand> for Command {
             &value.configuration,
             "--runtime",
             &value.runtime_identifier.to_string(),
-            "--verbosity",
-            &value.verbosity_level.to_string(),
         ]);
+
+        if let Some(verbosity_level) = value.verbosity_level {
+            command.args(["--verbosity", &verbosity_level.to_string()]);
+        };
         command
     }
 }
