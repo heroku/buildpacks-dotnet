@@ -1,8 +1,8 @@
 use crate::dotnet_publish_command::VerbosityLevel;
 
 pub(crate) struct DotnetBuildpackConfiguration {
-    pub(crate) build_configuration: String,
-    pub(crate) msbuild_verbosity_level: VerbosityLevel,
+    pub(crate) build_configuration: Option<String>,
+    pub(crate) msbuild_verbosity_level: Option<VerbosityLevel>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -17,32 +17,26 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
         Ok(Self {
             build_configuration: env
                 .get("BUILD_CONFIGURATION")
-                .map_or(String::from("Release"), |value| {
-                    value.to_string_lossy().to_string()
-                }),
-            msbuild_verbosity_level: detect_msbuild_verbosity_level(env)?,
+                .map(|value| value.to_string_lossy().to_string()),
+            msbuild_verbosity_level: detect_msbuild_verbosity_level(env).transpose()?,
         })
     }
 }
 
 fn detect_msbuild_verbosity_level(
     env: &libcnb::Env,
-) -> Result<VerbosityLevel, DotnetBuildpackConfigurationError> {
+) -> Option<Result<VerbosityLevel, DotnetBuildpackConfigurationError>> {
     env.get("MSBUILD_VERBOSITY_LEVEL")
         .map(|value| value.to_string_lossy())
-        .map_or(Ok(VerbosityLevel::Minimal), |value| {
-            match value.to_lowercase().as_str() {
-                "q" | "quiet" => Ok(VerbosityLevel::Quiet),
-                "m" | "minimal" => Ok(VerbosityLevel::Minimal),
-                "n" | "normal" => Ok(VerbosityLevel::Normal),
-                "d" | "detailed" => Ok(VerbosityLevel::Detailed),
-                "diag" | "diagnostic" => Ok(VerbosityLevel::Diagnostic),
-                _ => Err(
-                    DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(
-                        value.to_string(),
-                    ),
-                ),
-            }
+        .map(|value| match value.to_lowercase().as_str() {
+            "q" | "quiet" => Ok(VerbosityLevel::Quiet),
+            "m" | "minimal" => Ok(VerbosityLevel::Minimal),
+            "n" | "normal" => Ok(VerbosityLevel::Normal),
+            "d" | "detailed" => Ok(VerbosityLevel::Detailed),
+            "diag" | "diagnostic" => Ok(VerbosityLevel::Diagnostic),
+            _ => Err(
+                DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(value.to_string()),
+            ),
         })
 }
 
@@ -62,34 +56,31 @@ mod tests {
     #[test]
     fn test_detect_msbuild_verbosity_level() {
         let cases = [
-            (Some("quiet"), Ok(VerbosityLevel::Quiet)),
-            (Some("q"), Ok(VerbosityLevel::Quiet)),
-            (Some("minimal"), Ok(VerbosityLevel::Minimal)),
-            (Some("m"), Ok(VerbosityLevel::Minimal)),
-            (Some("normal"), Ok(VerbosityLevel::Normal)),
-            (Some("n"), Ok(VerbosityLevel::Normal)),
-            (Some("detailed"), Ok(VerbosityLevel::Detailed)),
-            (Some("d"), Ok(VerbosityLevel::Detailed)),
-            (Some("diagnostic"), Ok(VerbosityLevel::Diagnostic)),
-            (Some("diag"), Ok(VerbosityLevel::Diagnostic)),
+            ("q", Ok(VerbosityLevel::Quiet)),
+            ("quiet", Ok(VerbosityLevel::Quiet)),
+            ("minimal", Ok(VerbosityLevel::Minimal)),
+            ("m", Ok(VerbosityLevel::Minimal)),
+            ("normal", Ok(VerbosityLevel::Normal)),
+            ("n", Ok(VerbosityLevel::Normal)),
+            ("detailed", Ok(VerbosityLevel::Detailed)),
+            ("d", Ok(VerbosityLevel::Detailed)),
+            ("diagnostic", Ok(VerbosityLevel::Diagnostic)),
+            ("diag", Ok(VerbosityLevel::Diagnostic)),
             (
-                Some("invalid"),
+                "invalid",
                 Err(
                     DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(
                         "invalid".to_string(),
                     ),
                 ),
             ),
-            (None, Ok(VerbosityLevel::Minimal)),
         ];
 
-        for (input, expected) in &cases {
-            let env = match input {
-                Some(value) => create_env(&[("MSBUILD_VERBOSITY_LEVEL", value)]),
-                None => Env::new(),
-            };
+        for (input, expected) in cases {
+            let env = create_env(&[("MSBUILD_VERBOSITY_LEVEL", input)]);
             let result = detect_msbuild_verbosity_level(&env);
-            assert_eq!(result, *expected);
+            assert_eq!(result, Some(expected));
         }
+        assert!(detect_msbuild_verbosity_level(&Env::new()).is_none());
     }
 }

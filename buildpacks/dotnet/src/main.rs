@@ -108,9 +108,14 @@ impl Buildpack for DotnetBuildpack {
             nuget_cache_layer.path(),
         );
 
+        let build_configuration = buildpack_configuration
+            .build_configuration
+            .clone()
+            .unwrap_or_else(|| String::from("Release"));
+
         let launch_processes_result = launch_process::detect_solution_processes(
             &solution,
-            &buildpack_configuration.build_configuration,
+            &build_configuration,
             &runtime_identifier,
         )
         .map_err(DotnetBuildpackError::LaunchProcessDetection);

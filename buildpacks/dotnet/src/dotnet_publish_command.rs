@@ -5,9 +5,9 @@ use std::process::Command;
 
 pub(crate) struct DotnetPublishCommand {
     pub(crate) path: PathBuf,
-    pub(crate) configuration: String,
     pub(crate) runtime_identifier: RuntimeIdentifier,
-    pub(crate) verbosity_level: VerbosityLevel,
+    pub(crate) configuration: Option<String>,
+    pub(crate) verbosity_level: Option<VerbosityLevel>,
 }
 
 impl From<DotnetPublishCommand> for Command {
@@ -16,13 +16,16 @@ impl From<DotnetPublishCommand> for Command {
         command.args([
             "publish",
             &value.path.to_string_lossy(),
-            "--configuration",
-            &value.configuration,
             "--runtime",
             &value.runtime_identifier.to_string(),
-            "--verbosity",
-            &value.verbosity_level.to_string(),
         ]);
+
+        if let Some(configuration) = value.configuration {
+            command.args(["--configuration", &configuration]);
+        }
+        if let Some(verbosity_level) = value.verbosity_level {
+            command.args(["--verbosity", &verbosity_level.to_string()]);
+        };
         command
     }
 }
