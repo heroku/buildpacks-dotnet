@@ -110,6 +110,7 @@ impl Buildpack for DotnetBuildpack {
 
         let build_configuration = buildpack_configuration
             .build_configuration
+            .clone()
             .unwrap_or_else(|| String::from("Release"));
 
         let launch_processes_result = launch_process::detect_solution_processes(
@@ -122,7 +123,7 @@ impl Buildpack for DotnetBuildpack {
         utils::run_command_and_stream_output(
             Command::from(DotnetPublishCommand {
                 path: solution.path,
-                configuration: build_configuration,
+                configuration: buildpack_configuration.build_configuration,
                 runtime_identifier,
                 verbosity_level: buildpack_configuration.msbuild_verbosity_level,
             })
