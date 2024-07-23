@@ -14,7 +14,7 @@ fn test_dotnet_publish_multi_tfm_solution() {
             let rid = get_rid();
             assert_contains!(
                 context.pack_stdout,
-                "Inferred SDK version requirement: ^8.0"
+                "Detected SDK version requirement: ^8.0"
             );
             assert_contains!(
                 context.pack_stdout,
