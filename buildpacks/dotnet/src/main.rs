@@ -29,7 +29,7 @@ use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env};
-use libherokubuildpack::log::{log_info, log_warning};
+use libherokubuildpack::log::log_warning;
 use semver::{Version, VersionReq};
 use sha2::Sha512;
 use std::path::Path;
@@ -54,9 +54,12 @@ impl Buildpack for DotnetBuildpack {
         if contains_dotnet_files {
             DetectResultBuilder::pass().build()
         } else {
-            log_info(
-                "No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.",
-            );
+            Print::new(std::io::stdout())
+                .without_header()
+                .warning(
+                    "No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.",
+                )
+                .done();
             DetectResultBuilder::fail().build()
         }
     }
@@ -65,7 +68,7 @@ impl Buildpack for DotnetBuildpack {
         let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
             .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
 
-        let mut output = Print::new(std::io::stdout()).h1("Heroku .NET Buildpack");
+        let mut output = Print::new(std::io::stdout()).h2("Heroku .NET Buildpack");
         let mut bullet = output.bullet(".NET SDK version detection");
 
         let solution = get_solution_to_publish(&context.app_dir)?;
