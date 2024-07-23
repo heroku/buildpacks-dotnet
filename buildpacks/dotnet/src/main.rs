@@ -117,7 +117,7 @@ impl Buildpack for DotnetBuildpack {
             .done();
 
         let (sdk_layer, output) = layers::sdk::handle(&context, output, sdk_artifact)?;
-        let (nuget_cache_layer, output) = layers::nuget_cache::handle(&context, output)?;
+        let (nuget_cache_layer, mut output) = layers::nuget_cache::handle(&context, output)?;
 
         bullet = output.bullet("Publishing");
         let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
@@ -160,16 +160,20 @@ impl Buildpack for DotnetBuildpack {
                 |stdout, stderr| command.stream_output(stdout, stderr),
             )
             .map_err(DotnetBuildpackError::PublishCommand)?;
+        output = bullet.done();
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
-        BuildResultBuilder::new()
+        let result = BuildResultBuilder::new()
             .launch(
                 LaunchBuilder::new()
                     .processes(launch_processes_result?)
                     .build(),
             )
-            .build()
+            .build();
+
+        output.done();
+        result
     }
 
     fn on_error(&self, error: libcnb::Error<Self::Error>) {
