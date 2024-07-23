@@ -1,4 +1,5 @@
 use crate::{dotnet_layer_env, DotnetBuildpack, DotnetBuildpackError};
+use bullet_stream::{state, Print};
 use inventory::artifact::Artifact;
 use inventory::checksum::Checksum;
 use libcnb::data::layer_name;
@@ -8,13 +9,13 @@ use libcnb::layer::{
 };
 use libcnb::layer_env::Scope;
 use libherokubuildpack::download::download_file;
-use libherokubuildpack::log::log_info;
 use libherokubuildpack::tar::decompress_tarball;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use std::env::temp_dir;
 use std::fs::{self, File};
+use std::io::Stdout;
 use std::path::Path;
 
 #[derive(Serialize, Deserialize)]
@@ -29,6 +30,7 @@ pub(crate) enum CustomCause {
 
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
+    output: Print<state::Bullet<Stdout>>,
     artifact: &Artifact<Version, Sha512, Option<()>>,
 ) -> Result<LayerRef<DotnetBuildpack, (), CustomCause>, libcnb::Error<DotnetBuildpackError>> {
     let sdk_layer = context.cached_layer(
@@ -50,9 +52,11 @@ pub(crate) fn handle(
         },
     )?;
 
+    let mut bullet = output.bullet(".NET SDK installation");
+
     match sdk_layer.state {
         LayerState::Restored { .. } => {
-            log_info(format!(
+            bullet = bullet.sub_bullet(format!(
                 "Reusing cached .NET SDK version: {}",
                 artifact.version
             ));
@@ -62,7 +66,7 @@ pub(crate) fn handle(
                 cause: CustomCause::DifferentSdkArtifact(old_artifact),
             } = cause
             {
-                log_info(format!(
+                bullet = bullet.sub_bullet(format!(
                     "Deleting cached .NET SDK version: {}",
                     old_artifact.version
                 ));
@@ -72,7 +76,7 @@ pub(crate) fn handle(
                 artifact: artifact.clone(),
             })?;
 
-            libherokubuildpack::log::log_info(format!(
+            bullet = bullet.sub_bullet(format!(
                 "Downloading .NET SDK version {} from {}",
                 artifact.version, artifact.url
             ));
@@ -80,10 +84,10 @@ pub(crate) fn handle(
             let path = temp_dir().as_path().join("dotnetsdk.tar.gz");
             download_file(&artifact.url, path.clone()).map_err(SdkLayerError::DownloadArchive)?;
 
-            log_info("Verifying checksum");
+            bullet = bullet.sub_bullet("Verifying checksum");
             verify_checksum(&artifact.checksum, path.clone())?;
 
-            log_info("Installing .NET SDK");
+            bullet = bullet.sub_bullet("Installing .NET SDK");
             decompress_tarball(
                 &mut File::open(path.clone()).map_err(SdkLayerError::OpenArchive)?,
                 sdk_layer.path(),
@@ -96,6 +100,7 @@ pub(crate) fn handle(
             ))?;
         }
     }
+    let _ = bullet.done();
 
     Ok(sdk_layer)
 }

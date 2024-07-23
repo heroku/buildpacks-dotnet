@@ -94,6 +94,7 @@ dependencies = [
 name = "buildpack-heroku-dotnet"
 version = "0.0.0"
 dependencies = [
+ "bullet_stream",
  "hex",
  "indoc",
  "inventory",
@@ -108,6 +109,12 @@ dependencies = [
  "sha2",
  "tempfile",
 ]
+
+[[package]]
+name = "bullet_stream"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bec939946cfeb7d4ba709fb24f035a14b78b89641cd4a09434a6d317c0ae28a6"
 
 [[package]]
 name = "bumpalo"

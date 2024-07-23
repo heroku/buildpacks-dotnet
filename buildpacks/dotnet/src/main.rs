@@ -20,6 +20,7 @@ use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use crate::utils::StreamedCommandError;
+use bullet_stream::Print;
 use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
@@ -64,17 +65,31 @@ impl Buildpack for DotnetBuildpack {
         let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
             .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
 
-        log_header("Determining .NET version");
+        let mut output = Print::new(std::io::stdout()).h1("Heroku .NET Buildpack");
+        let mut bullet = output.bullet(".NET SDK version detection");
+
         let solution = get_solution_to_publish(&context.app_dir)?;
-        log_info(format!(
+
+        bullet = bullet.sub_bullet(format!(
             "Detected .NET file to publish: {}",
             solution.path.to_string_lossy()
         ));
 
-        let sdk_version_requirement = detect_global_json_sdk_version_requirement(&context.app_dir)
-            .unwrap_or_else(|| get_solution_sdk_version_requirement(&solution))?;
-        log_info(format!(
-            "Inferred SDK version requirement: {sdk_version_requirement}",
+        let sdk_version_requirement = if let Some(version_req) =
+            detect_global_json_sdk_version_requirement(&context.app_dir)
+        {
+            bullet = bullet.sub_bullet("Detecting version requirement from root global.json file");
+            version_req?
+        } else {
+            bullet = bullet.sub_bullet(format!(
+                "Inferring version requirement from \"{}\"",
+                &solution.path.to_string_lossy()
+            ));
+            get_solution_sdk_version_requirement(&solution)?
+        };
+
+        bullet = bullet.sub_bullet(format!(
+            "Detected SDK version requirement: {sdk_version_requirement}",
         ));
 
         let target_os = context.target.os.parse::<Os>()
@@ -91,11 +106,15 @@ impl Buildpack for DotnetBuildpack {
             .ok_or(DotnetBuildpackError::ResolveSdkVersion(
                 sdk_version_requirement,
             ))?;
-        log_info(format!(
-            "Resolved .NET SDK version {} ({}-{})",
-            sdk_artifact.version, sdk_artifact.os, sdk_artifact.arch
-        ));
-        let sdk_layer = layers::sdk::handle(&context, sdk_artifact)?;
+
+        output = bullet
+            .sub_bullet(format!(
+                "Resolved .NET SDK version {} ({}-{})",
+                sdk_artifact.version, sdk_artifact.os, sdk_artifact.arch
+            ))
+            .done();
+
+        let sdk_layer = layers::sdk::handle(&context, output, sdk_artifact)?;
 
         let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
 
@@ -221,7 +240,6 @@ fn detect_global_json_sdk_version_requirement(
     app_dir: &Path,
 ) -> Option<Result<VersionReq, DotnetBuildpackError>> {
     detect::global_json_file(app_dir).map(|file| {
-        log_info("Detected global.json file in the root directory");
         VersionReq::try_from(
             fs::read_to_string(file.as_path())
                 .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
