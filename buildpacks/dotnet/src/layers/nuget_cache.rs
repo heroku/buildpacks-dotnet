@@ -8,7 +8,6 @@ use libcnb::layer::{
     CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerRef, LayerState,
     RestoredLayerAction,
 };
-use libherokubuildpack::log::log_info;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -53,7 +52,7 @@ pub(crate) fn handle(
         LayerState::Restored {
             cause: restore_count,
         } => {
-            log_info("Reusing NuGet package cache");
+            bullet = bullet.sub_bullet("Reusing NuGet package cache");
             nuget_cache_layer.write_metadata(NugetCacheLayerMetadata {
                 restore_count: restore_count + 1.0,
             })?;

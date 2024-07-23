@@ -3,7 +3,6 @@ use crate::dotnet::{project, solution};
 use crate::dotnet_buildpack_configuration::DotnetBuildpackConfigurationError;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
-use crate::utils::StreamedCommandError;
 use crate::DotnetBuildpackError;
 use indoc::formatdoc;
 use libherokubuildpack::log::log_error;
@@ -173,12 +172,13 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             }
         },
         DotnetBuildpackError::PublishCommand(error) => match error {
-            StreamedCommandError::Io(io_error) => log_io_error(
+            fun_run::CmdError::SystemError(message, io_error) => log_io_error(
                 "Unable to publish .NET file",
-                "running the command to publish .NET file",
+                &format!("running the command to publish .NET file: {message}"),
                 io_error,
             ),
-            StreamedCommandError::NonZeroExitStatus(exit_status) => log_error(
+            fun_run::CmdError::NonZeroExitNotStreamed(output)
+            | fun_run::CmdError::NonZeroExitAlreadyStreamed(output) => log_error(
                 "Unable to publish .NET file",
                 formatdoc! {"
                     The 'dotnet publish' command did not exit successfully ({exit_status}).
@@ -187,7 +187,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     
                     In some cases, this happens due to an unstable network connection.
                     Please try again to see if the error resolves itself.
-                "},
+                ", exit_status = output.status()},
             ),
         },
         DotnetBuildpackError::CopyRuntimeFiles(io_error) => log_io_error(

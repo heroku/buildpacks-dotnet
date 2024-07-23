@@ -1,23 +1,5 @@
+use std::fs;
 use std::path::Path;
-use std::process::{Command, ExitStatus};
-use std::{fs, io};
-
-/// A helper for running an external process using [`Command`], that streams stdout/stderr
-/// to the user and checks that the exit status of the process was non-zero.
-pub(crate) fn run_command_and_stream_output(
-    command: &mut Command,
-) -> Result<(), StreamedCommandError> {
-    command
-        .status()
-        .map_err(StreamedCommandError::Io)
-        .and_then(|exit_status| {
-            if exit_status.success() {
-                Ok(())
-            } else {
-                Err(StreamedCommandError::NonZeroExitStatus(exit_status))
-            }
-        })
-}
 
 pub(crate) fn copy_recursively<P: AsRef<Path>>(src: P, dst: P) -> std::io::Result<()> {
     if src.as_ref().is_dir() {
@@ -33,13 +15,6 @@ pub(crate) fn copy_recursively<P: AsRef<Path>>(src: P, dst: P) -> std::io::Resul
         fs::copy(src, dst)?;
     }
     Ok(())
-}
-
-/// Errors that can occur when running an external process using `run_command_and_stream_output`.
-#[derive(Debug)]
-pub(crate) enum StreamedCommandError {
-    Io(io::Error),
-    NonZeroExitStatus(ExitStatus),
 }
 
 /// Convert a [`libcnb::Env`] to a sorted vector of key-value string slice tuples, for easier

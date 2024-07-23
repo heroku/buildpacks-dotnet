@@ -19,8 +19,8 @@ use crate::dotnet_buildpack_configuration::{
 use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
-use crate::utils::StreamedCommandError;
-use bullet_stream::Print;
+use bullet_stream::{style, Print};
+use fun_run::CommandWithName;
 use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
@@ -142,17 +142,22 @@ impl Buildpack for DotnetBuildpack {
         )
         .map_err(DotnetBuildpackError::LaunchProcessDetection);
 
-        utils::run_command_and_stream_output(
-            Command::from(DotnetPublishCommand {
-                path: solution.path,
-                configuration: buildpack_configuration.build_configuration,
-                runtime_identifier,
-                verbosity_level: buildpack_configuration.msbuild_verbosity_level,
-            })
+        let mut command = Command::from(DotnetPublishCommand {
+            path: solution.path,
+            configuration: buildpack_configuration.build_configuration,
+            runtime_identifier,
+            verbosity_level: buildpack_configuration.msbuild_verbosity_level,
+        });
+        command
             .current_dir(&context.app_dir)
-            .envs(&command_env.apply(Scope::Build, &Env::from_current())),
-        )
-        .map_err(DotnetBuildpackError::PublishCommand)?;
+            .envs(&command_env.apply(Scope::Build, &Env::from_current()));
+
+        let _result = bullet
+            .stream_with(
+                format!("Running {}", style::command(command.name())),
+                |stdout, stderr| command.stream_output(stdout, stderr),
+            )
+            .map_err(DotnetBuildpackError::PublishCommand)?;
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
@@ -269,7 +274,7 @@ enum DotnetBuildpackError {
     ResolveSdkVersion(VersionReq),
     SdkLayer(SdkLayerError),
     ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),
-    PublishCommand(StreamedCommandError),
+    PublishCommand(fun_run::CmdError),
     CopyRuntimeFiles(io::Error),
     LaunchProcessDetection(LaunchProcessDetectionError),
 }
