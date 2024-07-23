@@ -28,7 +28,7 @@ type HandleResult = Result<
 
 pub(crate) fn handle(
     context: &BuildContext<DotnetBuildpack>,
-    output: Print<state::Bullet<Stdout>>,
+    log: Print<state::Bullet<Stdout>>,
 ) -> HandleResult {
     let nuget_cache_layer = context.cached_layer(
         layer_name!("nuget-cache"),
@@ -46,13 +46,13 @@ pub(crate) fn handle(
         },
     )?;
 
-    let mut bullet = output.bullet("NuGet cache");
+    let mut log_bullet = log.bullet("NuGet cache");
 
     match nuget_cache_layer.state {
         LayerState::Restored {
             cause: restore_count,
         } => {
-            bullet = bullet.sub_bullet("Reusing NuGet package cache");
+            log_bullet = log_bullet.sub_bullet("Reusing NuGet package cache");
             nuget_cache_layer.write_metadata(NugetCacheLayerMetadata {
                 restore_count: restore_count + 1.0,
             })?;
@@ -60,16 +60,16 @@ pub(crate) fn handle(
         LayerState::Empty { cause } => {
             match cause {
                 EmptyLayerCause::NewlyCreated => {
-                    bullet = bullet.sub_bullet("Created NuGet package cache");
+                    log_bullet = log_bullet.sub_bullet("Created NuGet package cache");
                 }
                 EmptyLayerCause::InvalidMetadataAction { .. } => {
-                    bullet =
-                        bullet.sub_bullet("Purged NuGet package cache due to invalid metadata");
+                    log_bullet =
+                        log_bullet.sub_bullet("Purged NuGet package cache due to invalid metadata");
                 }
                 EmptyLayerCause::RestoredLayerAction {
                     cause: restore_count,
                 } => {
-                    bullet = bullet.sub_bullet(format!(
+                    log_bullet = log_bullet.sub_bullet(format!(
                         "Purged NuGet package cache after {restore_count} builds"
                     ));
                 }
@@ -77,5 +77,5 @@ pub(crate) fn handle(
             nuget_cache_layer.write_metadata(NugetCacheLayerMetadata { restore_count: 1.0 })?;
         }
     }
-    Ok((nuget_cache_layer, bullet.done()))
+    Ok((nuget_cache_layer, log_bullet.done()))
 }

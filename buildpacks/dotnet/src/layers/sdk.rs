@@ -38,7 +38,7 @@ type HandleResult = Result<
 
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
-    output: Print<state::Bullet<Stdout>>,
+    log: Print<state::Bullet<Stdout>>,
     artifact: &Artifact<Version, Sha512, Option<()>>,
 ) -> HandleResult {
     let sdk_layer = context.cached_layer(
@@ -60,11 +60,11 @@ pub(crate) fn handle(
         },
     )?;
 
-    let mut bullet = output.bullet(".NET SDK installation");
+    let mut log_bullet = log.bullet(".NET SDK installation");
 
     match sdk_layer.state {
         LayerState::Restored { .. } => {
-            bullet = bullet.sub_bullet(format!(
+            log_bullet = log_bullet.sub_bullet(format!(
                 "Reusing cached .NET SDK version: {}",
                 artifact.version
             ));
@@ -74,7 +74,7 @@ pub(crate) fn handle(
                 cause: CustomCause::DifferentSdkArtifact(old_artifact),
             } = cause
             {
-                bullet = bullet.sub_bullet(format!(
+                log_bullet = log_bullet.sub_bullet(format!(
                     "Deleting cached .NET SDK version: {}",
                     old_artifact.version
                 ));
@@ -84,18 +84,18 @@ pub(crate) fn handle(
                 artifact: artifact.clone(),
             })?;
 
-            bullet = bullet.sub_bullet(format!(
+            let log_background_bullet = log_bullet.start_timer(format!(
                 "Downloading .NET SDK version {} from {}",
                 artifact.version, artifact.url
             ));
 
             let path = temp_dir().as_path().join("dotnetsdk.tar.gz");
             download_file(&artifact.url, path.clone()).map_err(SdkLayerError::DownloadArchive)?;
-
-            bullet = bullet.sub_bullet("Verifying checksum");
+            log_bullet = log_background_bullet.done();
+            log_bullet = log_bullet.sub_bullet("Verifying checksum");
             verify_checksum(&artifact.checksum, path.clone())?;
 
-            bullet = bullet.sub_bullet("Installing .NET SDK");
+            log_bullet = log_bullet.sub_bullet("Installing .NET SDK");
             decompress_tarball(
                 &mut File::open(path.clone()).map_err(SdkLayerError::OpenArchive)?,
                 sdk_layer.path(),
@@ -109,7 +109,7 @@ pub(crate) fn handle(
         }
     }
 
-    Ok((sdk_layer, bullet.done()))
+    Ok((sdk_layer, log_bullet.done()))
 }
 
 fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>

@@ -67,12 +67,12 @@ impl Buildpack for DotnetBuildpack {
         let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
             .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
 
-        let mut output = Print::new(std::io::stdout()).h2("Heroku .NET Buildpack");
-        let mut bullet = output.bullet(".NET SDK version detection");
+        let mut log = Print::new(std::io::stdout()).h2("Heroku .NET Buildpack");
+        let mut log_bullet = log.bullet(".NET SDK version detection");
 
         let solution = get_solution_to_publish(&context.app_dir)?;
 
-        bullet = bullet.sub_bullet(format!(
+        log_bullet = log_bullet.sub_bullet(format!(
             "Detected .NET file to publish: {}",
             solution.path.to_string_lossy()
         ));
@@ -80,17 +80,18 @@ impl Buildpack for DotnetBuildpack {
         let sdk_version_requirement = if let Some(version_req) =
             detect_global_json_sdk_version_requirement(&context.app_dir)
         {
-            bullet = bullet.sub_bullet("Detecting version requirement from root global.json file");
+            log_bullet =
+                log_bullet.sub_bullet("Detecting version requirement from root global.json file");
             version_req?
         } else {
-            bullet = bullet.sub_bullet(format!(
+            log_bullet = log_bullet.sub_bullet(format!(
                 "Inferring version requirement from \"{}\"",
                 &solution.path.to_string_lossy()
             ));
             get_solution_sdk_version_requirement(&solution)?
         };
 
-        bullet = bullet.sub_bullet(format!(
+        log_bullet = log_bullet.sub_bullet(format!(
             "Detected SDK version requirement: {sdk_version_requirement}",
         ));
 
@@ -109,17 +110,17 @@ impl Buildpack for DotnetBuildpack {
                 sdk_version_requirement,
             ))?;
 
-        output = bullet
+        log = log_bullet
             .sub_bullet(format!(
                 "Resolved .NET SDK version {} ({}-{})",
                 sdk_artifact.version, sdk_artifact.os, sdk_artifact.arch
             ))
             .done();
 
-        let (sdk_layer, output) = layers::sdk::handle(&context, output, sdk_artifact)?;
-        let (nuget_cache_layer, mut output) = layers::nuget_cache::handle(&context, output)?;
+        let (sdk_layer, log) = layers::sdk::handle(&context, log, sdk_artifact)?;
+        let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
 
-        bullet = output.bullet("Publishing");
+        log_bullet = log.bullet("Publishing");
         let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
@@ -133,7 +134,7 @@ impl Buildpack for DotnetBuildpack {
             .clone()
             .unwrap_or_else(|| String::from("Release"));
 
-        bullet = bullet.sub_bullet(format!(
+        log_bullet = log_bullet.sub_bullet(format!(
             "Using \"{build_configuration}\" build configuration"
         ));
 
@@ -154,13 +155,13 @@ impl Buildpack for DotnetBuildpack {
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current()));
 
-        let _result = bullet
+        let _result = log_bullet
             .stream_with(
                 format!("Running {}", style::command(command.name())),
                 |stdout, stderr| command.stream_output(stdout, stderr),
             )
             .map_err(DotnetBuildpackError::PublishCommand)?;
-        output = bullet.done();
+        log = log_bullet.done();
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
@@ -172,7 +173,7 @@ impl Buildpack for DotnetBuildpack {
             )
             .build();
 
-        output.done();
+        log.done();
         result
     }
 
