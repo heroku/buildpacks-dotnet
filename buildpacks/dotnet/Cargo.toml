@@ -16,7 +16,7 @@ hex = "0.4"
 indoc = "2"
 inventory = { git = "https://github.com/malax/inventory", features = ["sha2", "semver"]}
 libcnb = "0.22"
-libherokubuildpack = { version = "0.22", default-features = false, features = ["log", "tar", "download"] }
+libherokubuildpack = { version = "0.22", default-features = false, features = ["tar", "download"] }
 regex = "1"
 roxmltree = "0.20"
 semver = "1.0"

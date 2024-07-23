@@ -29,7 +29,6 @@ use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env};
-use libherokubuildpack::log::log_warning;
 use semver::{Version, VersionReq};
 use sha2::Sha512;
 use std::path::Path;
@@ -181,20 +180,9 @@ impl Buildpack for DotnetBuildpack {
 fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackError> {
     let solution_file_paths =
         detect::solution_file_paths(app_dir).expect("function to pass after detection");
+    // TODO: Handle situation where multiple solution files are found (e.g. by logging a
+    // warning, or by building all solutions).
     if let Some(solution_file) = solution_file_paths.first() {
-        if solution_file_paths.len() > 1 {
-            log_warning(
-                "Multiple .NET solution files detected",
-                format!(
-                    "Found multiple .NET solution files: {}",
-                    solution_file_paths
-                        .iter()
-                        .map(|f| f.to_string_lossy().to_string())
-                        .collect::<Vec<String>>()
-                        .join(", ")
-                ),
-            );
-        }
         return Solution::load_from_path(solution_file)
             .map_err(DotnetBuildpackError::LoadSolutionFile);
     }
