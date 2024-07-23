@@ -74,7 +74,7 @@ impl Buildpack for DotnetBuildpack {
 
         log_bullet = log_bullet.sub_bullet(format!(
             "Detected .NET file to publish: {}",
-            solution.path.to_string_lossy()
+            style::value(solution.path.to_string_lossy())
         ));
 
         let sdk_version_requirement = if let Some(version_req) =
@@ -92,7 +92,8 @@ impl Buildpack for DotnetBuildpack {
         };
 
         log_bullet = log_bullet.sub_bullet(format!(
-            "Detected SDK version requirement: {sdk_version_requirement}",
+            "Detected SDK version requirement: {}",
+            style::value(sdk_version_requirement.to_string())
         ));
 
         let target_os = context.target.os.parse::<Os>()
@@ -112,8 +113,9 @@ impl Buildpack for DotnetBuildpack {
 
         log = log_bullet
             .sub_bullet(format!(
-                "Resolved .NET SDK version {} ({}-{})",
-                sdk_artifact.version, sdk_artifact.os, sdk_artifact.arch
+                "Resolved .NET SDK version {} {}",
+                style::value(sdk_artifact.version.to_string()),
+                style::details(format!("{}-{}", sdk_artifact.os, sdk_artifact.arch))
             ))
             .done();
 
@@ -135,7 +137,8 @@ impl Buildpack for DotnetBuildpack {
             .unwrap_or_else(|| String::from("Release"));
 
         log_bullet = log_bullet.sub_bullet(format!(
-            "Using \"{build_configuration}\" build configuration"
+            "Using {} build configuration",
+            style::value(build_configuration.clone())
         ));
 
         let launch_processes_result = launch_process::detect_solution_processes(

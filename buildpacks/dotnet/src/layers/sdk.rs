@@ -1,5 +1,5 @@
 use crate::{dotnet_layer_env, DotnetBuildpack, DotnetBuildpackError};
-use bullet_stream::{state, Print};
+use bullet_stream::{state, style, Print};
 use inventory::artifact::Artifact;
 use inventory::checksum::Checksum;
 use libcnb::data::layer_name;
@@ -86,7 +86,8 @@ pub(crate) fn handle(
 
             let log_background_bullet = log_bullet.start_timer(format!(
                 "Downloading .NET SDK version {} from {}",
-                artifact.version, artifact.url
+                style::value(artifact.version.to_string()),
+                style::url(artifact.clone().url)
             ));
 
             let path = temp_dir().as_path().join("dotnetsdk.tar.gz");
