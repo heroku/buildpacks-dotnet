@@ -115,11 +115,9 @@ impl Buildpack for DotnetBuildpack {
             .done();
 
         let (sdk_layer, output) = layers::sdk::handle(&context, output, sdk_artifact)?;
-        let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
+        let (nuget_cache_layer, output) = layers::nuget_cache::handle(&context, output)?;
 
-        let bullet = output.bullet("foo");
-
-        log_header("Publish");
+        bullet = output.bullet("Publishing");
         let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
