@@ -68,7 +68,7 @@ impl Buildpack for DotnetBuildpack {
             .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
 
         let mut log = Print::new(std::io::stdout()).h2("Heroku .NET Buildpack");
-        let mut log_bullet = log.bullet(".NET SDK version detection");
+        let mut log_bullet = log.bullet("SDK version detection");
 
         let solution = get_solution_to_publish(&context.app_dir)?;
 
@@ -85,14 +85,14 @@ impl Buildpack for DotnetBuildpack {
             version_req?
         } else {
             log_bullet = log_bullet.sub_bullet(format!(
-                "Inferring version requirement from \"{}\"",
-                &solution.path.to_string_lossy()
+                "Inferring version requirement from {}",
+                style::value(solution.path.to_string_lossy())
             ));
             get_solution_sdk_version_requirement(&solution)?
         };
 
         log_bullet = log_bullet.sub_bullet(format!(
-            "Detected SDK version requirement: {}",
+            "Detected version requirement: {}",
             style::value(sdk_version_requirement.to_string())
         ));
 
@@ -122,7 +122,7 @@ impl Buildpack for DotnetBuildpack {
         let (sdk_layer, log) = layers::sdk::handle(&context, log, sdk_artifact)?;
         let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
 
-        log_bullet = log.bullet("Publishing");
+        log_bullet = log.bullet("Publish solution");
         let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,

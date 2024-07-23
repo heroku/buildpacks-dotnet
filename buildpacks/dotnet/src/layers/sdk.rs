@@ -60,14 +60,12 @@ pub(crate) fn handle(
         },
     )?;
 
-    let mut log_bullet = log.bullet(".NET SDK installation");
+    let mut log_bullet = log.bullet("SDK installation");
 
     match sdk_layer.state {
         LayerState::Restored { .. } => {
-            log_bullet = log_bullet.sub_bullet(format!(
-                "Reusing cached .NET SDK version: {}",
-                artifact.version
-            ));
+            log_bullet =
+                log_bullet.sub_bullet(format!("Reusing cached SDK (version {})", artifact.version));
         }
         LayerState::Empty { ref cause } => {
             if let EmptyLayerCause::RestoredLayerAction {
@@ -75,7 +73,7 @@ pub(crate) fn handle(
             } = cause
             {
                 log_bullet = log_bullet.sub_bullet(format!(
-                    "Deleting cached .NET SDK version: {}",
+                    "Deleting cached .NET SDK (version {})",
                     old_artifact.version
                 ));
             }
@@ -85,18 +83,17 @@ pub(crate) fn handle(
             })?;
 
             let log_background_bullet = log_bullet.start_timer(format!(
-                "Downloading .NET SDK version {} from {}",
-                style::value(artifact.version.to_string()),
+                "Downloading SDK from {}",
                 style::url(artifact.clone().url)
             ));
 
             let path = temp_dir().as_path().join("dotnetsdk.tar.gz");
             download_file(&artifact.url, path.clone()).map_err(SdkLayerError::DownloadArchive)?;
             log_bullet = log_background_bullet.done();
-            log_bullet = log_bullet.sub_bullet("Verifying checksum");
+            log_bullet = log_bullet.sub_bullet("Verifying SDK checksum");
             verify_checksum(&artifact.checksum, path.clone())?;
 
-            log_bullet = log_bullet.sub_bullet("Installing .NET SDK");
+            log_bullet = log_bullet.sub_bullet("Installing SDK");
             decompress_tarball(
                 &mut File::open(path.clone()).map_err(SdkLayerError::OpenArchive)?,
                 sdk_layer.path(),
