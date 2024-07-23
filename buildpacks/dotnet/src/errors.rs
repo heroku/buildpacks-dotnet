@@ -4,9 +4,9 @@ use crate::dotnet_buildpack_configuration::DotnetBuildpackConfigurationError;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use crate::DotnetBuildpackError;
+use bullet_stream::Print;
 use indoc::formatdoc;
-use libherokubuildpack::log::log_error;
-use std::io;
+use std::io::{self, stdout};
 
 pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
     match error {
@@ -237,4 +237,14 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
             Details: {io_error}
         "},
     );
+}
+
+fn log_error(header: impl AsRef<str>, body: impl AsRef<str>) {
+    let output = Print::new(stdout()).without_header();
+    output.error(formatdoc! {"
+        {header}
+
+        {body}
+    ", header = header.as_ref(), body = body.as_ref(),
+    });
 }
