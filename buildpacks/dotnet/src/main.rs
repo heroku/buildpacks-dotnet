@@ -29,7 +29,7 @@ use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env};
-use libherokubuildpack::log::{log_header, log_info, log_warning};
+use libherokubuildpack::log::{log_info, log_warning};
 use semver::{Version, VersionReq};
 use sha2::Sha512;
 use std::path::Path;
@@ -130,6 +130,10 @@ impl Buildpack for DotnetBuildpack {
             .build_configuration
             .clone()
             .unwrap_or_else(|| String::from("Release"));
+
+        bullet = bullet.sub_bullet(format!(
+            "Using \"{build_configuration}\" build configuration"
+        ));
 
         let launch_processes_result = launch_process::detect_solution_processes(
             &solution,
