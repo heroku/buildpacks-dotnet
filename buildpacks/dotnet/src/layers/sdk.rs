@@ -28,11 +28,19 @@ pub(crate) enum CustomCause {
     DifferentSdkArtifact(Artifact<Version, Sha512, Option<()>>),
 }
 
+type HandleResult = Result<
+    (
+        LayerRef<DotnetBuildpack, (), CustomCause>,
+        Print<state::Bullet<Stdout>>,
+    ),
+    libcnb::Error<DotnetBuildpackError>,
+>;
+
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
     output: Print<state::Bullet<Stdout>>,
     artifact: &Artifact<Version, Sha512, Option<()>>,
-) -> Result<LayerRef<DotnetBuildpack, (), CustomCause>, libcnb::Error<DotnetBuildpackError>> {
+) -> HandleResult {
     let sdk_layer = context.cached_layer(
         layer_name!("sdk"),
         CachedLayerDefinition {
@@ -100,9 +108,8 @@ pub(crate) fn handle(
             ))?;
         }
     }
-    let _ = bullet.done();
 
-    Ok(sdk_layer)
+    Ok((sdk_layer, bullet.done()))
 }
 
 fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>

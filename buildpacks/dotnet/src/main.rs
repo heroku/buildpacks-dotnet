@@ -114,9 +114,10 @@ impl Buildpack for DotnetBuildpack {
             ))
             .done();
 
-        let sdk_layer = layers::sdk::handle(&context, output, sdk_artifact)?;
-
+        let (sdk_layer, output) = layers::sdk::handle(&context, output, sdk_artifact)?;
         let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
+
+        let bullet = output.bullet("foo");
 
         log_header("Publish");
         let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
