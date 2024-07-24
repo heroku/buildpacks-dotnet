@@ -107,10 +107,14 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 Details: {error}
             "},
         ),
+        // TODO: Consider adding more specifc errors for the parsed values (e.g. an invalid version or rollForward value)
         DotnetBuildpackError::ParseGlobalJsonVersionRequirement(error) => log_error(
             "Error parsing global.json version requirement",
             formatdoc! {"
                 The .NET SDK version requirement could not be parsed.
+
+                Use the error details below to troubleshoot and retry your build. For more information
+                about global.json files, see: https://learn.microsoft.com/en-us/dotnet/core/tools/global-json
                 
                 Details: {error}
             "},
@@ -131,7 +135,11 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             "Invalid .NET SDK version requirement",
             formatdoc! {"
                 The inferred .NET SDK version requirement could not be parsed.
-    
+
+                Use the error details below to troubleshoot and retry your build. If you think you found a bug in the
+                buildpack, reproduce the issue locally with a minimal example and file an issue here:
+                https://github.com/heroku/buildpacks-dotnet/issues/new
+
                 Details: {error}
             "},
         ),
