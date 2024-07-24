@@ -20,6 +20,7 @@ use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use crate::utils::StreamedCommandError;
+use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
@@ -117,8 +118,7 @@ impl Buildpack for DotnetBuildpack {
             &solution,
             &build_configuration,
             &runtime_identifier,
-        )
-        .map_err(DotnetBuildpackError::LaunchProcessDetection);
+        );
 
         utils::run_command_and_stream_output(
             Command::from(DotnetPublishCommand {
@@ -134,13 +134,16 @@ impl Buildpack for DotnetBuildpack {
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
-        BuildResultBuilder::new()
-            .launch(
-                LaunchBuilder::new()
-                    .processes(launch_processes_result?)
-                    .build(),
-            )
-            .build()
+        let mut build_result_builder = BuildResultBuilder::new();
+        match launch_processes_result {
+            Ok(processes) => {
+                // TODO: Print log information about registered processes
+                build_result_builder =
+                    build_result_builder.launch(LaunchBuilder::new().processes(processes).build());
+            }
+            Err(error) => log_launch_process_detection_warning(&error),
+        }
+        build_result_builder.build()
     }
 
     fn on_error(&self, error: libcnb::Error<Self::Error>) {
@@ -230,6 +233,30 @@ fn detect_global_json_sdk_version_requirement(
     })
 }
 
+fn log_launch_process_detection_warning(error: &LaunchProcessDetectionError) {
+    match error {
+        LaunchProcessDetectionError::ProcessType(process_type_error) => {
+            log_warning(
+                "Launch process detection error",
+                formatdoc! {"
+                    An invalid launch process type was detected.
+
+                    This buildpack will automatically try to register compiled project executables after successfully publishing an application/solution.
+                    The process type name is based on the name of the executable filename (usually the project name), which in some cases may be
+                    incompatible with the CNB spec; process types can only contain numbers, letters, and the characters `.`, `_`, and `-`.
+
+                    Use the warning details below to troubleshoot and make necessary adjustments if you wish to use this automatic registration feature.
+                    
+                    If you believe you've found a bug, or have feedback on how the current behavior could be improved to better fit your use case, file an issue here:
+                    https://github.com/heroku/buildpacks-dotnet/issues/new
+
+                    Details: {process_type_error}
+                "},
+            );
+        }
+    }
+}
+
 #[derive(Debug)]
 enum DotnetBuildpackError {
     BuildpackDetection(io::Error),
@@ -248,7 +275,6 @@ enum DotnetBuildpackError {
     ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),
     PublishCommand(StreamedCommandError),
     CopyRuntimeFiles(io::Error),
-    LaunchProcessDetection(LaunchProcessDetectionError),
 }
 
 impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
