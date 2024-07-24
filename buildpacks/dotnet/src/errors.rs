@@ -55,7 +55,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             formatdoc! {"
                 The root directory contains multiple .NET project files: {}.
 
-                Multiple project files in the root directory is not supported, as this is highly likely to
+                Having multiple project files in the root directory is not supported, as this is highly likely to
                 produce unexpected results. Reorganizing the directory and project structure to only include
                 one project file per folder (not only the root folder) is recommended.
 
@@ -70,7 +70,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         DotnetBuildpackError::LoadSolutionFile(error) => match error {
             solution::LoadError::ReadSolutionFile(io_error) => log_io_error(
                 "Unable to load solution file",
-                "reading solution file",
+                "reading the solution file",
                 io_error,
             ),
             solution::LoadError::LoadProject(load_project_error) => {
@@ -252,17 +252,24 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
 fn on_load_dotnet_project_error(error: &project::LoadError, occurred_while: &str) {
     match error {
         project::LoadError::ReadProjectFile(io_error) => {
-            log_io_error("Unable to read project", occurred_while, io_error);
+            log_io_error("Unable to load project", occurred_while, io_error);
         }
-        project::LoadError::XmlParseError(error) => log_error(
+        project::LoadError::XmlParseError(xml_parse_error) => log_error(
             "Unable to parse project file",
             formatdoc! {"
                 The project file XML content could not be parsed. This usually indicates an error in the project file.
                     
-                Details: {error}"},
+                Details: {xml_parse_error}"},
         ),
         project::LoadError::MissingTargetFramework => {
-            log_error("Project file is missing TargetFramework", String::new());
+            log_error(
+                "Project file is missing TargetFramework",
+                formatdoc! {"
+                    Project file is missing the `TargetFramework` property. This is a required property that must be set.
+
+                    For more information, see: https://learn.microsoft.com/en-us/dotnet/core/project-sdk/msbuild-props#targetframework
+                "},
+            );
         }
     }
 }
@@ -272,6 +279,8 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
         header,
         formatdoc! {"
             An unexpected I/O error occurred while {occurred_while}.
+            
+            Use the error details below to troubleshoot and retry your build.
             
             Details: {io_error}
         "},
