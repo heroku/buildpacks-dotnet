@@ -241,9 +241,10 @@ fn log_launch_process_detection_warning(error: &LaunchProcessDetectionError) {
                 formatdoc! {"
                     An invalid launch process type was detected.
 
-                    This buildpack will automatically try to register compiled project executables after successfully publishing an application/solution.
-                    The process type name is based on the name of the executable filename (usually the project name), which in some cases may be
-                    incompatible with the CNB spec; process types can only contain numbers, letters, and the characters `.`, `_`, and `-`.
+                    The buildpack will automatically try to register CNB process types for console and web projects after successfully publishing an application/solution.
+
+                    The process type name is based on the name of the executable filename (usually the project name, e.g. `webapi` or `backgroundworker`), which in some
+                    cases may be incompatible with the CNB specification; process type names can only contain numbers, letters, and the characters `.`, `_`, and `-`.
 
                     Use the warning details below to troubleshoot and make necessary adjustments if you wish to use this automatic registration feature.
                     
