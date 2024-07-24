@@ -221,9 +221,11 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 formatdoc! {"
                     The 'dotnet publish' command did not exit successfully ({exit_status}).
                     
-                    See the log output above for more information.
+                    This usually happens due to compilation errors. See the log output above for more information.
                     
-                    In some cases, this happens due to an unstable network connection.
+                    The publish process can also fail for a number of other reasons, such as intermittent network issues,
+                    inavailability of the NuGet package feed and/or other external dependencies, etc.
+
                     Please try again to see if the error resolves itself.
                 "},
             ),
