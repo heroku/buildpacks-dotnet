@@ -167,7 +167,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             ),
             SdkLayerError::ReadArchive(io_error) => {
                 log_io_error(
-                    "Couldn't read .NET SDK archive",
+                    "Error reading downloaded SDK archive",
                     "reading downloaded .NET SDK archive",
                     io_error,
                 );
