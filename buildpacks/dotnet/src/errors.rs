@@ -37,10 +37,21 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         DotnetBuildpackError::NoSolutionProjects => {
             log_error("No project references found in solution", String::new());
         }
-        DotnetBuildpackError::MultipleProjectFiles(message) => log_error(
+        DotnetBuildpackError::MultipleRootDirectoryProjectFiles(project_file_paths) => log_error(
             "Multiple .NET project files",
             formatdoc! {"
-                The root directory contains multiple .NET project files: {message}"
+                The root directory contains multiple .NET project files: {}.
+
+                Multiple project files in the root directory is not supported, as this is highly likely to
+                produce unexpected results. Reorganizing the directory and project structure to only include
+                one project file per folder (not only the root folder) is recommended.
+
+                If you are porting an application from .NET Framework to .NET, or wish to compile both side-by-side,
+                see this article for useful project organization advice: https://learn.microsoft.com/en-us/dotnet/core/porting/project-structure
+                ", project_file_paths.iter()
+                    .map(|f| f.to_string_lossy().to_string())
+                    .collect::<Vec<String>>()
+                    .join(", "),
             },
         ),
         DotnetBuildpackError::LoadSolutionFile(error) => match error {

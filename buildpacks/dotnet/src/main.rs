@@ -31,7 +31,7 @@ use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::log::{log_header, log_info, log_warning};
 use semver::{Version, VersionReq};
 use sha2::Sha512;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{fs, io};
 
@@ -172,12 +172,8 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
     let project_file_paths =
         detect::project_file_paths(app_dir).expect("function to pass after detection");
     if project_file_paths.len() > 1 {
-        return Err(DotnetBuildpackError::MultipleProjectFiles(
-            project_file_paths
-                .iter()
-                .map(|f| f.to_string_lossy().to_string())
-                .collect::<Vec<String>>()
-                .join(", "),
+        return Err(DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
+            project_file_paths,
         ));
     }
     Ok(Solution::ephemeral(
@@ -236,7 +232,7 @@ fn detect_global_json_sdk_version_requirement(
 enum DotnetBuildpackError {
     BuildpackDetection(io::Error),
     NoSolutionProjects,
-    MultipleProjectFiles(String),
+    MultipleRootDirectoryProjectFiles(Vec<PathBuf>),
     LoadSolutionFile(dotnet::solution::LoadError),
     LoadProjectFile(dotnet::project::LoadError),
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
