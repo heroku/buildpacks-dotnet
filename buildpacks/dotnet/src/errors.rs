@@ -1,7 +1,6 @@
 use crate::dotnet::target_framework_moniker::ParseTargetFrameworkError;
 use crate::dotnet::{project, solution};
 use crate::dotnet_buildpack_configuration::DotnetBuildpackConfigurationError;
-use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use crate::utils::StreamedCommandError;
 use crate::DotnetBuildpackError;
@@ -34,13 +33,35 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             "determining if the .NET buildpack should be run for this application",
             io_error,
         ),
-        DotnetBuildpackError::NoSolutionProjects => {
-            log_error("No project references found in solution", String::new());
+        DotnetBuildpackError::NoSolutionProjects(solution_path) => {
+            log_error(
+                "No project references found in solution",
+                formatdoc! {"
+                The solution file \"{}\" did not reference any projects.
+
+                This buildpack will prefer building a solution file over a project file when both are present in the root directory.
+                
+                To resolve this issue you may want to either:
+                  * Delete the solution file to allow a root project file to be built instead.
+                  * Reference projects that should be built from the solution file.
+                ", solution_path.to_string_lossy()},
+            );
         }
-        DotnetBuildpackError::MultipleProjectFiles(message) => log_error(
+        DotnetBuildpackError::MultipleRootDirectoryProjectFiles(project_file_paths) => log_error(
             "Multiple .NET project files",
             formatdoc! {"
-                The root directory contains multiple .NET project files: {message}"
+                The root directory contains multiple .NET project files: {}.
+
+                Multiple project files in the root directory is not supported, as this is highly likely to
+                produce unexpected results. Reorganizing the directory and project structure to only include
+                one project file per folder (not only the root folder) is recommended.
+
+                If you are porting an application from .NET Framework to .NET, or wish to compile both side-by-side,
+                see this article for useful project organization advice: https://learn.microsoft.com/en-us/dotnet/core/porting/project-structure
+                ", project_file_paths.iter()
+                    .map(|f| f.to_string_lossy().to_string())
+                    .collect::<Vec<String>>()
+                    .join(", "),
             },
         ),
         DotnetBuildpackError::LoadSolutionFile(error) => match error {
@@ -56,15 +77,17 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         DotnetBuildpackError::LoadProjectFile(error) => {
             on_load_dotnet_project_error(error, "reading root project file");
         }
-        // TODO: Add the erroneous input values to these error messages
         DotnetBuildpackError::ParseTargetFrameworkMoniker(error) => match error {
-            ParseTargetFrameworkError::InvalidFormat => {
-                log_error("Invalid target framework moniker format", String::new());
-            }
-            ParseTargetFrameworkError::UnsupportedOSTfm => {
+            ParseTargetFrameworkError::InvalidFormat(tfm)
+            | ParseTargetFrameworkError::UnsupportedOSTfm(tfm) => {
                 log_error(
-                    "Unsupported OS-specific target framework moniker",
-                    String::new(),
+                    "Invalid target framework",
+                    formatdoc! {"
+                        The detected target framework moniker `{tfm}` is either invalid or unsupported. This buildpack
+                        currently supports the following TFMs: `net5.0`, `net6.0`, `net7.0` and `.net8.0`.
+
+                        For more information, see: https://learn.microsoft.com/en-us/dotnet/standard/frameworks#latest-versions
+                    "},
                 );
             }
         },
@@ -74,9 +97,12 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             error,
         ),
         DotnetBuildpackError::ParseGlobalJson(error) => log_error(
-            "Invalid global.json format",
+            "Invalid global.json file",
             formatdoc! {"
-                The root directory `global.json` file could not be parsed.
+                The `global.json` file contains invalid JSON and could not be parsed.
+
+                Use the error details below to troubleshoot and retry your build. For more information
+                about global.json files, see: https://learn.microsoft.com/en-us/dotnet/core/tools/global-json
 
                 Details: {error}
             "},
@@ -84,7 +110,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         DotnetBuildpackError::ParseGlobalJsonVersionRequirement(error) => log_error(
             "Error parsing global.json version requirement",
             formatdoc! {"
-                The version requirement could not be parsed.
+                The .NET SDK version requirement could not be parsed.
                 
                 Details: {error}
             "},
@@ -113,12 +139,21 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             "Unsupported .NET SDK version",
             formatdoc! {"
                 A compatible .NET SDK release could not be resolved from the detected version requirement ({version_req}).
+
+                For a complete inventory of supported .NET SDK versions and platforms, see: https://github.com/heroku/buildpacks-dotnet/blob/main/buildpacks/dotnet/inventory.toml.
             "},
         ),
         DotnetBuildpackError::SdkLayer(error) => match error {
             SdkLayerError::DownloadArchive(error) => log_error(
-                "Couldn't download .NET SDK",
+                "Failed to download .NET SDK",
                 formatdoc! {"
+                    An unexpected error occurred while downloading the .NET SDK. This error can occur due to an unstable network connection. 
+
+                    Use the error details below to troubleshoot and retry your build. 
+
+                    If the issue persists and you think you found a bug in the buildpack, reproduce the issue locally with a minimal example and file an issue here:
+                    https://github.com/heroku/buildpacks-dotnet/issues/new
+
                     Details: {error}
                 "},
             ),
@@ -132,7 +167,10 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             SdkLayerError::VerifyArchiveChecksum { expected, actual } => log_error(
                 "Corrupted .NET SDK download",
                 formatdoc! {"
-                    Validation of the downloaded .NET SDK failed due to a checksum mismatch.
+                    Validation of the downloaded .NET SDK failed due to a checksum mismatch. This error may occur intermittently.
+                    
+                    Use the error details below to troubleshoot and retry your build. If the issue persists, file an issue here:
+                    https://github.com/heroku/buildpacks-dotnet/issues/new
 
                     Expected: {expected}
                     Actual: {actual}
@@ -183,9 +221,11 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 formatdoc! {"
                     The 'dotnet publish' command did not exit successfully ({exit_status}).
                     
-                    See the log output above for more information.
+                    This usually happens due to compilation errors. See the log output above for more information.
                     
-                    In some cases, this happens due to an unstable network connection.
+                    The publish process can also fail for a number of other reasons, such as intermittent network issues,
+                    inavailability of the NuGet package feed and/or other external dependencies, etc.
+
                     Please try again to see if the error resolves itself.
                 "},
             ),
@@ -195,18 +235,6 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             "copying .NET runtime files from the sdk layer to the runtime layer",
             io_error,
         ),
-        DotnetBuildpackError::LaunchProcessDetection(error) => match error {
-            LaunchProcessDetectionError::ProcessType(process_type_error) => {
-                log_error(
-                    "Launch process detection error",
-                    formatdoc! {"
-                        An invalid launch process type was detected.
-    
-                        Details: {process_type_error}
-                    "},
-                );
-            }
-        },
     }
 }
 
