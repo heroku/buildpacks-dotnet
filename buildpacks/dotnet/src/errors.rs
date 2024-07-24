@@ -232,7 +232,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     This usually happens due to compilation errors. See the log output above for more information.
                     
                     The publish process can also fail for a number of other reasons, such as intermittent network issues,
-                    inavailability of the NuGet package feed and/or other external dependencies, etc.
+                    unavailability of the NuGet package feed and/or other external dependencies, etc.
 
                     Please try again to see if the error resolves itself.
                 "},
