@@ -158,12 +158,9 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             SdkLayerError::DownloadArchive(error) => log_error(
                 "Failed to download .NET SDK",
                 formatdoc! {"
-                    An unexpected error occurred while downloading the .NET SDK. This error can occur due to an unstable network connection. 
+                    An unexpected error occurred while downloading the .NET SDK. This error can occur due to an unstable network connection, unavailability of the download server, etc. 
 
-                    Use the error details below to troubleshoot and retry your build. 
-
-                    If the issue persists and you think you found a bug in the buildpack, reproduce the issue locally with a minimal example and file an issue here:
-                    https://github.com/heroku/buildpacks-dotnet/issues/new
+                    Use the error details below to troubleshoot and retry your build.
 
                     Details: {error}
                 "},
