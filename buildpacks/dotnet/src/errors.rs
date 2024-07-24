@@ -78,7 +78,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         DotnetBuildpackError::ParseGlobalJson(error) => log_error(
             "Invalid global.json format",
             formatdoc! {"
-                The root directory `global.json` file could not be parsed.
+                The root directory `global.json` file contents could not be parsed.
 
                 Details: {error}
             "},
@@ -86,7 +86,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         DotnetBuildpackError::ParseGlobalJsonVersionRequirement(error) => log_error(
             "Error parsing global.json version requirement",
             formatdoc! {"
-                The version requirement could not be parsed.
+                The .NET SDK version requirement could not be parsed.
                 
                 Details: {error}
             "},
@@ -115,12 +115,21 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             "Unsupported .NET SDK version",
             formatdoc! {"
                 A compatible .NET SDK release could not be resolved from the detected version requirement ({version_req}).
+
+                For a complete inventory of supported .NET SDK versions and platforms, see: https://github.com/heroku/buildpacks-dotnet/blob/main/buildpacks/dotnet/inventory.toml.
             "},
         ),
         DotnetBuildpackError::SdkLayer(error) => match error {
             SdkLayerError::DownloadArchive(error) => log_error(
-                "Couldn't download .NET SDK",
+                "Failed to download .NET SDK",
                 formatdoc! {"
+                    An unexpected error occurred while downloading the .NET SDK. This error can occur due to an unstable network connection. 
+
+                    Use the error details below to troubleshoot and retry your build. 
+
+                    If the issue persists and you think you found a bug in the buildpack, reproduce the issue locally with a minimal example and file an issue here:
+                    https://github.com/heroku/buildpacks-dotnet/issues/new
+
                     Details: {error}
                 "},
             ),
