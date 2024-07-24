@@ -84,7 +84,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             ParseTargetFrameworkError::InvalidFormat(tfm)
             | ParseTargetFrameworkError::UnsupportedOSTfm(tfm) => {
                 log_error(
-                    "Invalid target framework",
+                    "Unsupported target framework",
                     formatdoc! {"
                         The detected target framework moniker `{tfm}` is either invalid or unsupported. This buildpack
                         currently supports the following TFMs: `net5.0`, `net6.0`, `net7.0` and `.net8.0`.
