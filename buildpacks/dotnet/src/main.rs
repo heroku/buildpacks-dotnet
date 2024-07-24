@@ -247,7 +247,7 @@ fn log_launch_process_detection_warning(error: &LaunchProcessDetectionError) {
                     cases may be incompatible with the CNB specification; process type names can only contain numbers, letters, and the characters `.`, `_`, and `-`.
 
                     Use the warning details below to troubleshoot and make necessary adjustments if you wish to use this automatic registration feature.
-                    
+
                     If you believe you've found a bug, or have feedback on how the current behavior could be improved to better fit your use case, file an issue here:
                     https://github.com/heroku/buildpacks-dotnet/issues/new
 
