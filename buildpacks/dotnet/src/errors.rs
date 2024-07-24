@@ -168,7 +168,10 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             SdkLayerError::VerifyArchiveChecksum { expected, actual } => log_error(
                 "Corrupted .NET SDK download",
                 formatdoc! {"
-                    Validation of the downloaded .NET SDK failed due to a checksum mismatch.
+                    Validation of the downloaded .NET SDK failed due to a checksum mismatch. This error may occur intermittently.
+                    
+                    Use the error details below to troubleshoot and retry your build. If the issue persists, file an issue here:
+                    https://github.com/heroku/buildpacks-dotnet/issues/new
 
                     Expected: {expected}
                     Actual: {actual}
