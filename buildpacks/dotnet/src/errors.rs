@@ -12,13 +12,16 @@ pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
     match error {
         libcnb::Error::BuildpackError(buildpack_error) => on_buildpack_error(&buildpack_error),
         libcnb_error => log_error(
-            "Internal buildpack error",
+            "Heroku .NET Buildpack internal buildpack error",
             formatdoc! {"
-                An unexpected internal error was reported by the framework used by this buildpack.
-        
-                If you see this error, please file an issue:
-                https://github.com/heroku/buildpacks-dotnet/issues/new
-        
+                The framework used by this buildpack encountered an unexpected error.
+
+                If you can't deploy to Heroku due to this issue, check the official Heroku Status page at status.heroku.com for any ongoing incidents.
+                After all incidents resolve, retry your build.
+
+                Use the error details below to troubleshoot and retry your build. If you think you found a bug in the
+                buildpack, reproduce the issue locally with a minimal example and file an issue here: https://github.com/heroku/buildpacks-dotnet/issues/new
+
                 Details: {libcnb_error}
             "},
         ),
