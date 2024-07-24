@@ -56,15 +56,17 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         DotnetBuildpackError::LoadProjectFile(error) => {
             on_load_dotnet_project_error(error, "reading root project file");
         }
-        // TODO: Add the erroneous input values to these error messages
         DotnetBuildpackError::ParseTargetFrameworkMoniker(error) => match error {
-            ParseTargetFrameworkError::InvalidFormat => {
-                log_error("Invalid target framework moniker format", String::new());
-            }
-            ParseTargetFrameworkError::UnsupportedOSTfm => {
+            ParseTargetFrameworkError::InvalidFormat(tfm)
+            | ParseTargetFrameworkError::UnsupportedOSTfm(tfm) => {
                 log_error(
-                    "Unsupported OS-specific target framework moniker",
-                    String::new(),
+                    "Invalid target framework",
+                    formatdoc! {"
+                        The detected target framework moniker `{tfm}` is either invalid or unsupported. This buildpack
+                        currently supports the following TFMs: `net5.0`, `net6.0`, `net7.0` and `.net8.0`.
+
+                        For more information, see: https://learn.microsoft.com/en-us/dotnet/standard/frameworks#latest-versions
+                    "},
                 );
             }
         },
