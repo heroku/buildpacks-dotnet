@@ -227,7 +227,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             StreamedCommandError::NonZeroExitStatus(exit_status) => log_error(
                 "Failed to publish solution",
                 formatdoc! {"
-                    The 'dotnet publish' command did not exit successfully ({exit_status}).
+                    The `dotnet publish` command did not exit successfully ({exit_status}).
                     
                     This often happens due to compilation errors. Use the command output above to troubleshoot and retry your build.
                     
