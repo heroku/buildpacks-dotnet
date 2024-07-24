@@ -40,7 +40,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             log_error(
                 "No project references found in solution",
                 formatdoc! {"
-                The solution file \"{}\" did not reference any projects.
+                The solution file (`{}`) did not reference any projects.
 
                 This buildpack will prefer building a solution file over a project file when both are present in the root directory.
                 
@@ -86,7 +86,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 log_error(
                     "Unsupported target framework",
                     formatdoc! {"
-                        The detected target framework moniker `{tfm}` is either invalid or unsupported. This buildpack
+                        The detected target framework moniker (`{tfm}`) is either invalid or unsupported. This buildpack
                         currently supports the following TFMs: `net5.0`, `net6.0`, `net7.0` and `.net8.0`.
 
                         For more information, see: https://learn.microsoft.com/en-us/dotnet/standard/frameworks#latest-versions
@@ -220,27 +220,27 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         },
         DotnetBuildpackError::PublishCommand(error) => match error {
             StreamedCommandError::Io(io_error) => log_io_error(
-                "Unable to publish .NET file",
-                "running the command to publish .NET file",
+                "Unable to publish solution",
+                "running the command to publish the .NET project/solution",
                 io_error,
             ),
             StreamedCommandError::NonZeroExitStatus(exit_status) => log_error(
-                "Unable to publish .NET file",
+                "Failed to publish solution",
                 formatdoc! {"
                     The 'dotnet publish' command did not exit successfully ({exit_status}).
                     
-                    This usually happens due to compilation errors. See the log output above for more information.
+                    This often happens due to compilation errors. Use the command output above to troubleshoot and retry your build.
                     
                     The publish process can also fail for a number of other reasons, such as intermittent network issues,
                     unavailability of the NuGet package feed and/or other external dependencies, etc.
-
+                    
                     Please try again to see if the error resolves itself.
                 "},
             ),
         },
         DotnetBuildpackError::CopyRuntimeFiles(io_error) => log_io_error(
             "Error copying .NET runtime files",
-            "copying .NET runtime files from the sdk layer to the runtime layer",
+            "copying .NET runtime files from the SDK layer to the runtime layer",
             io_error,
         ),
     }
