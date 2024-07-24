@@ -34,8 +34,19 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             "determining if the .NET buildpack should be run for this application",
             io_error,
         ),
-        DotnetBuildpackError::NoSolutionProjects => {
-            log_error("No project references found in solution", String::new());
+        DotnetBuildpackError::NoSolutionProjects(solution_path) => {
+            log_error(
+                "No project references found in solution",
+                formatdoc! {"
+                The solution file \"{}\" did not reference any projects.
+
+                This buildpack will prefer building a solution file over a project file when both are present in the root directory.
+                
+                To resolve this issue you may want to either:
+                  * Delete the solution file to allow a root project file to be built instead.
+                  * Reference projects that should be built from the solution file.
+                ", solution_path.to_string_lossy()},
+            );
         }
         DotnetBuildpackError::MultipleRootDirectoryProjectFiles(project_file_paths) => log_error(
             "Multiple .NET project files",

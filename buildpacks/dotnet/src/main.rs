@@ -208,7 +208,9 @@ fn get_solution_sdk_version_requirement(
         target_framework_monikers
             // The last (i.e. most recent, based on the sorting logic above) target framework moniker is preferred
             .last()
-            .ok_or(DotnetBuildpackError::NoSolutionProjects)?,
+            .ok_or(DotnetBuildpackError::NoSolutionProjects(
+                solution.path.clone(),
+            ))?,
     )
     .map_err(DotnetBuildpackError::ParseSolutionVersionRequirement)
 }
@@ -231,7 +233,7 @@ fn detect_global_json_sdk_version_requirement(
 #[derive(Debug)]
 enum DotnetBuildpackError {
     BuildpackDetection(io::Error),
-    NoSolutionProjects,
+    NoSolutionProjects(PathBuf),
     MultipleRootDirectoryProjectFiles(Vec<PathBuf>),
     LoadSolutionFile(dotnet::solution::LoadError),
     LoadProjectFile(dotnet::project::LoadError),
