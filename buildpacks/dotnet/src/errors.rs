@@ -192,8 +192,8 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 );
             }
             SdkLayerError::DecompressArchive(io_error) => log_io_error(
-                "Couldn't decompress .NET SDK",
-                "untarring .NET SDK archive",
+                "Failed to decompress .NET SDK",
+                "extracting .NET SDK archive contents",
                 io_error,
             ),
         },
@@ -202,7 +202,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 log_error(
                     "Invalid MSBuild verbosity level",
                     formatdoc! {"
-                        The 'MSBUILD_VERBOSITY_LEVEL' environment variable value ('{verbosity_level}') could not be parsed. Did you mean one of the following?
+                        The `MSBUILD_VERBOSITY_LEVEL` environment variable value (`{verbosity_level}`) was not recognized. Did you mean one of the following supported values?
 
                         d
                         detailed
