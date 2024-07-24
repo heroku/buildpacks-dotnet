@@ -43,7 +43,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 The solution file (`{}`) did not reference any projects.
 
                 This buildpack will prefer building a solution file over a project file when both are present in the root directory.
-                
+
                 To resolve this issue you may want to either:
                   * Delete the solution file to allow a root project file to be built instead.
                   * Reference projects that should be built from the solution file.
@@ -118,7 +118,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
 
                 Use the error details below to troubleshoot and retry your build. For more information
                 about global.json files, see: https://learn.microsoft.com/en-us/dotnet/core/tools/global-json
-                
+
                 Details: {error}
             "},
         ),
@@ -176,7 +176,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 "Corrupted .NET SDK download",
                 formatdoc! {"
                     Validation of the downloaded .NET SDK failed due to a checksum mismatch. This error may occur intermittently.
-                    
+
                     Use the error details below to troubleshoot and retry your build. If the issue persists, file an issue here:
                     https://github.com/heroku/buildpacks-dotnet/issues/new
 
@@ -228,12 +228,12 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 "Failed to publish solution",
                 formatdoc! {"
                     The `dotnet publish` command did not exit successfully ({exit_status}).
-                    
+
                     This often happens due to compilation errors. Use the command output above to troubleshoot and retry your build.
-                    
+
                     The publish process can also fail for a number of other reasons, such as intermittent network issues,
                     unavailability of the NuGet package feed and/or other external dependencies, etc.
-                    
+
                     Please try again to see if the error resolves itself.
                 "},
             ),
@@ -255,7 +255,7 @@ fn on_load_dotnet_project_error(error: &project::LoadError, occurred_while: &str
             "Unable to parse project file",
             formatdoc! {"
                 The project file XML content could not be parsed. This usually indicates an error in the project file.
-                    
+
                 Details: {xml_parse_error}"},
         ),
         project::LoadError::MissingTargetFramework => {
@@ -276,9 +276,9 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
         header,
         formatdoc! {"
             An unexpected I/O error occurred while {occurred_while}.
-            
+
             Use the error details below to troubleshoot and retry your build.
-            
+
             Details: {io_error}
         "},
     );
