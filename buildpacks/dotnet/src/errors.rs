@@ -98,9 +98,12 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             error,
         ),
         DotnetBuildpackError::ParseGlobalJson(error) => log_error(
-            "Invalid global.json format",
+            "Invalid global.json file",
             formatdoc! {"
-                The root directory `global.json` file contents could not be parsed.
+                The `global.json` file contains invalid JSON and could not be parsed.
+
+                Use the error details below to troubleshoot and retry your build. For more information
+                about global.json files, see: https://learn.microsoft.com/en-us/dotnet/core/tools/global-json
 
                 Details: {error}
             "},
