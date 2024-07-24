@@ -168,7 +168,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             SdkLayerError::ReadArchive(io_error) => {
                 log_io_error(
                     "Error reading downloaded SDK archive",
-                    "reading downloaded .NET SDK archive",
+                    "calculating checksum for the downloaded .NET SDK archive",
                     io_error,
                 );
             }
@@ -186,8 +186,8 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             ),
             SdkLayerError::OpenArchive(io_error) => {
                 log_io_error(
-                    "Couldn't open .NET SDK archive",
-                    "opening downloaded .NET SDK archive",
+                    "Error reading downloaded SDK archive",
+                    "decompressing downloaded .NET SDK archive",
                     io_error,
                 );
             }
