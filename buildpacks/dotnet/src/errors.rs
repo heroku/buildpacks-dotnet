@@ -12,13 +12,16 @@ pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
     match error {
         libcnb::Error::BuildpackError(buildpack_error) => on_buildpack_error(&buildpack_error),
         libcnb_error => log_error(
-            "Internal buildpack error",
+            "Heroku .NET Buildpack internal buildpack error",
             formatdoc! {"
-                An unexpected internal error was reported by the framework used by this buildpack.
-        
-                If you see this error, please file an issue:
-                https://github.com/heroku/buildpacks-dotnet/issues/new
-        
+                The framework used by this buildpack encountered an unexpected error.
+
+                If you can't deploy to Heroku due to this issue, check the official Heroku Status page at status.heroku.com for any ongoing incidents.
+                After all incidents resolve, retry your build.
+
+                Use the error details below to troubleshoot and retry your build. If you think you found a bug in the
+                buildpack, reproduce the issue locally with a minimal example and file an issue here: https://github.com/heroku/buildpacks-dotnet/issues/new
+
                 Details: {libcnb_error}
             "},
         ),
@@ -37,10 +40,10 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             log_error(
                 "No project references found in solution",
                 formatdoc! {"
-                The solution file \"{}\" did not reference any projects.
+                The solution file (`{}`) did not reference any projects.
 
                 This buildpack will prefer building a solution file over a project file when both are present in the root directory.
-                
+
                 To resolve this issue you may want to either:
                   * Delete the solution file to allow a root project file to be built instead.
                   * Reference projects that should be built from the solution file.
@@ -52,7 +55,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             formatdoc! {"
                 The root directory contains multiple .NET project files: {}.
 
-                Multiple project files in the root directory is not supported, as this is highly likely to
+                Having multiple project files in the root directory is not supported, as this is highly likely to
                 produce unexpected results. Reorganizing the directory and project structure to only include
                 one project file per folder (not only the root folder) is recommended.
 
@@ -67,7 +70,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         DotnetBuildpackError::LoadSolutionFile(error) => match error {
             solution::LoadError::ReadSolutionFile(io_error) => log_io_error(
                 "Unable to load solution file",
-                "reading solution file",
+                "reading the solution file",
                 io_error,
             ),
             solution::LoadError::LoadProject(load_project_error) => {
@@ -81,9 +84,9 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             ParseTargetFrameworkError::InvalidFormat(tfm)
             | ParseTargetFrameworkError::UnsupportedOSTfm(tfm) => {
                 log_error(
-                    "Invalid target framework",
+                    "Unsupported target framework",
                     formatdoc! {"
-                        The detected target framework moniker `{tfm}` is either invalid or unsupported. This buildpack
+                        The detected target framework moniker (`{tfm}`) is either invalid or unsupported. This buildpack
                         currently supports the following TFMs: `net5.0`, `net6.0`, `net7.0` and `.net8.0`.
 
                         For more information, see: https://learn.microsoft.com/en-us/dotnet/standard/frameworks#latest-versions
@@ -107,11 +110,15 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 Details: {error}
             "},
         ),
+        // TODO: Consider adding more specifc errors for the parsed values (e.g. an invalid version or rollForward value)
         DotnetBuildpackError::ParseGlobalJsonVersionRequirement(error) => log_error(
             "Error parsing global.json version requirement",
             formatdoc! {"
                 The .NET SDK version requirement could not be parsed.
-                
+
+                Use the error details below to troubleshoot and retry your build. For more information
+                about global.json files, see: https://learn.microsoft.com/en-us/dotnet/core/tools/global-json
+
                 Details: {error}
             "},
         ),
@@ -131,7 +138,11 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             "Invalid .NET SDK version requirement",
             formatdoc! {"
                 The inferred .NET SDK version requirement could not be parsed.
-    
+
+                Use the error details below to troubleshoot and retry your build. If you think you found a bug in the
+                buildpack, reproduce the issue locally with a minimal example and file an issue here:
+                https://github.com/heroku/buildpacks-dotnet/issues/new
+
                 Details: {error}
             "},
         ),
@@ -147,20 +158,17 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             SdkLayerError::DownloadArchive(error) => log_error(
                 "Failed to download .NET SDK",
                 formatdoc! {"
-                    An unexpected error occurred while downloading the .NET SDK. This error can occur due to an unstable network connection. 
+                    An unexpected error occurred while downloading the .NET SDK. This error can occur due to an unstable network connection, unavailability of the download server, etc. 
 
-                    Use the error details below to troubleshoot and retry your build. 
-
-                    If the issue persists and you think you found a bug in the buildpack, reproduce the issue locally with a minimal example and file an issue here:
-                    https://github.com/heroku/buildpacks-dotnet/issues/new
+                    Use the error details below to troubleshoot and retry your build.
 
                     Details: {error}
                 "},
             ),
             SdkLayerError::ReadArchive(io_error) => {
                 log_io_error(
-                    "Couldn't read .NET SDK archive",
-                    "reading downloaded .NET SDK archive",
+                    "Error reading downloaded SDK archive",
+                    "calculating checksum for the downloaded .NET SDK archive",
                     io_error,
                 );
             }
@@ -168,7 +176,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 "Corrupted .NET SDK download",
                 formatdoc! {"
                     Validation of the downloaded .NET SDK failed due to a checksum mismatch. This error may occur intermittently.
-                    
+
                     Use the error details below to troubleshoot and retry your build. If the issue persists, file an issue here:
                     https://github.com/heroku/buildpacks-dotnet/issues/new
 
@@ -178,14 +186,14 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             ),
             SdkLayerError::OpenArchive(io_error) => {
                 log_io_error(
-                    "Couldn't open .NET SDK archive",
-                    "opening downloaded .NET SDK archive",
+                    "Error reading downloaded SDK archive",
+                    "decompressing downloaded .NET SDK archive",
                     io_error,
                 );
             }
             SdkLayerError::DecompressArchive(io_error) => log_io_error(
-                "Couldn't decompress .NET SDK",
-                "untarring .NET SDK archive",
+                "Failed to decompress .NET SDK",
+                "extracting .NET SDK archive contents",
                 io_error,
             ),
         },
@@ -194,7 +202,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 log_error(
                     "Invalid MSBuild verbosity level",
                     formatdoc! {"
-                        The 'MSBUILD_VERBOSITY_LEVEL' environment variable value ('{verbosity_level}') could not be parsed. Did you mean one of the following?
+                        The `MSBUILD_VERBOSITY_LEVEL` environment variable value (`{verbosity_level}`) was not recognized. Did you mean one of the following supported values?
 
                         d
                         detailed
@@ -212,19 +220,19 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         },
         DotnetBuildpackError::PublishCommand(error) => match error {
             StreamedCommandError::Io(io_error) => log_io_error(
-                "Unable to publish .NET file",
-                "running the command to publish .NET file",
+                "Unable to publish solution",
+                "running the command to publish the .NET project/solution",
                 io_error,
             ),
             StreamedCommandError::NonZeroExitStatus(exit_status) => log_error(
-                "Unable to publish .NET file",
+                "Failed to publish solution",
                 formatdoc! {"
-                    The 'dotnet publish' command did not exit successfully ({exit_status}).
-                    
-                    This usually happens due to compilation errors. See the log output above for more information.
-                    
+                    The `dotnet publish` command did not exit successfully ({exit_status}).
+
+                    This often happens due to compilation errors. Use the command output above to troubleshoot and retry your build.
+
                     The publish process can also fail for a number of other reasons, such as intermittent network issues,
-                    inavailability of the NuGet package feed and/or other external dependencies, etc.
+                    unavailability of the NuGet package feed and/or other external dependencies, etc.
 
                     Please try again to see if the error resolves itself.
                 "},
@@ -232,7 +240,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         },
         DotnetBuildpackError::CopyRuntimeFiles(io_error) => log_io_error(
             "Error copying .NET runtime files",
-            "copying .NET runtime files from the sdk layer to the runtime layer",
+            "copying .NET runtime files from the SDK layer to the runtime layer",
             io_error,
         ),
     }
@@ -241,17 +249,24 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
 fn on_load_dotnet_project_error(error: &project::LoadError, occurred_while: &str) {
     match error {
         project::LoadError::ReadProjectFile(io_error) => {
-            log_io_error("Unable to read project", occurred_while, io_error);
+            log_io_error("Unable to load project", occurred_while, io_error);
         }
-        project::LoadError::XmlParseError(error) => log_error(
+        project::LoadError::XmlParseError(xml_parse_error) => log_error(
             "Unable to parse project file",
             formatdoc! {"
                 The project file XML content could not be parsed. This usually indicates an error in the project file.
-                    
-                Details: {error}"},
+
+                Details: {xml_parse_error}"},
         ),
         project::LoadError::MissingTargetFramework => {
-            log_error("Project file is missing TargetFramework", String::new());
+            log_error(
+                "Project file is missing TargetFramework",
+                formatdoc! {"
+                    Project file is missing the `TargetFramework` property. This is a required property that must be set.
+
+                    For more information, see: https://learn.microsoft.com/en-us/dotnet/core/project-sdk/msbuild-props#targetframework
+                "},
+            );
         }
     }
 }
@@ -261,7 +276,9 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
         header,
         formatdoc! {"
             An unexpected I/O error occurred while {occurred_while}.
-            
+
+            Use the error details below to troubleshoot and retry your build.
+
             Details: {io_error}
         "},
     );
