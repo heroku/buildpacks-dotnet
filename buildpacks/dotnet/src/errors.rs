@@ -273,16 +273,16 @@ fn on_load_dotnet_project_error(error: &project::LoadError, occurred_while: &str
 
                 Details: {xml_parse_error}"},
         ),
-        project::LoadError::MissingTargetFramework => {
+        project::LoadError::MissingTargetFramework(project_path) => {
             log_error(
                 "Project file is missing TargetFramework",
                 formatdoc! {"
-                    The project file is missing the `TargetFramework` property. This is a required property
-                    that must be set.
+                    The project file (`{project_path}`) is missing the `TargetFramework` property.
+                    This is a required property that must be set.
 
                     For more information, see:
                     https://learn.microsoft.com/en-us/dotnet/core/project-sdk/msbuild-props#targetframework
-                "},
+                ", project_path = project_path.to_string_lossy()},
             );
         }
     }
