@@ -90,6 +90,7 @@ pub(crate) fn handle(
             let path = temp_dir().as_path().join("dotnetsdk.tar.gz");
             download_file(&artifact.url, path.clone()).map_err(SdkLayerError::DownloadArchive)?;
             log_bullet = log_background_bullet.done();
+
             log_bullet = log_bullet.sub_bullet("Verifying SDK checksum");
             verify_checksum(&artifact.checksum, path.clone())?;
 

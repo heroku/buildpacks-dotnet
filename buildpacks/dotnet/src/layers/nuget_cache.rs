@@ -1,5 +1,3 @@
-use std::io::Stdout;
-
 use crate::{DotnetBuildpack, DotnetBuildpackError};
 use bullet_stream::{state, Print};
 use libcnb::build::BuildContext;
@@ -9,6 +7,7 @@ use libcnb::layer::{
     RestoredLayerAction,
 };
 use serde::{Deserialize, Serialize};
+use std::io::Stdout;
 
 #[derive(Serialize, Deserialize)]
 struct NugetCacheLayerMetadata {

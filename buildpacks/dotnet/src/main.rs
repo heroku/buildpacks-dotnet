@@ -126,7 +126,6 @@ impl Buildpack for DotnetBuildpack {
         let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
 
         log_bullet = log.bullet("Publish solution");
-        let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
             libcnb::layer_env::ModificationBehavior::Override,
@@ -138,32 +137,32 @@ impl Buildpack for DotnetBuildpack {
             .build_configuration
             .clone()
             .unwrap_or_else(|| String::from("Release"));
-
         log_bullet = log_bullet.sub_bullet(format!(
             "Using {} build configuration",
             style::value(build_configuration.clone())
         ));
 
+        let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
         let launch_processes_result = launch_process::detect_solution_processes(
             &solution,
             &build_configuration,
             &runtime_identifier,
         );
 
-        let mut command = Command::from(DotnetPublishCommand {
+        let mut publish_command = Command::from(DotnetPublishCommand {
             path: solution.path,
             configuration: buildpack_configuration.build_configuration,
             runtime_identifier,
             verbosity_level: buildpack_configuration.msbuild_verbosity_level,
         });
-        command
+        publish_command
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current()));
 
-        let _result = log_bullet
+        log_bullet
             .stream_with(
-                format!("Running {}", style::command(command.name())),
-                |stdout, stderr| command.stream_output(stdout, stderr),
+                format!("Running {}", style::command(publish_command.name())),
+                |stdout, stderr| publish_command.stream_output(stdout, stderr),
             )
             .map_err(DotnetBuildpackError::PublishCommand)?;
         log = log_bullet.done();
@@ -177,7 +176,7 @@ impl Buildpack for DotnetBuildpack {
                 build_result_builder =
                     build_result_builder.launch(LaunchBuilder::new().processes(processes).build());
             }
-            Err(error) => log = log_launch_process_detection_warning(&error, log),
+            Err(error) => log = log_launch_process_detection_warning(error, log),
         }
         log.done();
         build_result_builder.build()
@@ -259,7 +258,7 @@ fn detect_global_json_sdk_version_requirement(
 }
 
 fn log_launch_process_detection_warning(
-    error: &LaunchProcessDetectionError,
+    error: LaunchProcessDetectionError,
     log: Print<Bullet<Stdout>>,
 ) -> Print<Bullet<Stdout>> {
     match error {

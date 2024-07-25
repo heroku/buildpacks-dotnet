@@ -302,8 +302,7 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
 }
 
 fn log_error(header: impl AsRef<str>, body: impl AsRef<str>) {
-    let output = Print::new(stdout()).without_header();
-    output.error(formatdoc! {"
+    Print::new(stdout()).without_header().error(formatdoc! {"
         {header}
 
         {body}
