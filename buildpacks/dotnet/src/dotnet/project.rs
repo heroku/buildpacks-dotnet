@@ -18,7 +18,7 @@ impl Project {
             parse_metadata(&Document::parse(&content).map_err(LoadError::XmlParseError)?);
 
         if metadata.target_framework.is_empty() {
-            return Err(LoadError::MissingTargetFramework);
+            return Err(LoadError::MissingTargetFramework(path.to_path_buf()));
         }
 
         let project_type = infer_project_type(&metadata);
@@ -60,7 +60,7 @@ pub(crate) enum ProjectType {
 pub(crate) enum LoadError {
     ReadProjectFile(io::Error),
     XmlParseError(roxmltree::Error),
-    MissingTargetFramework,
+    MissingTargetFramework(PathBuf),
 }
 
 fn parse_metadata(document: &Document) -> Metadata {
