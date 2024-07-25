@@ -21,6 +21,7 @@ use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use bullet_stream::{style, Print};
 use fun_run::CommandWithName;
+use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
@@ -31,7 +32,7 @@ use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env};
 use semver::{Version, VersionReq};
 use sha2::Sha512;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{fs, io};
 
@@ -145,8 +146,7 @@ impl Buildpack for DotnetBuildpack {
             &solution,
             &build_configuration,
             &runtime_identifier,
-        )
-        .map_err(DotnetBuildpackError::LaunchProcessDetection);
+        );
 
         let mut command = Command::from(DotnetPublishCommand {
             path: solution.path,
@@ -168,16 +168,17 @@ impl Buildpack for DotnetBuildpack {
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
-        let result = BuildResultBuilder::new()
-            .launch(
-                LaunchBuilder::new()
-                    .processes(launch_processes_result?)
-                    .build(),
-            )
-            .build();
-
+        let mut build_result_builder = BuildResultBuilder::new();
+        match launch_processes_result {
+            Ok(processes) => {
+                // TODO: Print log information about registered processes
+                build_result_builder =
+                    build_result_builder.launch(LaunchBuilder::new().processes(processes).build());
+            }
+            Err(error) => log_launch_process_detection_warning(&error),
+        }
         log.done();
-        result
+        build_result_builder.build()
     }
 
     fn on_error(&self, error: libcnb::Error<Self::Error>) {
@@ -198,12 +199,8 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
     let project_file_paths =
         detect::project_file_paths(app_dir).expect("function to pass after detection");
     if project_file_paths.len() > 1 {
-        return Err(DotnetBuildpackError::MultipleProjectFiles(
-            project_file_paths
-                .iter()
-                .map(|f| f.to_string_lossy().to_string())
-                .collect::<Vec<String>>()
-                .join(", "),
+        return Err(DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
+            project_file_paths,
         ));
     }
     Ok(Solution::ephemeral(
@@ -238,7 +235,9 @@ fn get_solution_sdk_version_requirement(
         target_framework_monikers
             // The last (i.e. most recent, based on the sorting logic above) target framework moniker is preferred
             .last()
-            .ok_or(DotnetBuildpackError::NoSolutionProjects)?,
+            .ok_or(DotnetBuildpackError::NoSolutionProjects(
+                solution.path.clone(),
+            ))?,
     )
     .map_err(DotnetBuildpackError::ParseSolutionVersionRequirement)
 }
@@ -257,11 +256,41 @@ fn detect_global_json_sdk_version_requirement(
     })
 }
 
+fn log_launch_process_detection_warning(error: &LaunchProcessDetectionError) {
+    match error {
+        LaunchProcessDetectionError::ProcessType(process_type_error) => {
+            log_warning(
+                "Launch process detection error",
+                formatdoc! {"
+                    An invalid launch process type was detected.
+
+                    The buildpack will automatically try to register CNB process types for console
+                    and web projects after successfully publishing an application/solution.
+
+                    Process type names are based on the filenames of compiled project executables,
+                    which is usually the project name (e.g. `webapi` for a `webapi.csproj` project).
+                    In some cases, these may be incompatible with the CNB spec as process types can
+                    only contain numbers, letters, and the characters `.`, `_`, and `-`.
+
+                    Use the warning details below to troubleshoot and make necessary adjustments if
+                    you wish to use this automatic launch process type registration.
+
+                    If you believe you've found a bug, or have feedback on how the current behavior
+                    could be improved to better fit your use case, file an issue here:
+                    https://github.com/heroku/buildpacks-dotnet/issues/new
+
+                    Details: {process_type_error}
+                "},
+            );
+        }
+    }
+}
+
 #[derive(Debug)]
 enum DotnetBuildpackError {
     BuildpackDetection(io::Error),
-    NoSolutionProjects,
-    MultipleProjectFiles(String),
+    NoSolutionProjects(PathBuf),
+    MultipleRootDirectoryProjectFiles(Vec<PathBuf>),
     LoadSolutionFile(dotnet::solution::LoadError),
     LoadProjectFile(dotnet::project::LoadError),
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
@@ -275,7 +304,6 @@ enum DotnetBuildpackError {
     ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),
     PublishCommand(fun_run::CmdError),
     CopyRuntimeFiles(io::Error),
-    LaunchProcessDetection(LaunchProcessDetectionError),
 }
 
 impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {
