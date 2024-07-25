@@ -21,7 +21,9 @@ pub(crate) fn detect_solution_processes(
         .filter(|project| {
             matches!(
                 project.project_type,
-                ProjectType::WebApplication | ProjectType::ConsoleApplication
+                ProjectType::ConsoleApplication
+                    | ProjectType::WebApplication
+                    | ProjectType::WorkerService
             )
         })
         .map(|project| {

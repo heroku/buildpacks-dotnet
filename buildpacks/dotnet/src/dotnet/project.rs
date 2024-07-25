@@ -52,6 +52,7 @@ struct Metadata {
 pub(crate) enum ProjectType {
     ConsoleApplication,
     WebApplication,
+    WorkerService,
     Unknown,
 }
 
@@ -111,6 +112,7 @@ fn infer_project_type(metadata: &Metadata) -> ProjectType {
                 _ => ProjectType::Unknown,
             },
             "Microsoft.NET.Sdk.Web" | "Microsoft.NET.Sdk.Razor" => ProjectType::WebApplication,
+            "Microsoft.NET.Sdk.Worker" => ProjectType::WorkerService,
             _ => ProjectType::Unknown,
         };
     }
@@ -310,6 +312,17 @@ mod tests {
             infer_project_type(&metadata),
             ProjectType::ConsoleApplication
         );
+    }
+
+    #[test]
+    fn test_infer_project_type_worker() {
+        let metadata = Metadata {
+            sdk_id: Some("Microsoft.NET.Sdk.Worker".to_string()),
+            target_framework: "net6.0".to_string(),
+            output_type: None,
+            assembly_name: None,
+        };
+        assert_eq!(infer_project_type(&metadata), ProjectType::WorkerService);
     }
 
     #[test]
