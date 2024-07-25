@@ -19,6 +19,7 @@ use crate::dotnet_buildpack_configuration::{
 use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
+use bullet_stream::state::Bullet;
 use bullet_stream::{style, Print};
 use fun_run::CommandWithName;
 use indoc::formatdoc;
@@ -32,6 +33,7 @@ use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env};
 use semver::{Version, VersionReq};
 use sha2::Sha512;
+use std::io::Stdout;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{fs, io};
@@ -175,7 +177,7 @@ impl Buildpack for DotnetBuildpack {
                 build_result_builder =
                     build_result_builder.launch(LaunchBuilder::new().processes(processes).build());
             }
-            Err(error) => log_launch_process_detection_warning(&error),
+            Err(error) => log = log_launch_process_detection_warning(&error, log),
         }
         log.done();
         build_result_builder.build()
@@ -256,33 +258,33 @@ fn detect_global_json_sdk_version_requirement(
     })
 }
 
-fn log_launch_process_detection_warning(error: &LaunchProcessDetectionError) {
+fn log_launch_process_detection_warning(
+    error: &LaunchProcessDetectionError,
+    log: Print<Bullet<Stdout>>,
+) -> Print<Bullet<Stdout>> {
     match error {
-        LaunchProcessDetectionError::ProcessType(process_type_error) => {
-            log_warning(
-                "Launch process detection error",
-                formatdoc! {"
-                    An invalid launch process type was detected.
+        LaunchProcessDetectionError::ProcessType(process_type_error) => log.warning(formatdoc! {"
+            Launch process detection error
 
-                    The buildpack will automatically try to register CNB process types for console
-                    and web projects after successfully publishing an application/solution.
+            An invalid launch process type was detected.
 
-                    Process type names are based on the filenames of compiled project executables,
-                    which is usually the project name (e.g. `webapi` for a `webapi.csproj` project).
-                    In some cases, these may be incompatible with the CNB spec as process types can
-                    only contain numbers, letters, and the characters `.`, `_`, and `-`.
+            The buildpack will automatically try to register CNB process types for console
+            and web projects after successfully publishing an application/solution.
 
-                    Use the warning details below to troubleshoot and make necessary adjustments if
-                    you wish to use this automatic launch process type registration.
+            Process type names are based on the filenames of compiled project executables,
+            which is usually the project name (e.g. `webapi` for a `webapi.csproj` project).
+            In some cases, these may be incompatible with the CNB spec as process types can
+            only contain numbers, letters, and the characters `.`, `_`, and `-`.
 
-                    If you believe you've found a bug, or have feedback on how the current behavior
-                    could be improved to better fit your use case, file an issue here:
-                    https://github.com/heroku/buildpacks-dotnet/issues/new
+            Use the warning details below to troubleshoot and make necessary adjustments if
+            you wish to use this automatic launch process type registration.
 
-                    Details: {process_type_error}
-                "},
-            );
-        }
+            If you believe you've found a bug, or have feedback on how the current behavior
+            could be improved to better fit your use case, file an issue here:
+            https://github.com/heroku/buildpacks-dotnet/issues/new
+
+            Details: {process_type_error}
+        "}),
     }
 }
 
