@@ -11,9 +11,10 @@ fn detect_rejects_non_dotnet_projects() {
             assert_contains!(
                 context.pack_stdout,
                 indoc! {"========
-                    No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.
-                    ======== Results ========
-                "}
+
+                    ! No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.
+
+                    - Done (finished in <"}
             );
         },
     );

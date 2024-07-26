@@ -19,7 +19,9 @@ use crate::dotnet_buildpack_configuration::{
 use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
-use crate::utils::StreamedCommandError;
+use bullet_stream::state::Bullet;
+use bullet_stream::{style, Print};
+use fun_run::CommandWithName;
 use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
 use inventory::inventory::{Inventory, ParseInventoryError};
@@ -29,9 +31,9 @@ use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::Scope;
 use libcnb::{buildpack_main, Buildpack, Env};
-use libherokubuildpack::log::{log_header, log_info, log_warning};
 use semver::{Version, VersionReq};
 use sha2::Sha512;
+use std::io::Stdout;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{fs, io};
@@ -54,9 +56,12 @@ impl Buildpack for DotnetBuildpack {
         if contains_dotnet_files {
             DetectResultBuilder::pass().build()
         } else {
-            log_info(
-                "No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.",
-            );
+            Print::new(std::io::stdout())
+                .without_header()
+                .warning(
+                    "No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.",
+                )
+                .done();
             DetectResultBuilder::fail().build()
         }
     }
@@ -65,17 +70,33 @@ impl Buildpack for DotnetBuildpack {
         let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
             .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
 
-        log_header("Determining .NET version");
+        let mut log = Print::new(std::io::stdout()).h2("Heroku .NET Buildpack");
+        let mut log_bullet = log.bullet("SDK version detection");
+
         let solution = get_solution_to_publish(&context.app_dir)?;
-        log_info(format!(
+
+        log_bullet = log_bullet.sub_bullet(format!(
             "Detected .NET file to publish: {}",
-            solution.path.to_string_lossy()
+            style::value(solution.path.to_string_lossy())
         ));
 
-        let sdk_version_requirement = detect_global_json_sdk_version_requirement(&context.app_dir)
-            .unwrap_or_else(|| get_solution_sdk_version_requirement(&solution))?;
-        log_info(format!(
-            "Inferred SDK version requirement: {sdk_version_requirement}",
+        let sdk_version_requirement = if let Some(version_req) =
+            detect_global_json_sdk_version_requirement(&context.app_dir)
+        {
+            log_bullet =
+                log_bullet.sub_bullet("Detecting version requirement from root global.json file");
+            version_req?
+        } else {
+            log_bullet = log_bullet.sub_bullet(format!(
+                "Inferring version requirement from {}",
+                style::value(solution.path.to_string_lossy())
+            ));
+            get_solution_sdk_version_requirement(&solution)?
+        };
+
+        log_bullet = log_bullet.sub_bullet(format!(
+            "Detected version requirement: {}",
+            style::value(sdk_version_requirement.to_string())
         ));
 
         let target_os = context.target.os.parse::<Os>()
@@ -92,16 +113,19 @@ impl Buildpack for DotnetBuildpack {
             .ok_or(DotnetBuildpackError::ResolveSdkVersion(
                 sdk_version_requirement,
             ))?;
-        log_info(format!(
-            "Resolved .NET SDK version {} ({}-{})",
-            sdk_artifact.version, sdk_artifact.os, sdk_artifact.arch
-        ));
-        let sdk_layer = layers::sdk::handle(&context, sdk_artifact)?;
 
-        let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
+        log = log_bullet
+            .sub_bullet(format!(
+                "Resolved .NET SDK version {} {}",
+                style::value(sdk_artifact.version.to_string()),
+                style::details(format!("{}-{}", sdk_artifact.os, sdk_artifact.arch))
+            ))
+            .done();
 
-        log_header("Publish");
-        let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
+        let (sdk_layer, log) = layers::sdk::handle(&context, log, sdk_artifact)?;
+        let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
+
+        log_bullet = log.bullet("Publish solution");
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
             libcnb::layer_env::ModificationBehavior::Override,
@@ -113,24 +137,35 @@ impl Buildpack for DotnetBuildpack {
             .build_configuration
             .clone()
             .unwrap_or_else(|| String::from("Release"));
+        log_bullet = log_bullet.sub_bullet(format!(
+            "Using {} build configuration",
+            style::value(build_configuration.clone())
+        ));
 
+        let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
         let launch_processes_result = launch_process::detect_solution_processes(
             &solution,
             &build_configuration,
             &runtime_identifier,
         );
 
-        utils::run_command_and_stream_output(
-            Command::from(DotnetPublishCommand {
-                path: solution.path,
-                configuration: buildpack_configuration.build_configuration,
-                runtime_identifier,
-                verbosity_level: buildpack_configuration.msbuild_verbosity_level,
-            })
+        let mut publish_command = Command::from(DotnetPublishCommand {
+            path: solution.path,
+            configuration: buildpack_configuration.build_configuration,
+            runtime_identifier,
+            verbosity_level: buildpack_configuration.msbuild_verbosity_level,
+        });
+        publish_command
             .current_dir(&context.app_dir)
-            .envs(&command_env.apply(Scope::Build, &Env::from_current())),
-        )
-        .map_err(DotnetBuildpackError::PublishCommand)?;
+            .envs(&command_env.apply(Scope::Build, &Env::from_current()));
+
+        log_bullet
+            .stream_with(
+                format!("Running {}", style::command(publish_command.name())),
+                |stdout, stderr| publish_command.stream_output(stdout, stderr),
+            )
+            .map_err(DotnetBuildpackError::PublishCommand)?;
+        log = log_bullet.done();
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
@@ -141,8 +176,9 @@ impl Buildpack for DotnetBuildpack {
                 build_result_builder =
                     build_result_builder.launch(LaunchBuilder::new().processes(processes).build());
             }
-            Err(error) => log_launch_process_detection_warning(&error),
+            Err(error) => log = log_launch_process_detection_warning(error, log),
         }
+        log.done();
         build_result_builder.build()
     }
 
@@ -154,20 +190,9 @@ impl Buildpack for DotnetBuildpack {
 fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackError> {
     let solution_file_paths =
         detect::solution_file_paths(app_dir).expect("function to pass after detection");
+    // TODO: Handle situation where multiple solution files are found (e.g. by logging a
+    // warning, or by building all solutions).
     if let Some(solution_file) = solution_file_paths.first() {
-        if solution_file_paths.len() > 1 {
-            log_warning(
-                "Multiple .NET solution files detected",
-                format!(
-                    "Found multiple .NET solution files: {}",
-                    solution_file_paths
-                        .iter()
-                        .map(|f| f.to_string_lossy().to_string())
-                        .collect::<Vec<String>>()
-                        .join(", ")
-                ),
-            );
-        }
         return Solution::load_from_path(solution_file)
             .map_err(DotnetBuildpackError::LoadSolutionFile);
     }
@@ -222,7 +247,6 @@ fn detect_global_json_sdk_version_requirement(
     app_dir: &Path,
 ) -> Option<Result<VersionReq, DotnetBuildpackError>> {
     detect::global_json_file(app_dir).map(|file| {
-        log_info("Detected global.json file in the root directory");
         VersionReq::try_from(
             fs::read_to_string(file.as_path())
                 .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
@@ -233,33 +257,33 @@ fn detect_global_json_sdk_version_requirement(
     })
 }
 
-fn log_launch_process_detection_warning(error: &LaunchProcessDetectionError) {
+fn log_launch_process_detection_warning(
+    error: LaunchProcessDetectionError,
+    log: Print<Bullet<Stdout>>,
+) -> Print<Bullet<Stdout>> {
     match error {
-        LaunchProcessDetectionError::ProcessType(process_type_error) => {
-            log_warning(
-                "Launch process detection error",
-                formatdoc! {"
-                    An invalid launch process type was detected.
+        LaunchProcessDetectionError::ProcessType(process_type_error) => log.warning(formatdoc! {"
+            Launch process detection error
 
-                    The buildpack will automatically try to register CNB process types for console
-                    and web projects after successfully publishing an application/solution.
+            An invalid launch process type was detected.
 
-                    Process type names are based on the filenames of compiled project executables,
-                    which is usually the project name (e.g. `webapi` for a `webapi.csproj` project).
-                    In some cases, these may be incompatible with the CNB spec as process types can
-                    only contain numbers, letters, and the characters `.`, `_`, and `-`.
+            The buildpack will automatically try to register CNB process types for console
+            and web projects after successfully publishing an application/solution.
 
-                    Use the warning details below to troubleshoot and make necessary adjustments if
-                    you wish to use this automatic launch process type registration.
+            Process type names are based on the filenames of compiled project executables,
+            which is usually the project name (e.g. `webapi` for a `webapi.csproj` project).
+            In some cases, these may be incompatible with the CNB spec as process types can
+            only contain numbers, letters, and the characters `.`, `_`, and `-`.
 
-                    If you believe you've found a bug, or have feedback on how the current behavior
-                    could be improved to better fit your use case, file an issue here:
-                    https://github.com/heroku/buildpacks-dotnet/issues/new
+            Use the warning details below to troubleshoot and make necessary adjustments if
+            you wish to use this automatic launch process type registration.
 
-                    Details: {process_type_error}
-                "},
-            );
-        }
+            If you believe you've found a bug, or have feedback on how the current behavior
+            could be improved to better fit your use case, file an issue here:
+            https://github.com/heroku/buildpacks-dotnet/issues/new
+
+            Details: {process_type_error}
+        "}),
     }
 }
 
@@ -279,7 +303,7 @@ enum DotnetBuildpackError {
     ResolveSdkVersion(VersionReq),
     SdkLayer(SdkLayerError),
     ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),
-    PublishCommand(StreamedCommandError),
+    PublishCommand(fun_run::CmdError),
     CopyRuntimeFiles(io::Error),
 }
 

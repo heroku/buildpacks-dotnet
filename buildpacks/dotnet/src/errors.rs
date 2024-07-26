@@ -2,11 +2,10 @@ use crate::dotnet::target_framework_moniker::ParseTargetFrameworkError;
 use crate::dotnet::{project, solution};
 use crate::dotnet_buildpack_configuration::DotnetBuildpackConfigurationError;
 use crate::layers::sdk::SdkLayerError;
-use crate::utils::StreamedCommandError;
 use crate::DotnetBuildpackError;
+use bullet_stream::Print;
 use indoc::formatdoc;
-use libherokubuildpack::log::log_error;
-use std::io;
+use std::io::{self, stdout};
 
 pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
     match error {
@@ -231,12 +230,13 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             }
         },
         DotnetBuildpackError::PublishCommand(error) => match error {
-            StreamedCommandError::Io(io_error) => log_io_error(
+            fun_run::CmdError::SystemError(message, io_error) => log_io_error(
                 "Unable to publish solution",
-                "running the command to publish the .NET project/solution",
+                &format!("running the command to publish the .NET project/solution: {message}"),
                 io_error,
             ),
-            StreamedCommandError::NonZeroExitStatus(exit_status) => log_error(
+            fun_run::CmdError::NonZeroExitNotStreamed(output)
+            | fun_run::CmdError::NonZeroExitAlreadyStreamed(output) => log_error(
                 "Failed to publish solution",
                 formatdoc! {"
                     The `dotnet publish` command did not exit successfully ({exit_status}).
@@ -249,7 +249,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     other external dependencies, etc.
 
                     Please try again to see if the error resolves itself.
-                "},
+                ", exit_status = output.status()},
             ),
         },
         DotnetBuildpackError::CopyRuntimeFiles(io_error) => log_io_error(
@@ -299,4 +299,13 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
             Details: {io_error}
         "},
     );
+}
+
+fn log_error(header: impl AsRef<str>, body: impl AsRef<str>) {
+    Print::new(stdout()).without_header().error(formatdoc! {"
+        {header}
+
+        {body}
+    ", header = header.as_ref(), body = body.as_ref(),
+    });
 }

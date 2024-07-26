@@ -1,11 +1,10 @@
+use crate::{dotnet_layer_env, utils, DotnetBuildpack, DotnetBuildpackError};
 use libcnb::data::layer_name;
 use libcnb::layer::UncachedLayerDefinition;
 use libcnb::layer_env::Scope;
 use std::path::Path;
 
-use crate::{dotnet_layer_env, utils, DotnetBuildpack, DotnetBuildpackError};
-
-// These are the paths we want to this layer copy from the SDK directory/layer
+// These are the paths we want to copy to this layer from the SDK layer
 const RUNTIME_PATHS: &[&str] = &[
     "dotnet",
     "host",

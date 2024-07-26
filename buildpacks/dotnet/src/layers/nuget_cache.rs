@@ -1,13 +1,13 @@
-use crate::DotnetBuildpack;
+use crate::{DotnetBuildpack, DotnetBuildpackError};
+use bullet_stream::{state, Print};
 use libcnb::build::BuildContext;
 use libcnb::data::layer_name;
 use libcnb::layer::{
     CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerRef, LayerState,
     RestoredLayerAction,
 };
-use libcnb::Buildpack;
-use libherokubuildpack::log::log_info;
 use serde::{Deserialize, Serialize};
+use std::io::Stdout;
 
 #[derive(Serialize, Deserialize)]
 struct NugetCacheLayerMetadata {
@@ -17,10 +17,18 @@ struct NugetCacheLayerMetadata {
 
 const MAX_NUGET_CACHE_RESTORE_COUNT: f32 = 10.0;
 
+type HandleResult = Result<
+    (
+        LayerRef<DotnetBuildpack, (), f32>,
+        Print<state::Bullet<Stdout>>,
+    ),
+    libcnb::Error<DotnetBuildpackError>,
+>;
+
 pub(crate) fn handle(
     context: &BuildContext<DotnetBuildpack>,
-) -> Result<LayerRef<DotnetBuildpack, (), f32>, libcnb::Error<<DotnetBuildpack as Buildpack>::Error>>
-{
+    log: Print<state::Bullet<Stdout>>,
+) -> HandleResult {
     let nuget_cache_layer = context.cached_layer(
         layer_name!("nuget-cache"),
         CachedLayerDefinition {
@@ -36,11 +44,14 @@ pub(crate) fn handle(
             },
         },
     )?;
+
+    let mut log_bullet = log.bullet("NuGet cache");
+
     match nuget_cache_layer.state {
         LayerState::Restored {
             cause: restore_count,
         } => {
-            log_info("Reusing NuGet package cache");
+            log_bullet = log_bullet.sub_bullet("Reusing NuGet package cache");
             nuget_cache_layer.write_metadata(NugetCacheLayerMetadata {
                 restore_count: restore_count + 1.0,
             })?;
@@ -48,15 +59,16 @@ pub(crate) fn handle(
         LayerState::Empty { cause } => {
             match cause {
                 EmptyLayerCause::NewlyCreated => {
-                    log_info("Created NuGet package cache");
+                    log_bullet = log_bullet.sub_bullet("Created NuGet package cache");
                 }
                 EmptyLayerCause::InvalidMetadataAction { .. } => {
-                    log_info("Purged NuGet package cache due to invalid metadata");
+                    log_bullet =
+                        log_bullet.sub_bullet("Purged NuGet package cache due to invalid metadata");
                 }
                 EmptyLayerCause::RestoredLayerAction {
                     cause: restore_count,
                 } => {
-                    log_info(format!(
+                    log_bullet = log_bullet.sub_bullet(format!(
                         "Purged NuGet package cache after {restore_count} builds"
                     ));
                 }
@@ -64,5 +76,5 @@ pub(crate) fn handle(
             nuget_cache_layer.write_metadata(NugetCacheLayerMetadata { restore_count: 1.0 })?;
         }
     }
-    Ok(nuget_cache_layer)
+    Ok((nuget_cache_layer, log_bullet.done()))
 }

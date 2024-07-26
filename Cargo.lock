@@ -94,6 +94,8 @@ dependencies = [
 name = "buildpack-heroku-dotnet"
 version = "0.0.0"
 dependencies = [
+ "bullet_stream",
+ "fun_run",
  "hex",
  "indoc",
  "inventory",
@@ -108,6 +110,12 @@ dependencies = [
  "sha2",
  "tempfile",
 ]
+
+[[package]]
+name = "bullet_stream"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bec939946cfeb7d4ba709fb24f035a14b78b89641cd4a09434a6d317c0ae28a6"
 
 [[package]]
 name = "bumpalo"
@@ -330,6 +338,16 @@ name = "fs_extra"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42703706b716c37f96a77aea830392ad231f44c9e9a67872fa5548707e11b11c"
+
+[[package]]
+name = "fun_run"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac1060b826a0883f31399a72e983a55ad0b38830429a5d1dff3719aac9782415"
+dependencies = [
+ "lazy_static",
+ "regex",
+]
 
 [[package]]
 name = "generic-array"
@@ -612,7 +630,6 @@ checksum = "eab52a85eac161353c49a53c2af9531ebca4262902ffb861f9ddfc135aedda93"
 dependencies = [
  "flate2",
  "tar",
- "termcolor",
  "thiserror",
  "ureq",
 ]
@@ -941,15 +958,6 @@ dependencies = [
  "fastrand",
  "rustix",
  "windows-sys",
-]
-
-[[package]]
-name = "termcolor"
-version = "1.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
-dependencies = [
- "winapi-util",
 ]
 
 [[package]]
