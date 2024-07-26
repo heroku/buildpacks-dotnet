@@ -18,8 +18,8 @@ pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
                 If you can't deploy to Heroku due to this issue, check the official Heroku Status page at
                 status.heroku.com for any ongoing incidents. After all incidents resolve, retry your build.
 
-                Use the error details below to troubleshoot and retry your build. If you think you found a bug
-                in the buildpack, reproduce the issue locally with a minimal example and file an issue here:
+                Use the debug information above to troubleshoot and retry your build. If you think you found a
+                bug in the buildpack, reproduce the issue locally with a minimal example and file an issue here:
                 https://github.com/heroku/buildpacks-dotnet/issues/new
             "},
             Some(libcnb_error.to_string()),
@@ -31,22 +31,23 @@ pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
 fn on_buildpack_error(error: &DotnetBuildpackError) {
     match error {
         DotnetBuildpackError::BuildpackDetection(io_error) => log_io_error(
-            "Unable to complete buildpack detection",
-            "determining if the .NET buildpack should be run for this application",
+            "Error completing buildpack detection",
+            "determining if we must run the Heroku .NET buildpack for this application.",
             io_error,
         ),
         DotnetBuildpackError::NoSolutionProjects(solution_path) => {
             log_error(
                 "No project references found in solution",
                 formatdoc! {"
-                The solution file (`{}`) did not reference any projects.
+                The solution file `{}` has no project references.
 
-                This buildpack will prefer building a solution file over a project file when
-                both are present in the root directory.
+                This buildpack prefers building a solution file over a project file if both
+                are present in the root directory.
 
-                To resolve this issue you may want to either:
-                  * Delete the solution file to allow a root project file to be built instead.
-                  * Reference projects that should be built from the solution file.
+                To resolve this issue,
+                * delete the solution file to build a root project file instead.
+                * Or reference the projects to build from the solution file.
+
                 ", solution_path.to_string_lossy()},
                 None,
             );
@@ -56,12 +57,12 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             formatdoc! {"
                 The root directory contains multiple .NET project files: {}.
 
-                Having multiple project files in the root directory is not supported, as this is
-                highly likely to produce unexpected results. Reorganizing the directory and
-                project structure to only include one project file per folder is recommended.
+                We don’t support having multiple project files in the root directory to prevent
+                unexpected results. We recommend reorganizing the directory and project
+                structure to include only one project file per folder.
 
-                If you are porting an application from .NET Framework to .NET, or wish to compile
-                both side-by-side, see this article for useful project organization advice:
+                If you’re porting an application from .NET Framework to .NET, or compiling both
+                side-by-side, see Microsoft’s documentation for project organization guidance:
                 https://learn.microsoft.com/en-us/dotnet/core/porting/project-structure
                 ", project_file_paths.iter()
                     .map(|f| f.to_string_lossy().to_string())
@@ -72,7 +73,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         ),
         DotnetBuildpackError::LoadSolutionFile(error) => match error {
             solution::LoadError::ReadSolutionFile(io_error) => log_io_error(
-                "Unable to load solution file",
+                "Error loading solution file",
                 "reading the solution file",
                 io_error,
             ),
@@ -100,41 +101,42 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             }
         },
         DotnetBuildpackError::ReadGlobalJsonFile(error) => log_io_error(
-            "Error reading global.json file",
+            "Error reading `global.json` file",
             "detecting SDK version requirement",
             error,
         ),
         DotnetBuildpackError::ParseGlobalJson(error) => log_error(
-            "Invalid global.json file",
+            "Invalid `global.json` file",
             formatdoc! {"
-                The `global.json` file contains invalid JSON and could not be parsed.
+                We can’t parse the root directory `global.json` file because it contains invalid JSON.
 
-                Use the error details below to troubleshoot and retry your build. For more
-                information about `global.json` files, see:
+                Use the debug information above to troubleshoot and retry your build. For more
+                information about `global.json` files, see Microsoft’s documentation:
                 https://learn.microsoft.com/en-us/dotnet/core/tools/global-json
             "},
             Some(error.to_string()),
         ),
         // TODO: Consider adding more specific errors for the parsed values (e.g. an invalid rollForward value)
         DotnetBuildpackError::ParseGlobalJsonVersionRequirement(error) => log_error(
-            "Error parsing global.json version requirement",
+            "Error parsing `global.json` version requirement",
             formatdoc! {"
-                The .NET SDK version requirement could not be parsed.
+                We can’t parse the .NET SDK version requirement.
 
-                Use the error details below to troubleshoot and retry your build. For more
-                information about `global.json` files, see:
+                Use the debug information above to troubleshoot and retry your build. For more
+                information about `global.json` files, see Microsoft’s documentation:
                 https://learn.microsoft.com/en-us/dotnet/core/tools/global-json
             "},
             Some(error.to_string()),
         ),
         DotnetBuildpackError::ParseInventory(error) => log_error(
-            "Invalid inventory.toml file",
+            "Invalid `inventory.toml` file",
             formatdoc! {"
-                The inventory of .NET SDK releases could not be parsed. This error should
-                never occur to users of this buildpack and is almost always a buildpack bug.
+                We can’t parse the inventory of .NET SDK releases. This error
+                is almost always a buildpack bug.
 
-                If you see this error, please file an issue:
+                If you see this error, please file an issue here:
                 https://github.com/heroku/buildpacks-dotnet/issues/new
+
             "},
             Some(error.to_string()),
         ),
@@ -264,21 +266,23 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
 fn on_load_dotnet_project_error(error: &project::LoadError, occurred_while: &str) {
     match error {
         project::LoadError::ReadProjectFile(io_error) => {
-            log_io_error("Unable to load project", occurred_while, io_error);
+            log_io_error("Error loading the project file", occurred_while, io_error);
         }
         project::LoadError::XmlParseError(xml_parse_error) => log_error(
-            "Unable to parse project file",
+            "Error parsing the project file",
             formatdoc! {"
-                The project file XML content could not be parsed. This usually indicates an
-                error in the project file."},
+                We can’t parse the project file’s XML content. Parsing errors usually
+                indicate an error in the project file.
+                
+                Use the debug information above to troubleshoot and retry your build."},
             Some(xml_parse_error.to_string()),
         ),
         project::LoadError::MissingTargetFramework(project_path) => {
             log_error(
-                "Project file is missing TargetFramework",
+                "Project file missing TargetFramework property",
                 formatdoc! {"
-                    The project file (`{project_path}`) is missing the `TargetFramework` property.
-                    This is a required property that must be set.
+                    The project file `{project_path}` is missing the `TargetFramework` property.
+                    You must set this required property.
 
                     For more information, see:
                     https://learn.microsoft.com/en-us/dotnet/core/project-sdk/msbuild-props#targetframework
@@ -295,7 +299,9 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
         formatdoc! {"
             An unexpected I/O error occurred while {occurred_while}.
 
-            Use the error details above to troubleshoot and retry your build.
+            Use the debug information above to troubleshoot and retry your build.  If the
+            issue persists, file an issue here:
+            https://github.com/heroku/buildpacks-dotnet/issues/new
         "},
         Some(io_error.to_string()),
     );
