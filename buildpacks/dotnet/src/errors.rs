@@ -3,7 +3,7 @@ use crate::dotnet::{project, solution};
 use crate::dotnet_buildpack_configuration::DotnetBuildpackConfigurationError;
 use crate::layers::sdk::SdkLayerError;
 use crate::DotnetBuildpackError;
-use bullet_stream::Print;
+use bullet_stream::{style, Print};
 use indoc::formatdoc;
 use std::io::{self, stdout};
 
@@ -21,9 +21,8 @@ pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
                 Use the error details below to troubleshoot and retry your build. If you think you found a bug
                 in the buildpack, reproduce the issue locally with a minimal example and file an issue here:
                 https://github.com/heroku/buildpacks-dotnet/issues/new
-
-                Details: {libcnb_error}
             "},
+            Some(libcnb_error.to_string()),
         ),
     }
 }
@@ -49,6 +48,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                   * Delete the solution file to allow a root project file to be built instead.
                   * Reference projects that should be built from the solution file.
                 ", solution_path.to_string_lossy()},
+                None,
             );
         }
         DotnetBuildpackError::MultipleRootDirectoryProjectFiles(project_file_paths) => log_error(
@@ -68,6 +68,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     .collect::<Vec<String>>()
                     .join(", "),
             },
+            None,
         ),
         DotnetBuildpackError::LoadSolutionFile(error) => match error {
             solution::LoadError::ReadSolutionFile(io_error) => log_io_error(
@@ -94,6 +95,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                         For more information, see:
                         https://learn.microsoft.com/en-us/dotnet/standard/frameworks#latest-versions
                     "},
+                    None,
                 );
             }
         },
@@ -110,9 +112,8 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 Use the error details below to troubleshoot and retry your build. For more
                 information about `global.json` files, see:
                 https://learn.microsoft.com/en-us/dotnet/core/tools/global-json
-
-                Details: {error}
             "},
+            Some(error.to_string()),
         ),
         // TODO: Consider adding more specific errors for the parsed values (e.g. an invalid rollForward value)
         DotnetBuildpackError::ParseGlobalJsonVersionRequirement(error) => log_error(
@@ -123,9 +124,8 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 Use the error details below to troubleshoot and retry your build. For more
                 information about `global.json` files, see:
                 https://learn.microsoft.com/en-us/dotnet/core/tools/global-json
-
-                Details: {error}
             "},
+            Some(error.to_string()),
         ),
         DotnetBuildpackError::ParseInventory(error) => log_error(
             "Invalid inventory.toml file",
@@ -135,9 +135,8 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
 
                 If you see this error, please file an issue:
                 https://github.com/heroku/buildpacks-dotnet/issues/new
-
-                Details: {error}
             "},
+            Some(error.to_string()),
         ),
         DotnetBuildpackError::ParseSolutionVersionRequirement(error) => log_error(
             "Invalid .NET SDK version requirement",
@@ -148,9 +147,8 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 you found a bug in the buildpack, reproduce the issue locally with a minimal 
                 example and file an issue here:
                 https://github.com/heroku/buildpacks-dotnet/issues/new
-
-                Details: {error}
             "},
+            Some(error.to_string()),
         ),
         DotnetBuildpackError::ResolveSdkVersion(version_req) => log_error(
             "Unsupported .NET SDK version",
@@ -161,6 +159,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 For a complete inventory of supported .NET SDK versions and platforms, see:
                 https://github.com/heroku/buildpacks-dotnet/blob/main/buildpacks/dotnet/inventory.toml.
             "},
+            None,
         ),
         DotnetBuildpackError::SdkLayer(error) => match error {
             SdkLayerError::DownloadArchive(error) => log_error(
@@ -170,9 +169,8 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     due to an unstable network connection, unavailability of the download server, etc.
 
                     Use the error details below to troubleshoot and retry your build.
-
-                    Details: {error}
                 "},
+                Some(error.to_string()),
             ),
             SdkLayerError::ReadArchive(io_error) => {
                 log_io_error(
@@ -193,6 +191,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     Expected: {expected}
                     Actual: {actual}
                 ", expected = hex::encode(expected), actual = hex::encode(actual) },
+                None,
             ),
             SdkLayerError::OpenArchive(io_error) => {
                 log_io_error(
@@ -226,6 +225,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                         q
                         quiet
                     "},
+                    None,
                 );
             }
         },
@@ -250,6 +250,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
 
                     Please try again to see if the error resolves itself.
                 ", exit_status = output.status()},
+                None,
             ),
         },
         DotnetBuildpackError::CopyRuntimeFiles(io_error) => log_io_error(
@@ -269,9 +270,8 @@ fn on_load_dotnet_project_error(error: &project::LoadError, occurred_while: &str
             "Unable to parse project file",
             formatdoc! {"
                 The project file XML content could not be parsed. This usually indicates an
-                error in the project file.
-
-                Details: {xml_parse_error}"},
+                error in the project file."},
+            Some(xml_parse_error.to_string()),
         ),
         project::LoadError::MissingTargetFramework(project_path) => {
             log_error(
@@ -283,6 +283,7 @@ fn on_load_dotnet_project_error(error: &project::LoadError, occurred_while: &str
                     For more information, see:
                     https://learn.microsoft.com/en-us/dotnet/core/project-sdk/msbuild-props#targetframework
                 ", project_path = project_path.to_string_lossy()},
+                None,
             );
         }
     }
@@ -294,15 +295,19 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
         formatdoc! {"
             An unexpected I/O error occurred while {occurred_while}.
 
-            Use the error details below to troubleshoot and retry your build.
-
-            Details: {io_error}
+            Use the error details above to troubleshoot and retry your build.
         "},
+        Some(io_error.to_string()),
     );
 }
 
-fn log_error(header: impl AsRef<str>, body: impl AsRef<str>) {
-    Print::new(stdout()).without_header().error(formatdoc! {"
+fn log_error(header: impl AsRef<str>, body: impl AsRef<str>, error: Option<String>) {
+    let mut log = Print::new(stdout()).without_header();
+    if let Some(error) = error {
+        let bullet = log.bullet(style::important("Debug info"));
+        log = bullet.sub_bullet(error).done();
+    }
+    log.error(formatdoc! {"
         {header}
 
         {body}
