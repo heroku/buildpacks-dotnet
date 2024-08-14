@@ -28,7 +28,7 @@ docker run --rm -it -e "PORT=8080" -p 8080:8080 sample-app
 
 ## Application Requirements
 
-A solution file (e.g. `MySolution.sln`) or .NET project file (e.g. `*.csproj`, `*.vbproj` or `*.fsproj`) must be present in the application's root directory. If the root directory contains both solution and project files, the solution file will be preferred for the build and publish process.
+A solution file (e.g. `MySolution.sln`) or .NET project file (e.g. `*.csproj`, `*.vbproj` or `*.fsproj`) must be present in the application’s root directory. If the root directory contains both solution and project files, the solution file will be preferred for the build and publish process.
 
 The buildpack support C#, Visual Basic and F# projects using the .NET and ASP.NET Core frameworks (version 8.0 and up).
 
@@ -36,7 +36,7 @@ The buildpack support C#, Visual Basic and F# projects using the .NET and ASP.NE
 
 ### .NET Version
 
-By default, the buildpack will install the latest available .NET SDK based on the value of the [`TargetFramework` property][target-framework] in project files. The .NET and ASP.NET Core runtimes included in the SDK will also be included in the final application image.
+By default, the buildpack will install the latest available .NET SDK based on the value of the [`TargetFramework` property][target-framework], which must be set in each project file. TFM values that follow the `net{major_version}.0` format are currently supported (e.g. `net6.0`, `net7.0`, `net8.0`). If a solution references projects that target different framework versions, the most recent version will be preferred when inferring the .NET SDK version to install.
 
 To install a different .NET SDK version, add a [`global.json` file][global-json] to the root directory. The buildpack supports specifying both the `version` and `rollForward` policy to define which .NET SDK version to install. For instance, to install a specific version a `global.json` file may look like this:
 
