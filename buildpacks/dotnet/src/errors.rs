@@ -232,14 +232,14 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             }
         },
         DotnetBuildpackError::PublishCommand(error) => match error {
-            fun_run::CmdError::SystemError(message, io_error) => log_io_error(
-                "Unable to publish solution",
-                &format!("running the command to publish the .NET project/solution: {message}"),
+            fun_run::CmdError::SystemError(_message, io_error) => log_io_error(
+                "Unable to publish",
+                "running the command to publish the .NET solution/project",
                 io_error,
             ),
             fun_run::CmdError::NonZeroExitNotStreamed(output)
             | fun_run::CmdError::NonZeroExitAlreadyStreamed(output) => log_error(
-                "Failed to publish solution",
+                "Unable to publish",
                 formatdoc! {"
                     The `dotnet publish` command exited unsuccessfully ({exit_status}).
 
