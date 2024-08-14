@@ -55,7 +55,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         DotnetBuildpackError::MultipleRootDirectoryProjectFiles(project_file_paths) => log_error(
             "Multiple .NET project files",
             formatdoc! {"
-                The root directory contains multiple .NET project files: {}.
+                The root directory contains multiple .NET project files: `{}`.
 
                 We don’t support having multiple project files in the root directory to prevent
                 unexpected results. We recommend reorganizing the directory and project
@@ -67,7 +67,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 ", project_file_paths.iter()
                     .map(|f| f.to_string_lossy().to_string())
                     .collect::<Vec<String>>()
-                    .join(", "),
+                    .join("`, `"),
             },
             None,
         ),
