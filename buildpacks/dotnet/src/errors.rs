@@ -90,7 +90,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 log_error(
                     "Unsupported target framework",
                     formatdoc! {"
-                        The detected target framework moniker (`{tfm}`) is either invalid or unsupported. This
+                        The detected target framework moniker `{tfm}` is either invalid or unsupported. This
                         buildpack currently supports the following TFMs: `net5.0`, `net6.0`, `net7.0`, `net8.0`.
 
                         For more information, see:
@@ -110,9 +110,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             formatdoc! {"
                 We can’t parse the root directory `global.json` file because it contains invalid JSON.
 
-                Use the debug information above to troubleshoot and retry your build. For more
-                information about `global.json` files, see Microsoft’s documentation:
-                https://learn.microsoft.com/en-us/dotnet/core/tools/global-json
+                Use the debug information above to troubleshoot and retry your build.
             "},
             Some(error.to_string()),
         ),
@@ -143,23 +141,24 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
         DotnetBuildpackError::ParseSolutionVersionRequirement(error) => log_error(
             "Invalid .NET SDK version requirement",
             formatdoc! {"
-                The inferred .NET SDK version requirement could not be parsed.
+                We can’t parse the inferred .NET SDK version requirement.
 
-                Use the error details below to troubleshoot and retry your build. If you think
-                you found a bug in the buildpack, reproduce the issue locally with a minimal 
+                Use the debug information above to troubleshoot and retry your build. If you think
+                you found a bug in the buildpack, reproduce the issue locally with a minimal
                 example and file an issue here:
                 https://github.com/heroku/buildpacks-dotnet/issues/new
+
             "},
             Some(error.to_string()),
         ),
         DotnetBuildpackError::ResolveSdkVersion(version_req) => log_error(
             "Unsupported .NET SDK version",
             formatdoc! {"
-                A compatible .NET SDK release could not be resolved from the detected version
+                We can’t find a compatible .NET SDK release for the detected version
                 requirement ({version_req}).
 
                 For a complete inventory of supported .NET SDK versions and platforms, see:
-                https://github.com/heroku/buildpacks-dotnet/blob/main/buildpacks/dotnet/inventory.toml.
+                https://github.com/heroku/buildpacks-dotnet/blob/main/buildpacks/dotnet/inventory.toml
             "},
             None,
         ),
@@ -168,9 +167,9 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 "Failed to download .NET SDK",
                 formatdoc! {"
                     An unexpected error occurred while downloading the .NET SDK. This error can occur
-                    due to an unstable network connection, unavailability of the download server, etc.
+                    due to an unstable network connection.
 
-                    Use the error details below to troubleshoot and retry your build.
+                    Use the debug information above to troubleshoot and retry your build.
                 "},
                 Some(error.to_string()),
             ),
@@ -184,11 +183,12 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             SdkLayerError::VerifyArchiveChecksum { expected, actual } => log_error(
                 "Corrupted .NET SDK download",
                 formatdoc! {"
-                    Validation of the downloaded .NET SDK failed due to a checksum mismatch. This error may
+                    Validation of the downloaded .NET SDK failed due to a checksum mismatch. This error can
                     occur intermittently.
 
-                    Use the error details below to troubleshoot and retry your build. If the issue persists,
-                    file an issue here: https://github.com/heroku/buildpacks-dotnet/issues/new
+                    Use the debug information above to troubleshoot and retry your build. If the issue persists,
+                    file an issue here:
+                    https://github.com/heroku/buildpacks-dotnet/issues/new
 
                     Expected: {expected}
                     Actual: {actual}
@@ -213,8 +213,8 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 log_error(
                     "Invalid MSBuild verbosity level",
                     formatdoc! {"
-                        The `MSBUILD_VERBOSITY_LEVEL` environment variable value (`{verbosity_level}`) was
-                        not recognized. Did you mean one of the following supported values?
+                        The `MSBUILD_VERBOSITY_LEVEL` environment variable value (`{verbosity_level}`)
+                        is invalid. Did you mean one of the following supported values?
 
                         d
                         detailed
@@ -241,16 +241,16 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             | fun_run::CmdError::NonZeroExitAlreadyStreamed(output) => log_error(
                 "Failed to publish solution",
                 formatdoc! {"
-                    The `dotnet publish` command did not exit successfully ({exit_status}).
+                    The `dotnet publish` command exited unsuccessfully ({exit_status}).
 
-                    This often happens due to compilation errors. Use the command output above to
-                    troubleshoot and retry your build.
+                    This error usually happens due to compilation errors. Use the command output
+                    above to troubleshoot and retry your build.
 
                     The publish process can also fail for a number of other reasons, such as
                     intermittent network issues, unavailability of the NuGet package feed and/or
                     other external dependencies, etc.
 
-                    Please try again to see if the error resolves itself.
+                    Try again to see if the error resolves itself.
                 ", exit_status = output.status()},
                 None,
             ),
@@ -299,7 +299,7 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
         formatdoc! {"
             An unexpected I/O error occurred while {occurred_while}.
 
-            Use the debug information above to troubleshoot and retry your build.  If the
+            Use the debug information above to troubleshoot and retry your build. If the
             issue persists, file an issue here:
             https://github.com/heroku/buildpacks-dotnet/issues/new
         "},

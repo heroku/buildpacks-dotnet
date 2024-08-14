@@ -263,26 +263,28 @@ fn log_launch_process_detection_warning(
 ) -> Print<Bullet<Stdout>> {
     match error {
         LaunchProcessDetectionError::ProcessType(process_type_error) => log.warning(formatdoc! {"
+            {process_type_error}
+
             Launch process detection error
 
-            An invalid launch process type was detected.
+            We detected an invalid launch process type.
 
-            The buildpack will automatically try to register CNB process types for console
-            and web projects after successfully publishing an application/solution.
+            The buildpack automatically tries to register Cloud Native Buildpacks (CNB)
+            process types for console and web projects after successfully publishing an
+            application.
 
             Process type names are based on the filenames of compiled project executables,
-            which is usually the project name (e.g. `webapi` for a `webapi.csproj` project).
-            In some cases, these may be incompatible with the CNB spec as process types can
-            only contain numbers, letters, and the characters `.`, `_`, and `-`.
+            which is usually the project name. For example, `webapi` for a `webapi.csproj`
+            project. In some cases, these names are be incompatible with the CNB spec as 
+            process types can only contain numbers, letters, and the characters `.`, `_`,
+            and `-`.
 
-            Use the warning details below to troubleshoot and make necessary adjustments if
-            you wish to use this automatic launch process type registration.
+            To use this automatic launch process type registration, see the warning details
+            above to troubleshoot and make necessary adjustments.
 
-            If you believe you've found a bug, or have feedback on how the current behavior
-            could be improved to better fit your use case, file an issue here:
+            If you think you found a bug in the buildpack, or have feedback on improving
+            the behavior for your use case, file an issue here:
             https://github.com/heroku/buildpacks-dotnet/issues/new
-
-            Details: {process_type_error}
         "}),
     }
 }
