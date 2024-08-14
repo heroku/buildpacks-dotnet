@@ -94,7 +94,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                         buildpack currently supports the following TFMs: `net5.0`, `net6.0`, `net7.0`, `net8.0`.
 
                         For more information, see:
-                        https://learn.microsoft.com/en-us/dotnet/standard/frameworks#latest-versions
+                        https://github.com/heroku/buildpacks-dotnet#net-version
                     "},
                     None,
                 );
@@ -121,8 +121,8 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 We can’t parse the .NET SDK version requirement.
 
                 Use the debug information above to troubleshoot and retry your build. For more
-                information about `global.json` files, see Microsoft’s documentation:
-                https://learn.microsoft.com/en-us/dotnet/core/tools/global-json
+                information, see:
+                https://github.com/heroku/buildpacks-dotnet#net-version
             "},
             Some(error.to_string()),
         ),
@@ -285,7 +285,7 @@ fn on_load_dotnet_project_error(error: &project::LoadError, occurred_while: &str
                     You must set this required property.
 
                     For more information, see:
-                    https://learn.microsoft.com/en-us/dotnet/core/project-sdk/msbuild-props#targetframework
+                    https://github.com/heroku/buildpacks-dotnet#net-version
                 ", project_path = project_path.to_string_lossy()},
                 None,
             );
