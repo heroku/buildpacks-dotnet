@@ -12,7 +12,7 @@ permissions:
 jobs:
   update-dotnet-inventory:
     name: Update .NET SDK inventory
-    runs-on: pub-hk-ubuntu-24.04-ip
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/create-github-app-token@v1
         id: generate-token
