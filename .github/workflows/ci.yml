@@ -15,7 +15,7 @@ env:
 
 jobs:
   lint:
-    runs-on: pub-hk-ubuntu-24.04-ip # TODO: change to ubuntu-24.04 once repo is public
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,7 +29,7 @@ jobs:
         run: cargo fmt -- --check
 
   unit-test:
-    runs-on: pub-hk-ubuntu-24.04-ip # TODO: change to ubuntu-24.04 once repo is public
+    runs-on: ubuntu-24.04
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -45,8 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: ["amd64"] # Add arm64 when supported
-    # TODO: change to pub-hk-ubuntu-24.04-arm-medium and ubuntu-24.04 once repo is public
-    runs-on: ${{ matrix.arch == 'arm64' && 'pub-hk-ubuntu-24.04-arm-ip' || 'pub-hk-ubuntu-24.04-ip' }}
+    runs-on: ${{ matrix.arch == 'arm64' && 'pub-hk-ubuntu-24.04-arm-medium' || 'ubuntu-24.04' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
