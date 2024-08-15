@@ -45,7 +45,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 are present in the root directory.
 
                 To resolve this issue,
-                * delete the solution file to build a root project file instead.
+                * Delete the solution file to build a root project file instead.
                 * Or reference the projects to build from the solution file.
 
                 ", solution_path.to_string_lossy()},
