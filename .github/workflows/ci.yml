@@ -44,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: ["amd64"] # Add arm64 when supported
+        arch: ["amd64", "arm64"]
     runs-on: ${{ matrix.arch == 'arm64' && 'pub-hk-ubuntu-24.04-arm-medium' || 'ubuntu-24.04' }}
     steps:
       - name: Checkout
