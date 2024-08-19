@@ -12,7 +12,7 @@ permissions:
 jobs:
   update-dotnet-inventory:
     name: Update .NET SDK inventory
-    runs-on: ubuntu-24.04
+    runs-on: pub-hk-ubuntu-24.04-ip
     steps:
       - uses: actions/create-github-app-token@v1
         id: generate-token
@@ -31,7 +31,7 @@ jobs:
 
       - name: Rebuild Inventory
         id: rebuild-inventory
-        run: cargo run --package inventory-updater buildpacks/dotnet/inventory.toml CHANGELOG.md
+        run: cargo run --package inventory-updater buildpacks/dotnet/inventory.toml buildpacks/dotnet/CHANGELOG.md
 
       - name: Create Pull Request
         id: pr
