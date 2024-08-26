@@ -152,7 +152,7 @@ impl Buildpack for DotnetBuildpack {
         let mut publish_command = Command::from(DotnetPublishCommand {
             path: solution.path,
             configuration: buildpack_configuration.build_configuration,
-            runtime_identifier,
+            runtime_identifier: runtime_identifier.clone(),
             verbosity_level: buildpack_configuration.msbuild_verbosity_level,
         });
         publish_command
@@ -167,7 +167,7 @@ impl Buildpack for DotnetBuildpack {
             .map_err(DotnetBuildpackError::PublishCommand)?;
         log = log_bullet.done();
 
-        layers::runtime::handle(&context, &sdk_layer.path())?;
+        layers::runtime::handle(&context, &sdk_layer.path(), &runtime_identifier)?;
 
         let mut build_result_builder = BuildResultBuilder::new();
         match launch_processes_result {

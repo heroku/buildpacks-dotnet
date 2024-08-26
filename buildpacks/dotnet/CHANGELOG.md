@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A `HEROKU_DOTNET_RUNTIME_IDENTIFIER` environment variable is now set to the .NET Runtime Identifier (RID) value used to a publish an app. This enables writing `Procfile` commands that are compatible with multiple platforms and CPU architectures. ([#119](https://github.com/heroku/buildpacks-dotnet/pull/119))
+
 ## [0.1.1] - 2024-08-19
 
 ### Added
