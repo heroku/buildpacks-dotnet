@@ -143,11 +143,7 @@ impl Buildpack for DotnetBuildpack {
         ));
 
         let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
-        let launch_processes_result = launch_process::detect_solution_processes(
-            &solution,
-            &build_configuration,
-            &runtime_identifier,
-        );
+        let launch_processes_result = launch_process::detect_solution_processes(&solution);
 
         let mut publish_command = Command::from(DotnetPublishCommand {
             path: solution.path,

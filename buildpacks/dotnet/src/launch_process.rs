@@ -1,5 +1,4 @@
 use crate::dotnet::project::ProjectType;
-use crate::dotnet::runtime_identifier::RuntimeIdentifier;
 use crate::dotnet::solution::Solution;
 use libcnb::data::launch::{
     Process, ProcessBuilder, ProcessType, ProcessTypeError, WorkingDirectory,
@@ -12,8 +11,6 @@ pub(crate) enum LaunchProcessDetectionError {
 
 pub(crate) fn detect_solution_processes(
     solution: &Solution,
-    configuration: &str,
-    runtime_identifier: &RuntimeIdentifier,
 ) -> Result<Vec<Process>, LaunchProcessDetectionError> {
     solution
         .projects
@@ -32,9 +29,6 @@ pub(crate) fn detect_solution_processes(
                 .parent()
                 .expect("Project file should always have a parent directory")
                 .join("bin")
-                .join(configuration)
-                .join(&project.target_framework)
-                .join(runtime_identifier.to_string())
                 .join("publish")
                 .join(&project.assembly_name);
             let mut command = format!("{}", executable_path.to_string_lossy());
