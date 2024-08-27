@@ -143,10 +143,9 @@ impl Buildpack for DotnetBuildpack {
         ));
 
         let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
-        let launch_processes_result = launch_process::detect_solution_processes(&solution);
 
         let mut publish_command = Command::from(DotnetPublishCommand {
-            path: solution.path,
+            path: solution.path.clone(),
             configuration: buildpack_configuration.build_configuration,
             runtime_identifier,
             verbosity_level: buildpack_configuration.msbuild_verbosity_level,
@@ -166,7 +165,7 @@ impl Buildpack for DotnetBuildpack {
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
         let mut build_result_builder = BuildResultBuilder::new();
-        match launch_processes_result {
+        match launch_process::detect_solution_processes(&solution) {
             Ok(processes) => {
                 // TODO: Print log information about registered processes
                 build_result_builder =
