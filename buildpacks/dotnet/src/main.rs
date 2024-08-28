@@ -19,7 +19,7 @@ use crate::dotnet_buildpack_configuration::{
 use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
-use bullet_stream::state::Bullet;
+use bullet_stream::state::{Bullet, SubBullet};
 use bullet_stream::{style, Print};
 use fun_run::CommandWithName;
 use indoc::formatdoc;
@@ -66,6 +66,7 @@ impl Buildpack for DotnetBuildpack {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
             .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
@@ -162,17 +163,32 @@ impl Buildpack for DotnetBuildpack {
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
-        let mut build_result_builder = BuildResultBuilder::new();
-        match launch_process::detect_solution_processes(&solution) {
+        log_bullet = log
+            .bullet("Setting launch table")
+            .sub_bullet("Detecting process types from published artifacts");
+        let mut launch_builder = LaunchBuilder::new();
+        log = match launch_process::detect_solution_processes(&solution) {
             Ok(processes) => {
-                // TODO: Print log information about registered processes
-                build_result_builder =
-                    build_result_builder.launch(LaunchBuilder::new().processes(processes).build());
+                if processes.is_empty() {
+                    log_bullet = log_bullet.sub_bullet("No processes were detected");
+                }
+                for process in processes {
+                    log_bullet = log_bullet.sub_bullet(format!(
+                        "Added {}: {}",
+                        style::value(process.r#type.to_string()),
+                        process.command.join(" ")
+                    ));
+                    launch_builder.process(process);
+                }
+                log_bullet.done()
             }
-            Err(error) => log = log_launch_process_detection_warning(error, log),
-        }
+            Err(error) => log_launch_process_detection_warning(error, log_bullet),
+        };
         log.done();
-        build_result_builder.build()
+
+        BuildResultBuilder::new()
+            .launch(launch_builder.build())
+            .build()
     }
 
     fn on_error(&self, error: libcnb::Error<Self::Error>) {
@@ -252,10 +268,11 @@ fn detect_global_json_sdk_version_requirement(
 
 fn log_launch_process_detection_warning(
     error: LaunchProcessDetectionError,
-    log: Print<Bullet<Stdout>>,
+    log: Print<SubBullet<Stdout>>,
 ) -> Print<Bullet<Stdout>> {
     match error {
-        LaunchProcessDetectionError::ProcessType(process_type_error) => log.warning(formatdoc! {"
+        LaunchProcessDetectionError::ProcessType(process_type_error) => log
+            .warning(formatdoc! {"
             {process_type_error}
 
             Launch process detection error
@@ -278,7 +295,8 @@ fn log_launch_process_detection_warning(
             If you think you found a bug in the buildpack, or have feedback on improving
             the behavior for your use case, file an issue here:
             https://github.com/heroku/buildpacks-dotnet/issues/new
-        "}),
+        "})
+            .done(),
     }
 }
 
