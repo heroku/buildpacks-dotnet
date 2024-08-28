@@ -18,6 +18,7 @@ impl From<DotnetPublishCommand> for Command {
             &value.path.to_string_lossy(),
             "--runtime",
             &value.runtime_identifier.to_string(),
+            "-p:PublishDir=bin/publish",
         ]);
 
         if let Some(configuration) = value.configuration {

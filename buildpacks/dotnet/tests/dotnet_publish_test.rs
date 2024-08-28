@@ -19,16 +19,13 @@ fn test_dotnet_publish_multi_tfm_solution() {
             );
             assert_contains!(
                 context.pack_stdout,
-                &format! {"worker -> /workspace/worker/bin/Release/net6.0/{rid}/publish/" }
+                "worker -> /workspace/worker/bin/publish/"
             );
             assert_contains!(
                 context.pack_stdout,
                 &format! {"web -> /workspace/web/bin/Release/net8.0/{rid}/web.dll" }
             );
-            assert_contains!(
-                context.pack_stdout,
-                &format! {"web -> /workspace/web/bin/Release/net8.0/{rid}/publish/" }
-            );
+            assert_contains!(context.pack_stdout, "web -> /workspace/web/bin/publish/");
         },
     );
 }
@@ -53,7 +50,7 @@ fn test_dotnet_publish_with_debug_configuration() {
                           Determining projects to restore...
                           Restored /workspace/foo.csproj <PLACEHOLDER>.
                           foo -> /workspace/bin/Debug/net8.0/{rid}/foo.dll
-                          foo -> /workspace/bin/Debug/net8.0/{rid}/publish/"#}
+                          foo -> /workspace/bin/publish/"#}
             );
         },
     );
@@ -74,7 +71,7 @@ fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
               &formatdoc! {r#"
                 - Publish solution
                   - Using `Release` build configuration
-                  - Running `dotnet publish /workspace/foo.csproj --runtime {rid} --verbosity normal`
+                  - Running `dotnet publish /workspace/foo.csproj --runtime {rid} "-p:PublishDir=bin/publish" --verbosity normal`
                 
                       MSBuild version 17.8.3+195e7f5a3 for .NET
                       Build started <PLACEHOLDER>.
