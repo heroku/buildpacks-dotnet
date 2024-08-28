@@ -142,12 +142,10 @@ impl Buildpack for DotnetBuildpack {
             style::value(build_configuration.clone())
         ));
 
-        let runtime_identifier = runtime_identifier::get_runtime_identifier(target_os, target_arch);
-
         let mut publish_command = Command::from(DotnetPublishCommand {
             path: solution.path.clone(),
             configuration: buildpack_configuration.build_configuration,
-            runtime_identifier,
+            runtime_identifier: runtime_identifier::get_runtime_identifier(target_os, target_arch),
             verbosity_level: buildpack_configuration.msbuild_verbosity_level,
         });
         publish_command
