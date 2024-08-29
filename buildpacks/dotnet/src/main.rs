@@ -273,29 +273,29 @@ fn log_launch_process_detection_warning(
     match error {
         LaunchProcessDetectionError::ProcessType(process_type_error) => log
             .warning(formatdoc! {"
-            {process_type_error}
+                {process_type_error}
 
-            Launch process detection error
+                Launch process detection error
 
-            We detected an invalid launch process type.
+                We detected an invalid launch process type.
 
-            The buildpack automatically tries to register Cloud Native Buildpacks (CNB)
-            process types for console and web projects after successfully publishing an
-            application.
+                The buildpack automatically tries to register Cloud Native Buildpacks (CNB)
+                process types for console and web projects after successfully publishing an
+                application.
 
-            Process type names are based on the filenames of compiled project executables,
-            which is usually the project name. For example, `webapi` for a `webapi.csproj`
-            project. In some cases, these names are be incompatible with the CNB spec as 
-            process types can only contain numbers, letters, and the characters `.`, `_`,
-            and `-`.
+                Process type names are based on the filenames of compiled project executables,
+                which is usually the project name. For example, `webapi` for a `webapi.csproj`
+                project. In some cases, these names are be incompatible with the CNB spec as 
+                process types can only contain numbers, letters, and the characters `.`, `_`,
+                and `-`.
 
-            To use this automatic launch process type registration, see the warning details
-            above to troubleshoot and make necessary adjustments.
+                To use this automatic launch process type registration, see the warning details
+                above to troubleshoot and make necessary adjustments.
 
-            If you think you found a bug in the buildpack, or have feedback on improving
-            the behavior for your use case, file an issue here:
-            https://github.com/heroku/buildpacks-dotnet/issues/new
-        "})
+                If you think you found a bug in the buildpack, or have feedback on improving
+                the behavior for your use case, file an issue here:
+                https://github.com/heroku/buildpacks-dotnet/issues/new
+            "})
             .done(),
     }
 }
