@@ -217,7 +217,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
 fn get_solution_sdk_version_requirement(
     solution: &Solution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
-    let mut target_framework_monikers = solution
+    solution
         .projects
         .iter()
         .map(|project| {
@@ -226,21 +226,15 @@ fn get_solution_sdk_version_requirement(
                 .parse::<TargetFrameworkMoniker>()
                 .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)
         })
-        .collect::<Result<Vec<_>, _>>()?;
-
-    // The target framework monikers are sorted lexicographically, which is sufficient for now
-    // (as the only expected TFMs are currently "net5.0", "net6.0", "net7.0", "net8.0", "net9.0").
-    target_framework_monikers.sort_by_key(|tfm| tfm.version_part.clone());
-
-    VersionReq::try_from(
-        target_framework_monikers
-            // The last (i.e. most recent, based on the sorting logic above) target framework moniker is preferred
-            .last()
-            .ok_or(DotnetBuildpackError::NoSolutionProjects(
-                solution.path.clone(),
-            ))?,
-    )
-    .map_err(DotnetBuildpackError::ParseSolutionVersionRequirement)
+        .collect::<Result<Vec<_>, _>>()?
+        .iter()
+        // Select the most recent TFM sorted lexicographically, which is sufficient for now as the
+        // only expected TFMs follow a consistent format: `netX.0` (e.g. `net6.0`, `net8.0` etc).
+        .max_by_key(|tfm| tfm.version_part.clone())
+        .ok_or_else(|| DotnetBuildpackError::NoSolutionProjects(solution.path.clone()))
+        .map(|tfm| {
+            VersionReq::try_from(tfm).map_err(DotnetBuildpackError::ParseSolutionVersionRequirement)
+        })?
 }
 
 fn detect_global_json_sdk_version_requirement(
