@@ -197,25 +197,21 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
     // TODO: Handle situation where multiple solution files are found (e.g. by logging a
     // warning, or by building all solutions).
     if let Some(solution_file) = solution_file_paths.first() {
-        return Solution::load_from_path(solution_file)
-            .map_err(DotnetBuildpackError::LoadSolutionFile);
-    }
+        Solution::load_from_path(solution_file).map_err(DotnetBuildpackError::LoadSolutionFile)
+    } else {
+        let project_file_paths =
+            detect::project_file_paths(app_dir).expect("function to pass after detection");
 
-    let project_file_paths =
-        detect::project_file_paths(app_dir).expect("function to pass after detection");
-    if project_file_paths.len() > 1 {
-        return Err(DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
-            project_file_paths,
-        ));
+        match project_file_paths.as_slice() {
+            [single_project] => Ok(Solution::ephemeral(
+                Project::load_from_path(single_project)
+                    .map_err(DotnetBuildpackError::LoadProjectFile)?,
+            )),
+            _ => Err(DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
+                project_file_paths,
+            )),
+        }
     }
-    Ok(Solution::ephemeral(
-        Project::load_from_path(
-            project_file_paths
-                .first()
-                .expect("A project file to be present"),
-        )
-        .map_err(DotnetBuildpackError::LoadProjectFile)?,
-    ))
 }
 
 fn get_solution_sdk_version_requirement(
