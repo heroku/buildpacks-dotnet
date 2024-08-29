@@ -9,14 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The buildpack log output now includes more launch process detection and registration details. ([#124](https://github.com/heroku/buildpacks-dotnet/pull/124))
-- The `PublishDir` MSBuild property is now set to `bin/publish` when running `dotnet publish`, to ensure that the publish output for each project is consistently sent to the same location (relative to the project file). This enables writing `Procfile` commands that are compatible with any target OS/arch (i.e. Runtime Identifier (RID)), build configuration (e.g. `Release`/`Debug`) and Target Framework Moniker (TFM). ([#120](https://github.com/heroku/buildpacks-dotnet/pull/121))
+- Enhanced buildpack log output to provide more detailed information on launch process detection and registration. ([#124](https://github.com/heroku/buildpacks-dotnet/pull/124))
+- Set the `PublishDir` MSBuild property to `bin/publish` when running `dotnet publish`. This change ensures that the publish output for each project is consistently placed in the same directory relative to the project file, making it easier to write `Procfile` commands that work across different OS/architectures (e.g. `linux-arm64`, `linux-x64` RIDs), build configurations (e.g. `Release`, `Debug`), and Target Framework Monikers (e.g. `net8.0`, `net6.0`). ([#121](https://github.com/heroku/buildpacks-dotnet/pull/121))
 
 ## [0.1.1] - 2024-08-19
 
 ### Added
 
-- Inventory .NET SDKs: 8.0.401 (linux-arm64), 8.0.401 (linux-amd64)
+- Support for .NET SDK versions: 8.0.401 (linux-arm64), 8.0.401 (linux-amd64).
 
 ## [0.1.0] - 2024-08-15
 
