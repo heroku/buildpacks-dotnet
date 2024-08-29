@@ -15,7 +15,7 @@ struct NugetCacheLayerMetadata {
     restore_count: f32,
 }
 
-const MAX_NUGET_CACHE_RESTORE_COUNT: f32 = 10.0;
+const MAX_NUGET_CACHE_RESTORE_COUNT: f32 = 20.0;
 
 type HandleResult = Result<
     (
