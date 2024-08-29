@@ -1,6 +1,5 @@
 # Default to requesting pull request reviews from the Heroku Languages team.
-# Uncomment when the buildpack is out of development.
-#* @heroku/languages
+* @heroku/languages
 
 # Except for automation that:
 # - updates binary inventories
