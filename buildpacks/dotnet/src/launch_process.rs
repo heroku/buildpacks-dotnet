@@ -31,7 +31,7 @@ pub(crate) fn detect_solution_processes(
                 .join("bin")
                 .join("publish")
                 .join(&project.assembly_name);
-            let mut command = format!("{}", executable_path.to_string_lossy());
+            let mut command = executable_path.to_string_lossy().to_string();
 
             if project.project_type == ProjectType::WebApplication {
                 command.push_str(" --urls http://0.0.0.0:$PORT");

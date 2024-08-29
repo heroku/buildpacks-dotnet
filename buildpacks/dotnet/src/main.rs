@@ -46,24 +46,19 @@ impl Buildpack for DotnetBuildpack {
     type Error = DotnetBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
-        let contains_dotnet_files = detect::get_files_with_extensions(
-            &context.app_dir,
-            &["sln", "csproj", "vbproj", "fsproj"],
-        )
-        .map(|paths| !paths.is_empty())
-        .map_err(DotnetBuildpackError::BuildpackDetection)?;
-
-        if contains_dotnet_files {
-            DetectResultBuilder::pass().build()
-        } else {
-            Print::new(std::io::stdout())
-                .without_header()
-                .warning(
-                    "No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.",
-                )
-                .done();
-            DetectResultBuilder::fail().build()
-        }
+        detect::get_files_with_extensions(&context.app_dir, &["sln", "csproj", "vbproj", "fsproj"])
+            .map(|paths| {
+                if paths.is_empty() {
+                    Print::new(std::io::stdout())
+                        .without_header()
+                        .warning("No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.")
+                        .done();
+                    DetectResultBuilder::fail().build()
+                } else {
+                    DetectResultBuilder::pass().build()
+                }
+            })
+            .map_err(DotnetBuildpackError::BuildpackDetection)?
     }
 
     #[allow(clippy::too_many_lines)]
@@ -202,31 +197,27 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
     // TODO: Handle situation where multiple solution files are found (e.g. by logging a
     // warning, or by building all solutions).
     if let Some(solution_file) = solution_file_paths.first() {
-        return Solution::load_from_path(solution_file)
-            .map_err(DotnetBuildpackError::LoadSolutionFile);
-    }
+        Solution::load_from_path(solution_file).map_err(DotnetBuildpackError::LoadSolutionFile)
+    } else {
+        let project_file_paths =
+            detect::project_file_paths(app_dir).expect("function to pass after detection");
 
-    let project_file_paths =
-        detect::project_file_paths(app_dir).expect("function to pass after detection");
-    if project_file_paths.len() > 1 {
-        return Err(DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
-            project_file_paths,
-        ));
+        match project_file_paths.as_slice() {
+            [single_project] => Ok(Solution::ephemeral(
+                Project::load_from_path(single_project)
+                    .map_err(DotnetBuildpackError::LoadProjectFile)?,
+            )),
+            _ => Err(DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
+                project_file_paths,
+            )),
+        }
     }
-    Ok(Solution::ephemeral(
-        Project::load_from_path(
-            project_file_paths
-                .first()
-                .expect("A project file to be present"),
-        )
-        .map_err(DotnetBuildpackError::LoadProjectFile)?,
-    ))
 }
 
 fn get_solution_sdk_version_requirement(
     solution: &Solution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
-    let mut target_framework_monikers = solution
+    solution
         .projects
         .iter()
         .map(|project| {
@@ -235,21 +226,15 @@ fn get_solution_sdk_version_requirement(
                 .parse::<TargetFrameworkMoniker>()
                 .map_err(DotnetBuildpackError::ParseTargetFrameworkMoniker)
         })
-        .collect::<Result<Vec<_>, _>>()?;
-
-    // The target framework monikers are sorted lexicographically, which is sufficient for now
-    // (as the only expected TFMs are currently "net5.0", "net6.0", "net7.0", "net8.0", "net9.0").
-    target_framework_monikers.sort_by_key(|tfm| tfm.version_part.clone());
-
-    VersionReq::try_from(
-        target_framework_monikers
-            // The last (i.e. most recent, based on the sorting logic above) target framework moniker is preferred
-            .last()
-            .ok_or(DotnetBuildpackError::NoSolutionProjects(
-                solution.path.clone(),
-            ))?,
-    )
-    .map_err(DotnetBuildpackError::ParseSolutionVersionRequirement)
+        .collect::<Result<Vec<_>, _>>()?
+        .iter()
+        // Select the most recent TFM sorted lexicographically, which is sufficient for now as the
+        // only expected TFMs follow a consistent format: `netX.0` (e.g. `net6.0`, `net8.0` etc).
+        .max_by_key(|tfm| tfm.version_part.clone())
+        .ok_or_else(|| DotnetBuildpackError::NoSolutionProjects(solution.path.clone()))
+        .map(|tfm| {
+            VersionReq::try_from(tfm).map_err(DotnetBuildpackError::ParseSolutionVersionRequirement)
+        })?
 }
 
 fn detect_global_json_sdk_version_requirement(
