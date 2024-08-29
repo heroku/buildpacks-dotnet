@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Inventory .NET SDKs: 8.0.401 (linux-arm64), 8.0.401 (linux-amd64)
+- Support for .NET SDK versions: 8.0.401 (linux-arm64), 8.0.401 (linux-amd64).
 
 ## [0.1.0] - 2024-08-15
 

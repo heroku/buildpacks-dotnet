@@ -93,7 +93,7 @@ fn update_changelog(
             .join(", ");
         changelog.unreleased.add(
             change_group,
-            format!("Inventory .NET SDKs: {formatted_artifacts}"),
+            format!("Support for .NET SDK versions: {formatted_artifacts}."),
         );
     }
 }
