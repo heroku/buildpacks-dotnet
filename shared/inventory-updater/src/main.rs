@@ -1,7 +1,8 @@
 use inventory::artifact::{Arch, Artifact, Os};
 use inventory::checksum::Checksum;
-use inventory::inventory::Inventory;
+use inventory::Inventory;
 use keep_a_changelog_file::{ChangeGroup, Changelog};
+use libherokubuildpack::inventory;
 use semver::Version;
 use serde::Deserialize;
 use sha2::Sha512;
