@@ -92,7 +92,6 @@ dependencies = [
  "fun_run",
  "hex",
  "indoc",
- "inventory",
  "libcnb",
  "libcnb-test",
  "libherokubuildpack",
@@ -306,9 +305,9 @@ checksum = "0ce7134b9999ecaf8bcd65542e436736ef32ddca1b3e06094cb6ec5755203b80"
 
 [[package]]
 name = "flate2"
-version = "1.0.33"
+version = "1.0.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "324a1be68054ef05ad64b861cc9eaf1d623d2d8cb25b4bf2cb9cdd902b4bf253"
+checksum = "a1b589b4dc103969ad3cf85c950899926ec64300a1a46d76c03a6072957036f0"
 dependencies = [
  "crc32fast",
  "libz-sys",
@@ -467,24 +466,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b248f5224d1d606005e02c97f5aa4e88eeb230488bcc03bc9ca4d7991399f2b5"
 
 [[package]]
-name = "inventory"
-version = "0.1.0"
-source = "git+https://github.com/malax/inventory#e4eed7de95e49d441cdf13f9c001644ed9159393"
-dependencies = [
- "hex",
- "semver",
- "serde",
- "sha2",
- "thiserror",
- "toml",
-]
-
-[[package]]
 name = "inventory-updater"
 version = "0.0.0"
 dependencies = [
- "inventory",
  "keep_a_changelog_file",
+ "libherokubuildpack",
  "semver",
  "serde",
  "sha2",
@@ -621,13 +607,18 @@ dependencies = [
 
 [[package]]
 name = "libherokubuildpack"
-version = "0.23.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffe351c883e5a3f177742237be322ec7098d22fd5bc555792454cb2297ee3fba"
+checksum = "bec33ef08ce0508ced826f7bdfcd0538bdfc2270632915e447d1ea72bce5645d"
 dependencies = [
  "flate2",
+ "hex",
+ "semver",
+ "serde",
+ "sha2",
  "tar",
  "thiserror",
+ "toml",
  "ureq",
 ]
 
@@ -955,9 +946,9 @@ dependencies = [
 
 [[package]]
 name = "tar"
-version = "0.4.41"
+version = "0.4.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb797dad5fb5b76fcf519e702f4a589483b5ef06567f160c392832c1f5e44909"
+checksum = "4ff6c40d3aedb5e06b57c6f669ad17ab063dd1e63d977c6a88e7f4dfa4f04020"
 dependencies = [
  "filetime",
  "libc",
@@ -978,18 +969,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.63"
+version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0342370b38b6a11b6cc11d6a805569958d54cfa061a29969c3b5ce2ea405724"
+checksum = "d50af8abc119fb8bb6dbabcfa89656f46f84aa0ac7688088608076ad2b459a84"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.63"
+version = "1.0.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4558b58466b9ad7ca0f102865eccc95938dca1a74a856f2b57b6629050da261"
+checksum = "08904e7672f5eb876eaaf87e0ce17857500934f4981c4a0ab2b4aa98baac7fc3"
 dependencies = [
  "proc-macro2",
  "quote",

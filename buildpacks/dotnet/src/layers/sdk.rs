@@ -9,6 +9,7 @@ use libcnb::layer::{
 };
 use libcnb::layer_env::Scope;
 use libherokubuildpack::download::download_file;
+use libherokubuildpack::inventory;
 use libherokubuildpack::tar::decompress_tarball;
 use semver::Version;
 use serde::{Deserialize, Serialize};
