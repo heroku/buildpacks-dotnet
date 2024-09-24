@@ -20,16 +20,16 @@ fn main() {
         (args[1].clone(), args[2].clone())
     };
 
-    let local_inventory: Inventory<Version, Sha512, Option<()>> = {
-        let content = fs::read_to_string(&inventory_path).unwrap_or_else(|e| {
+    let local_inventory = fs::read_to_string(&inventory_path)
+        .unwrap_or_else(|e| {
             eprintln!("Error reading inventory file at '{inventory_path}': {e}");
             process::exit(1);
-        });
-        toml::from_str(&content).unwrap_or_else(|e| {
+        })
+        .parse::<Inventory<Version, Sha512, Option<()>>>()
+        .unwrap_or_else(|e| {
             eprintln!("Error parsing inventory file at '{inventory_path}': {e}");
             process::exit(1);
-        })
-    };
+        });
 
     let remote_inventory = Inventory {
         artifacts: list_upstream_artifacts(),
