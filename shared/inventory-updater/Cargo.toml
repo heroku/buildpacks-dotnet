@@ -13,5 +13,4 @@ keep_a_changelog_file = "0.1"
 semver = "1.0"
 serde = "1"
 sha2 = "0.10"
-toml = "0.8"
 ureq = { version = "2", features = ["json"] }
