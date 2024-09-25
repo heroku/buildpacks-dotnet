@@ -35,12 +35,7 @@ fn main() {
         artifacts: list_upstream_artifacts(),
     };
 
-    let toml_content = toml::to_string(&remote_inventory).unwrap_or_else(|e| {
-        eprintln!("Error serializing inventory as TOML: {e}");
-        process::exit(1);
-    });
-
-    fs::write(&inventory_path, toml_content).unwrap_or_else(|e| {
+    fs::write(&inventory_path, remote_inventory.to_string()).unwrap_or_else(|e| {
         eprintln!("Error writing inventory to file: {e}");
         process::exit(1);
     });
