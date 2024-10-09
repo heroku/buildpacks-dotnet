@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support for .NET SDK versions: 8.0.110 (linux-arm64), 8.0.110 (linux-amd64), 8.0.306 (linux-arm64), 8.0.306 (linux-amd64), 8.0.403 (linux-arm64), 8.0.403 (linux-amd64).
+
 ## [0.1.3] - 2024-09-25
 
 ### Added
