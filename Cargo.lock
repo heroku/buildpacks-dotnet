@@ -92,7 +92,6 @@ dependencies = [
  "fun_run",
  "hex",
  "indoc",
- "inventory",
  "libcnb",
  "libcnb-test",
  "libherokubuildpack",
@@ -467,28 +466,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b248f5224d1d606005e02c97f5aa4e88eeb230488bcc03bc9ca4d7991399f2b5"
 
 [[package]]
-name = "inventory"
-version = "0.1.0"
-source = "git+https://github.com/malax/inventory#e4eed7de95e49d441cdf13f9c001644ed9159393"
-dependencies = [
- "hex",
- "semver",
- "serde",
- "sha2",
- "thiserror",
- "toml",
-]
-
-[[package]]
 name = "inventory-updater"
 version = "0.0.0"
 dependencies = [
- "inventory",
  "keep_a_changelog_file",
+ "libherokubuildpack",
  "semver",
  "serde",
  "sha2",
- "toml",
  "ureq",
 ]
 
@@ -622,12 +607,16 @@ dependencies = [
 [[package]]
 name = "libherokubuildpack"
 version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffe351c883e5a3f177742237be322ec7098d22fd5bc555792454cb2297ee3fba"
+source = "git+https://github.com/heroku/libcnb.rs?branch=migrate-inventory-code#453861c66c715dd3cf5517b298c8ac75e81dcfc3"
 dependencies = [
  "flate2",
+ "hex",
+ "semver",
+ "serde",
+ "sha2",
  "tar",
  "thiserror",
+ "toml",
  "ureq",
 ]
 
