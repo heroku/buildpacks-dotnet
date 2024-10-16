@@ -1,8 +1,6 @@
 use crate::dotnet::project::ProjectType;
 use crate::dotnet::solution::Solution;
-use libcnb::data::launch::{
-    Process, ProcessBuilder, ProcessType, ProcessTypeError, WorkingDirectory,
-};
+use libcnb::data::launch::{Process, ProcessBuilder, ProcessType, ProcessTypeError};
 
 #[derive(Debug)]
 pub(crate) enum LaunchProcessDetectionError {
@@ -41,11 +39,17 @@ pub(crate) fn detect_solution_processes(
                 )
                 .expect("Project to be nested in solution parent directory");
 
-            let mut command = relative_executable_path
-                .file_name()
-                .expect("Executable path to never terminate in `..`")
-                .to_string_lossy()
-                .to_string();
+            let mut command = format!(
+                "cd {}; ./{}",
+                relative_executable_path
+                    .parent()
+                    .expect("Path to always have a parent directory")
+                    .display(),
+                relative_executable_path
+                    .file_name()
+                    .expect("Path to never terminate in `..`")
+                    .to_string_lossy()
+            );
 
             if project.project_type == ProjectType::WebApplication {
                 command.push_str(" --urls http://0.0.0.0:$PORT");
@@ -56,14 +60,7 @@ pub(crate) fn detect_solution_processes(
                 .parse::<ProcessType>()
                 .map_err(LaunchProcessDetectionError::ProcessType)
                 .map(|process_type| {
-                    ProcessBuilder::new(process_type, ["bash", "-c", &format!("./{}", &command)])
-                        .working_directory(WorkingDirectory::Directory(
-                            relative_executable_path
-                                .parent()
-                                .expect("Executable path to always have a parent directory")
-                                .to_path_buf(),
-                        ))
-                        .build()
+                    ProcessBuilder::new(process_type, ["bash", "-c", &command]).build()
                 })
         })
         .collect::<Result<_, _>>()
