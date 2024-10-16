@@ -41,7 +41,7 @@ pub(crate) fn detect_solution_processes(
                 )
                 .expect("Project to be nested in solution parent directory");
 
-            let mut command = executable_path
+            let mut command = relative_executable_path
                 .file_name()
                 .expect("Executable path to never terminate in `..`")
                 .to_string_lossy()
