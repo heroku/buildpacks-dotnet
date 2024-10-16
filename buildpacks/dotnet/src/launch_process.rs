@@ -31,6 +31,16 @@ pub(crate) fn detect_solution_processes(
                 .join("bin")
                 .join("publish")
                 .join(&project.assembly_name);
+
+            let relative_executable_path = executable_path
+                .strip_prefix(
+                    solution
+                        .path
+                        .parent()
+                        .expect("Solution path to have a parent"),
+                )
+                .expect("Project to be nested in solution parent directory");
+
             let mut command = executable_path
                 .file_name()
                 .expect("Executable path to never terminate in `..`")
@@ -48,16 +58,9 @@ pub(crate) fn detect_solution_processes(
                 .map(|process_type| {
                     ProcessBuilder::new(process_type, ["bash", "-c", &format!("./{}", &command)])
                         .working_directory(WorkingDirectory::Directory(
-                            executable_path
+                            relative_executable_path
                                 .parent()
                                 .expect("Executable path to always have a parent directory")
-                                .strip_prefix(
-                                    solution
-                                        .path
-                                        .parent()
-                                        .expect("Solution path to have a parent"),
-                                )
-                                .expect("Project to be nested in solution parent directory")
                                 .to_path_buf(),
                         ))
                         .build()
