@@ -50,7 +50,14 @@ pub(crate) fn detect_solution_processes(
                         .working_directory(WorkingDirectory::Directory(
                             executable_path
                                 .parent()
-                                .expect("Executable should always have a parent directory")
+                                .expect("Executable path to always have a parent directory")
+                                .strip_prefix(
+                                    solution
+                                        .path
+                                        .parent()
+                                        .expect("Solution path to have a parent"),
+                                )
+                                .expect("Project to be nested in solution parent directory")
                                 .to_path_buf(),
                         ))
                         .build()
