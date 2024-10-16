@@ -31,7 +31,11 @@ pub(crate) fn detect_solution_processes(
                 .join("bin")
                 .join("publish")
                 .join(&project.assembly_name);
-            let mut command = executable_path.to_string_lossy().to_string();
+            let mut command = executable_path
+                .file_name()
+                .expect("Executable path to never terminate in `..`")
+                .to_string_lossy()
+                .to_string();
 
             if project.project_type == ProjectType::WebApplication {
                 command.push_str(" --urls http://0.0.0.0:$PORT");
@@ -42,7 +46,7 @@ pub(crate) fn detect_solution_processes(
                 .parse::<ProcessType>()
                 .map_err(LaunchProcessDetectionError::ProcessType)
                 .map(|process_type| {
-                    ProcessBuilder::new(process_type, ["bash", "-c", &command])
+                    ProcessBuilder::new(process_type, ["bash", "-c", &format!("./{}", &command)])
                         .working_directory(WorkingDirectory::Directory(
                             executable_path
                                 .parent()
