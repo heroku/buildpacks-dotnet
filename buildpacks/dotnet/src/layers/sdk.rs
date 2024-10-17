@@ -8,7 +8,7 @@ use libcnb::layer::{
     RestoredLayerAction,
 };
 use libcnb::layer_env::Scope;
-use libherokubuildpack::download::download_file;
+use libherokubuildpack::download::{download_file, DownloadError};
 use libherokubuildpack::inventory;
 use libherokubuildpack::tar::decompress_tarball;
 use semver::Version;
@@ -18,6 +18,8 @@ use std::env::temp_dir;
 use std::fs::{self, File};
 use std::io::Stdout;
 use std::path::Path;
+use std::thread;
+use std::time::Duration;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SdkLayerMetadata {
@@ -83,13 +85,27 @@ pub(crate) fn handle(
                 artifact: artifact.clone(),
             })?;
 
-            let log_background_bullet = log_bullet.start_timer(format!(
+            let mut log_background_bullet = log_bullet.start_timer(format!(
                 "Downloading SDK from {}",
                 style::url(artifact.clone().url)
             ));
 
             let path = temp_dir().as_path().join("dotnetsdk.tar.gz");
-            download_file(&artifact.url, path.clone()).map_err(SdkLayerError::DownloadArchive)?;
+            let mut download_attempts = 0;
+            loop {
+                match download_file(&artifact.url, path.clone()) {
+                    Err(DownloadError::IoError(error)) if download_attempts < 1 => {
+                        log_bullet = log_background_bullet.cancel(format!("{error}"));
+                        download_attempts += 1;
+                        thread::sleep(Duration::from_secs(1));
+                        log_background_bullet = log_bullet.start_timer("Retrying");
+                    }
+                    result => {
+                        result.map_err(SdkLayerError::DownloadArchive)?;
+                        break;
+                    }
+                }
+            }
             log_bullet = log_background_bullet.done();
 
             log_bullet = log_bullet.sub_bullet("Verifying SDK checksum");
