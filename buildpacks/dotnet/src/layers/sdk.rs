@@ -90,7 +90,7 @@ pub(crate) fn handle(
                 style::url(artifact.clone().url)
             ));
 
-            let tarball_path = temp_dir().as_path().join("dotnetsdk.tar.gz");
+            let tarball_path = temp_dir().join("dotnetsdk.tar.gz");
             let mut download_attempts = 0;
             loop {
                 match download_file(&artifact.url, &tarball_path) {
