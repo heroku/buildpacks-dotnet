@@ -1,4 +1,5 @@
 use inventory::artifact::{Arch, Os};
+use libherokubuildpack::inventory;
 use std::fmt;
 
 /// Enum representing supported .NET Runtime Identifiers (RIDs).
