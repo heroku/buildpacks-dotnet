@@ -39,6 +39,8 @@ type HandleResult = Result<
     libcnb::Error<DotnetBuildpackError>,
 >;
 
+const MAX_RETRIES: u8 = 1;
+
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
     log: Print<state::Bullet<Stdout>>,
@@ -92,9 +94,9 @@ pub(crate) fn handle(
 
             let tarball_path = temp_dir().join("dotnetsdk.tar.gz");
             let mut download_attempts = 0;
-            loop {
+            while download_attempts <= MAX_RETRIES {
                 match download_file(&artifact.url, &tarball_path) {
-                    Err(DownloadError::IoError(error)) if download_attempts < 1 => {
+                    Err(DownloadError::IoError(error)) if download_attempts < MAX_RETRIES => {
                         log_bullet = log_background_bullet.cancel(format!("{error}"));
                         download_attempts += 1;
                         thread::sleep(Duration::from_secs(1));
