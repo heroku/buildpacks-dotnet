@@ -93,7 +93,7 @@ pub(crate) fn handle(
             let path = temp_dir().as_path().join("dotnetsdk.tar.gz");
             let mut download_attempts = 0;
             loop {
-                match download_file(&artifact.url, path.clone()) {
+                match download_file(&artifact.url, &path) {
                     Err(DownloadError::IoError(error)) if download_attempts < 1 => {
                         log_bullet = log_background_bullet.cancel(format!("{error}"));
                         download_attempts += 1;
@@ -109,11 +109,11 @@ pub(crate) fn handle(
             log_bullet = log_background_bullet.done();
 
             log_bullet = log_bullet.sub_bullet("Verifying SDK checksum");
-            verify_checksum(&artifact.checksum, path.clone())?;
+            verify_checksum(&artifact.checksum, &path)?;
 
             log_bullet = log_bullet.sub_bullet("Installing SDK");
             decompress_tarball(
-                &mut File::open(path.clone()).map_err(SdkLayerError::OpenArchive)?,
+                &mut File::open(&path).map_err(SdkLayerError::OpenArchive)?,
                 sdk_layer.path(),
             )
             .map_err(SdkLayerError::DecompressArchive)?;
