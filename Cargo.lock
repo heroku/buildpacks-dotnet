@@ -106,9 +106,9 @@ dependencies = [
 
 [[package]]
 name = "bullet_stream"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bec939946cfeb7d4ba709fb24f035a14b78b89641cd4a09434a6d317c0ae28a6"
+checksum = "1e038a9e6b7e36319ab42141434b0c7a93f7714aa90abf63cc5086e106027bb7"
 
 [[package]]
 name = "bumpalo"
