@@ -8,7 +8,7 @@ use libcnb::layer::{
     RestoredLayerAction,
 };
 use libcnb::layer_env::Scope;
-use libherokubuildpack::download::download_file;
+use libherokubuildpack::download::{download_file, DownloadError};
 use libherokubuildpack::inventory;
 use libherokubuildpack::tar::decompress_tarball;
 use semver::Version;
@@ -18,6 +18,8 @@ use std::env::temp_dir;
 use std::fs::{self, File};
 use std::io::Stdout;
 use std::path::Path;
+use std::thread;
+use std::time::Duration;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SdkLayerMetadata {
@@ -36,6 +38,8 @@ type HandleResult = Result<
     ),
     libcnb::Error<DotnetBuildpackError>,
 >;
+
+const MAX_RETRIES: u8 = 1;
 
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
@@ -83,21 +87,35 @@ pub(crate) fn handle(
                 artifact: artifact.clone(),
             })?;
 
-            let log_background_bullet = log_bullet.start_timer(format!(
+            let mut log_background_bullet = log_bullet.start_timer(format!(
                 "Downloading SDK from {}",
                 style::url(artifact.clone().url)
             ));
 
-            let path = temp_dir().as_path().join("dotnetsdk.tar.gz");
-            download_file(&artifact.url, path.clone()).map_err(SdkLayerError::DownloadArchive)?;
+            let tarball_path = temp_dir().join("dotnetsdk.tar.gz");
+            let mut download_attempts = 0;
+            while download_attempts <= MAX_RETRIES {
+                match download_file(&artifact.url, &tarball_path) {
+                    Err(DownloadError::IoError(error)) if download_attempts < MAX_RETRIES => {
+                        log_bullet = log_background_bullet.cancel(format!("{error}"));
+                        download_attempts += 1;
+                        thread::sleep(Duration::from_secs(1));
+                        log_background_bullet = log_bullet.start_timer("Retrying");
+                    }
+                    result => {
+                        result.map_err(SdkLayerError::DownloadArchive)?;
+                        break;
+                    }
+                }
+            }
             log_bullet = log_background_bullet.done();
 
             log_bullet = log_bullet.sub_bullet("Verifying SDK checksum");
-            verify_checksum(&artifact.checksum, path.clone())?;
+            verify_checksum(&artifact.checksum, &tarball_path)?;
 
             log_bullet = log_bullet.sub_bullet("Installing SDK");
             decompress_tarball(
-                &mut File::open(path.clone()).map_err(SdkLayerError::OpenArchive)?,
+                &mut File::open(&tarball_path).map_err(SdkLayerError::OpenArchive)?,
                 sdk_layer.path(),
             )
             .map_err(SdkLayerError::DecompressArchive)?;
