@@ -474,7 +474,6 @@ dependencies = [
  "semver",
  "serde",
  "sha2",
- "toml",
  "ureq",
 ]
 
