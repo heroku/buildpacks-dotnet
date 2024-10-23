@@ -34,7 +34,7 @@ use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::inventory;
 use semver::{Version, VersionReq};
 use sha2::Sha512;
-use std::io::Stdout;
+use std::io::{Stdout, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{fs, io};
@@ -50,10 +50,8 @@ impl Buildpack for DotnetBuildpack {
         detect::get_files_with_extensions(&context.app_dir, &["sln", "csproj", "vbproj", "fsproj"])
             .map(|paths| {
                 if paths.is_empty() {
-                    Print::new(std::io::stdout())
-                        .without_header()
-                        .warning("No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.")
-                        .done();
+                    println!("No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.");
+                    std::io::stdout().flush().expect("Couldn't flush output stream");
                     DetectResultBuilder::fail().build()
                 } else {
                     DetectResultBuilder::pass().build()
