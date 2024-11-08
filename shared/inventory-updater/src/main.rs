@@ -120,37 +120,40 @@ struct File {
     hash: String,
 }
 
-const DOTNET_UPSTREAM_RELEASE_FEED: &str =
-    "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/8.0/releases.json";
+const SUPPORTED_MAJOR_VERSIONS: &[i32] = &[8];
 
 fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, Option<()>>> {
-    ureq::get(DOTNET_UPSTREAM_RELEASE_FEED)
-        .call()
-        .expect(".NET release feed should be available")
-        .into_json::<DotNetReleaseFeed>()
-        .expect(".NET release feed should be parsable from JSON")
-        .releases
-        .into_iter()
-        .flat_map(|release| {
-            release.sdks.into_iter().flat_map(|sdk| {
-                sdk.files.into_iter().filter_map(move |file| {
-                    let (os, arch) = match file.rid.as_str() {
-                        "linux-x64" => (Os::Linux, Arch::Amd64),
-                        "linux-arm64" => (Os::Linux, Arch::Arm64),
-                        _ => return None,
-                    };
-                    Some(Artifact {
-                        version: sdk.version.clone(),
-                        os,
-                        arch,
-                        url: file.url.clone(),
-                        checksum: format!("sha512:{}", file.hash)
-                            .parse::<Checksum<Sha512>>()
-                            .expect("checksum should be a valid hex-encoded SHA-512 string"),
-                        metadata: None,
+    SUPPORTED_MAJOR_VERSIONS
+        .iter()
+        .flat_map(|major_version| {
+            ureq::get(&format!("https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/{major_version}.0/releases.json"))
+                .call()
+                .expect(".NET release feed should be available")
+                .into_json::<DotNetReleaseFeed>()
+                .expect(".NET release feed should be parsable from JSON")
+                .releases
+                .into_iter()
+                .flat_map(|release| {
+                    release.sdks.into_iter().flat_map(|sdk| {
+                        sdk.files.into_iter().filter_map(move |file| {
+                            let (os, arch) = match file.rid.as_str() {
+                                "linux-x64" => (Os::Linux, Arch::Amd64),
+                                "linux-arm64" => (Os::Linux, Arch::Arm64),
+                                _ => return None,
+                            };
+                            Some(Artifact {
+                                version: sdk.version.clone(),
+                                os,
+                                arch,
+                                url: file.url.clone(),
+                                checksum: format!("sha512:{}", file.hash)
+                                    .parse::<Checksum<Sha512>>()
+                                    .expect("checksum should be a valid hex-encoded SHA-512 string"),
+                                metadata: None,
+                            })
+                        })
                     })
                 })
-            })
         })
         .collect()
 }
