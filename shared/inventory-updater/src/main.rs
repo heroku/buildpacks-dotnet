@@ -32,8 +32,12 @@ fn main() {
             process::exit(1);
         });
 
+    let mut upstream_artifacts = list_upstream_artifacts();
+    upstream_artifacts
+        .sort_by_key(|artifact| (artifact.version.clone(), artifact.arch.to_string()));
+    upstream_artifacts.reverse();
     let remote_inventory = Inventory {
-        artifacts: list_upstream_artifacts(),
+        artifacts: upstream_artifacts,
     };
 
     fs::write(&inventory_path, remote_inventory.to_string()).unwrap_or_else(|e| {
