@@ -35,7 +35,6 @@ fn main() {
     let mut upstream_artifacts = list_upstream_artifacts();
     upstream_artifacts
         .sort_by_key(|artifact| (artifact.version.clone(), artifact.arch.to_string()));
-    upstream_artifacts.reverse();
     let remote_inventory = Inventory {
         artifacts: upstream_artifacts,
     };
