@@ -123,7 +123,7 @@ struct File {
     hash: String,
 }
 
-const SUPPORTED_MAJOR_VERSIONS: &[i32] = &[8];
+const SUPPORTED_MAJOR_VERSIONS: &[i32] = &[8, 9];
 
 fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, Option<()>>> {
     SUPPORTED_MAJOR_VERSIONS
