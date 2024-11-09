@@ -4,7 +4,7 @@ use libcnb_test::{assert_contains, assert_empty, TestRunner};
 
 #[test]
 #[ignore = "integration test"]
-fn test_sdk_resolution_with_target_framework() {
+fn test_sdk_resolution_with_target_framework_8_0() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/basic_web_8.0"),
         |context| {
