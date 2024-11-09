@@ -24,6 +24,26 @@ fn test_sdk_resolution_with_target_framework_8_0() {
 
 #[test]
 #[ignore = "integration test"]
+fn test_sdk_resolution_with_target_framework_9_0() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/basic_web_9.0"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            assert_contains!(
+                context.pack_stdout,
+                &indoc! {r"
+                    - SDK version detection
+                      - Detected .NET file to publish: `/workspace/foo.csproj`
+                      - Inferring version requirement from `/workspace/foo.csproj`
+                      - Detected version requirement: `^9.0`
+                      - Resolved .NET SDK version `9.0"}
+            );
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
 fn test_sdk_resolution_with_solution_file() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/solution_with_web_and_console_projects"),
