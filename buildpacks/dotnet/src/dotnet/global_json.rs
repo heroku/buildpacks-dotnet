@@ -114,9 +114,19 @@ mod tests {
                 expected: "=6.0.100",
             },
             TestCase {
+                version: "6.0.100-rc.1.12345.1",
+                roll_forward: Some("disable"),
+                expected: "=6.0.100-rc.1.12345.1",
+            },
+            TestCase {
                 version: "6.0.100",
                 roll_forward: None,
                 expected: "^6.0.100",
+            },
+            TestCase {
+                version: "6.0.100-rc.1.12345.1",
+                roll_forward: None,
+                expected: "^6.0.100-rc.1.12345.1",
             },
         ];
 
