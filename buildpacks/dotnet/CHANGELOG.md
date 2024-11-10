@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The buildpack will now retry SDK downloads when the request failure is caused by I/O errors. ([#140](https://github.com/heroku/buildpacks-dotnet/pull/140))
 
+### Added
+
+- Support for .NET SDK versions: 9.0.100-preview.1.24101.2 (linux-amd64), 9.0.100-preview.1.24101.2 (linux-arm64), 9.0.100-preview.2.24157.14 (linux-amd64), 9.0.100-preview.2.24157.14 (linux-arm64), 9.0.100-preview.3.24204.13 (linux-amd64), 9.0.100-preview.3.24204.13 (linux-arm64), 9.0.100-preview.4.24267.66 (linux-amd64), 9.0.100-preview.4.24267.66 (linux-arm64), 9.0.100-preview.5.24307.3 (linux-amd64), 9.0.100-preview.5.24307.3 (linux-arm64), 9.0.100-preview.6.24328.19 (linux-amd64), 9.0.100-preview.6.24328.19 (linux-arm64), 9.0.100-preview.7.24407.12 (linux-amd64), 9.0.100-preview.7.24407.12 (linux-arm64), 9.0.100-rc.1.24452.12 (linux-amd64), 9.0.100-rc.1.24452.12 (linux-arm64), 9.0.100-rc.2.24474.11 (linux-amd64), 9.0.100-rc.2.24474.11 (linux-arm64).
+
 ## [0.1.4] - 2024-10-09
 
 ### Added
