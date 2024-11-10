@@ -57,7 +57,7 @@ pub(crate) fn handle(
         LayerState::Empty { cause } => {
             nuget_cache_layer.write_metadata(NugetCacheLayerMetadata { restore_count: 1.0 })?;
             match cause {
-                EmptyLayerCause::NewlyCreated => Some("Created NuGet package cache".to_string()),
+                EmptyLayerCause::NewlyCreated => None,
                 EmptyLayerCause::InvalidMetadataAction { .. } => {
                     Some("Purged NuGet package cache due to invalid metadata".to_string())
                 }
