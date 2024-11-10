@@ -27,7 +27,7 @@ type HandleResult = Result<
 
 pub(crate) fn handle(
     context: &BuildContext<DotnetBuildpack>,
-    log: Print<state::Bullet<Stdout>>,
+    mut log: Print<state::Bullet<Stdout>>,
 ) -> HandleResult {
     let nuget_cache_layer = context.cached_layer(
         layer_name!("nuget-cache"),
@@ -45,36 +45,33 @@ pub(crate) fn handle(
         },
     )?;
 
-    let mut log_bullet = log.bullet("NuGet cache");
-
-    match nuget_cache_layer.state {
+    let log_output = match nuget_cache_layer.state {
         LayerState::Restored {
             cause: restore_count,
         } => {
-            log_bullet = log_bullet.sub_bullet("Reusing NuGet package cache");
             nuget_cache_layer.write_metadata(NugetCacheLayerMetadata {
                 restore_count: restore_count + 1.0,
             })?;
+            Some("Reusing NuGet package cache".to_string())
         }
         LayerState::Empty { cause } => {
+            nuget_cache_layer.write_metadata(NugetCacheLayerMetadata { restore_count: 1.0 })?;
             match cause {
-                EmptyLayerCause::NewlyCreated => {
-                    log_bullet = log_bullet.sub_bullet("Created NuGet package cache");
-                }
+                EmptyLayerCause::NewlyCreated => Some("Created NuGet package cache".to_string()),
                 EmptyLayerCause::InvalidMetadataAction { .. } => {
-                    log_bullet =
-                        log_bullet.sub_bullet("Purged NuGet package cache due to invalid metadata");
+                    Some("Purged NuGet package cache due to invalid metadata".to_string())
                 }
                 EmptyLayerCause::RestoredLayerAction {
                     cause: restore_count,
-                } => {
-                    log_bullet = log_bullet.sub_bullet(format!(
-                        "Purged NuGet package cache after {restore_count} builds"
-                    ));
-                }
+                } => Some(format!(
+                    "Purged NuGet package cache after {restore_count} builds"
+                )),
             }
-            nuget_cache_layer.write_metadata(NugetCacheLayerMetadata { restore_count: 1.0 })?;
         }
+    };
+
+    if let Some(message) = log_output {
+        log = log.bullet("NuGet cache").sub_bullet(message).done();
     }
-    Ok((nuget_cache_layer, log_bullet.done()))
+    Ok((nuget_cache_layer, log))
 }
