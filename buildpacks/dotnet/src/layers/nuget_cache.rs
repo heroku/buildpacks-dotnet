@@ -1,13 +1,11 @@
-use crate::{DotnetBuildpack, DotnetBuildpackError};
-use bullet_stream::{state, Print};
+use crate::layers::{BuildLog, LayerLogResult};
+use crate::DotnetBuildpack;
 use libcnb::build::BuildContext;
 use libcnb::data::layer_name;
 use libcnb::layer::{
-    CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerRef, LayerState,
-    RestoredLayerAction,
+    CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerState, RestoredLayerAction,
 };
 use serde::{Deserialize, Serialize};
-use std::io::Stdout;
 
 #[derive(Serialize, Deserialize)]
 struct NugetCacheLayerMetadata {
@@ -17,18 +15,10 @@ struct NugetCacheLayerMetadata {
 
 const MAX_NUGET_CACHE_RESTORE_COUNT: f32 = 20.0;
 
-type HandleResult = Result<
-    (
-        LayerRef<DotnetBuildpack, (), f32>,
-        Print<state::Bullet<Stdout>>,
-    ),
-    libcnb::Error<DotnetBuildpackError>,
->;
-
 pub(crate) fn handle(
     context: &BuildContext<DotnetBuildpack>,
-    log: Print<state::Bullet<Stdout>>,
-) -> HandleResult {
+    log: BuildLog,
+) -> LayerLogResult<f32> {
     let nuget_cache_layer = context.cached_layer(
         layer_name!("nuget-cache"),
         CachedLayerDefinition {

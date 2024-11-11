@@ -1,11 +1,11 @@
+use crate::layers::{BuildLog, LayerLogResult};
 use crate::{dotnet_layer_env, DotnetBuildpack, DotnetBuildpackError};
-use bullet_stream::{state, style, Print};
+use bullet_stream::style;
 use inventory::artifact::Artifact;
 use inventory::checksum::Checksum;
 use libcnb::data::layer_name;
 use libcnb::layer::{
-    CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerRef, LayerState,
-    RestoredLayerAction,
+    CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerState, RestoredLayerAction,
 };
 use libcnb::layer_env::Scope;
 use libherokubuildpack::download::{download_file, DownloadError};
@@ -16,7 +16,6 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use std::env::temp_dir;
 use std::fs::{self, File};
-use std::io::Stdout;
 use std::path::Path;
 use std::thread;
 use std::time::Duration;
@@ -31,21 +30,13 @@ pub(crate) enum CustomCause {
     DifferentSdkArtifact(Artifact<Version, Sha512, Option<()>>),
 }
 
-type HandleResult = Result<
-    (
-        LayerRef<DotnetBuildpack, (), CustomCause>,
-        Print<state::Bullet<Stdout>>,
-    ),
-    libcnb::Error<DotnetBuildpackError>,
->;
-
 const MAX_RETRIES: u8 = 1;
 
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
-    log: Print<state::Bullet<Stdout>>,
+    log: BuildLog,
     artifact: &Artifact<Version, Sha512, Option<()>>,
-) -> HandleResult {
+) -> LayerLogResult<CustomCause> {
     let sdk_layer = context.cached_layer(
         layer_name!("sdk"),
         CachedLayerDefinition {
