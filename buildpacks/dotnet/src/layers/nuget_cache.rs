@@ -45,29 +45,25 @@ pub(crate) fn handle(
         },
     )?;
 
+    let restore_count = match nuget_cache_layer.state {
+        LayerState::Restored { cause: count } => count + 1.0,
+        LayerState::Empty { .. } => 1.0,
+    };
+    nuget_cache_layer.write_metadata(NugetCacheLayerMetadata { restore_count })?;
+
     let log_output = match nuget_cache_layer.state {
-        LayerState::Restored {
-            cause: restore_count,
-        } => {
-            nuget_cache_layer.write_metadata(NugetCacheLayerMetadata {
-                restore_count: restore_count + 1.0,
-            })?;
-            Some("Reusing NuGet package cache".to_string())
-        }
-        LayerState::Empty { cause } => {
-            nuget_cache_layer.write_metadata(NugetCacheLayerMetadata { restore_count: 1.0 })?;
-            match cause {
-                EmptyLayerCause::NewlyCreated => None,
-                EmptyLayerCause::InvalidMetadataAction { .. } => {
-                    Some("Purged NuGet package cache due to invalid metadata".to_string())
-                }
-                EmptyLayerCause::RestoredLayerAction {
-                    cause: restore_count,
-                } => Some(format!(
-                    "Purged NuGet package cache after {restore_count} builds"
-                )),
+        LayerState::Restored { .. } => Some("Reusing NuGet package cache".to_string()),
+        LayerState::Empty { cause } => match cause {
+            EmptyLayerCause::NewlyCreated => None,
+            EmptyLayerCause::InvalidMetadataAction { .. } => {
+                Some("Purged NuGet package cache due to invalid metadata".to_string())
             }
-        }
+            EmptyLayerCause::RestoredLayerAction {
+                cause: restore_count,
+            } => Some(format!(
+                "Purged NuGet package cache after {restore_count} builds"
+            )),
+        },
     };
 
     if let Some(message) = log_output {
