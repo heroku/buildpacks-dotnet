@@ -57,10 +57,10 @@ pub(crate) fn handle(
         LayerState::Empty { cause } => match cause {
             EmptyLayerCause::NewlyCreated => None,
             EmptyLayerCause::InvalidMetadataAction { .. } => {
-                Some("Purged NuGet package cache due to invalid metadata".to_string())
+                Some("Purging NuGet package cache due to invalid metadata".to_string())
             }
             EmptyLayerCause::RestoredLayerAction { cause: count } => {
-                Some(format!("Purged NuGet package cache after {count} uses"))
+                Some(format!("Purging NuGet package cache after {count} uses"))
             }
         },
     };
