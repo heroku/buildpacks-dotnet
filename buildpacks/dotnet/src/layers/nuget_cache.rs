@@ -52,7 +52,7 @@ pub(crate) fn handle(
         },
     })?;
 
-    let log_output = match nuget_cache_layer.state {
+    let log_message = match nuget_cache_layer.state {
         LayerState::Restored { .. } => Some("Reusing NuGet package cache".to_string()),
         LayerState::Empty { cause } => match cause {
             EmptyLayerCause::NewlyCreated => None,
@@ -67,7 +67,7 @@ pub(crate) fn handle(
         },
     };
 
-    if let Some(message) = log_output {
+    if let Some(message) = log_message {
         log = log.bullet("NuGet cache").sub_bullet(message).done();
     }
     Ok((nuget_cache_layer, log))
