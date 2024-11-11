@@ -57,10 +57,10 @@ pub(crate) fn handle(
         LayerState::Empty { cause } => match cause {
             EmptyLayerCause::NewlyCreated => None,
             EmptyLayerCause::InvalidMetadataAction { .. } => {
-                Some("Purging package cache due to invalid metadata".to_string())
+                Some("Clearing package cache due to invalid metadata".to_string())
             }
             EmptyLayerCause::RestoredLayerAction { cause: count } => {
-                Some(format!("Purging package cache after {count} uses"))
+                Some(format!("Clearing package cache after {count} uses"))
             }
         },
     };
