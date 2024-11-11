@@ -45,11 +45,12 @@ pub(crate) fn handle(
         },
     )?;
 
-    let restore_count = match nuget_cache_layer.state {
-        LayerState::Restored { cause: count } => count + 1.0,
-        LayerState::Empty { .. } => 1.0,
-    };
-    nuget_cache_layer.write_metadata(NugetCacheLayerMetadata { restore_count })?;
+    nuget_cache_layer.write_metadata(NugetCacheLayerMetadata {
+        restore_count: match nuget_cache_layer.state {
+            LayerState::Restored { cause: count } => count + 1.0,
+            LayerState::Empty { .. } => 1.0,
+        },
+    })?;
 
     let log_output = match nuget_cache_layer.state {
         LayerState::Restored { .. } => Some("Reusing NuGet package cache".to_string()),
