@@ -1,5 +1,5 @@
-use crate::layers::{BuildLog, LayerLogResult};
-use crate::DotnetBuildpack;
+use crate::layers::{BuildLog, DotnetLayerRef};
+use crate::{DotnetBuildpack, DotnetBuildpackError};
 use libcnb::build::BuildContext;
 use libcnb::data::layer_name;
 use libcnb::layer::{
@@ -18,7 +18,7 @@ const MAX_NUGET_CACHE_RESTORE_COUNT: f32 = 20.0;
 pub(crate) fn handle(
     context: &BuildContext<DotnetBuildpack>,
     log: BuildLog,
-) -> LayerLogResult<f32> {
+) -> Result<(DotnetLayerRef<f32>, BuildLog), libcnb::Error<DotnetBuildpackError>> {
     let nuget_cache_layer = context.cached_layer(
         layer_name!("nuget-cache"),
         CachedLayerDefinition {

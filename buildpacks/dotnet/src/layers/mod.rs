@@ -3,10 +3,4 @@ pub(crate) mod runtime;
 pub(crate) mod sdk;
 
 pub(crate) type BuildLog = bullet_stream::Print<bullet_stream::state::Bullet<std::io::Stdout>>;
-pub(crate) type LayerLogResult<T> = Result<
-    (
-        libcnb::layer::LayerRef<crate::DotnetBuildpack, (), T>,
-        BuildLog,
-    ),
-    libcnb::Error<crate::DotnetBuildpackError>,
->;
+pub(crate) type DotnetLayerRef<T> = libcnb::layer::LayerRef<crate::DotnetBuildpack, (), T>;

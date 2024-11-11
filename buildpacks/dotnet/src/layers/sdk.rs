@@ -1,4 +1,4 @@
-use crate::layers::{BuildLog, LayerLogResult};
+use crate::layers::{BuildLog, DotnetLayerRef};
 use crate::{dotnet_layer_env, DotnetBuildpack, DotnetBuildpackError};
 use bullet_stream::style;
 use inventory::artifact::Artifact;
@@ -36,7 +36,7 @@ pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
     log: BuildLog,
     artifact: &Artifact<Version, Sha512, Option<()>>,
-) -> LayerLogResult<CustomCause> {
+) -> Result<(DotnetLayerRef<CustomCause>, BuildLog), libcnb::Error<DotnetBuildpackError>> {
     let sdk_layer = context.cached_layer(
         layer_name!("sdk"),
         CachedLayerDefinition {
