@@ -114,9 +114,19 @@ mod tests {
                 expected: "=6.0.100",
             },
             TestCase {
+                version: "6.0.100-rc.1.12345.1",
+                roll_forward: Some("disable"),
+                expected: "=6.0.100-rc.1.12345.1",
+            },
+            TestCase {
                 version: "6.0.100",
                 roll_forward: None,
-                expected: "6.0.100",
+                expected: "^6.0.100",
+            },
+            TestCase {
+                version: "6.0.100-rc.1.12345.1",
+                roll_forward: None,
+                expected: "^6.0.100-rc.1.12345.1",
             },
         ];
 
@@ -127,8 +137,11 @@ mod tests {
             };
             let global_json = GlobalJson { sdk: sdk_config };
             let result = VersionReq::try_from(global_json).unwrap();
-            let expected = VersionReq::parse(case.expected).unwrap();
-            assert_eq!(result, expected, "Failed for case: {case:?}");
+            assert_eq!(
+                result.to_string(),
+                case.expected,
+                "Failed for case: {case:?}"
+            );
         }
     }
 
