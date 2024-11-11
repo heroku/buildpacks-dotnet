@@ -17,7 +17,7 @@ fn test_nuget_restore_and_cache() {
             let config = context.config.clone();
             context.rebuild(config, |rebuild_context| {
                 assert_not_contains!(&rebuild_context.pack_stdout, "Installed Newtonsoft.Json 13.0.3");
-                assert_contains!(&rebuild_context.pack_stdout, "Reusing NuGet package cache");
+                assert_contains!(&rebuild_context.pack_stdout, "Reusing package cache");
                 assert_contains!(&rebuild_context.pack_stdout, "Restored /workspace/consoleapp.csproj");
             });
         });

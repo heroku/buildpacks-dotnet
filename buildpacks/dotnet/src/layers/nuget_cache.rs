@@ -53,14 +53,14 @@ pub(crate) fn handle(
     })?;
 
     let log_message = match nuget_cache_layer.state {
-        LayerState::Restored { .. } => Some("Reusing NuGet package cache".to_string()),
+        LayerState::Restored { .. } => Some("Reusing package cache".to_string()),
         LayerState::Empty { cause } => match cause {
             EmptyLayerCause::NewlyCreated => None,
             EmptyLayerCause::InvalidMetadataAction { .. } => {
-                Some("Purging NuGet package cache due to invalid metadata".to_string())
+                Some("Purging package cache due to invalid metadata".to_string())
             }
             EmptyLayerCause::RestoredLayerAction { cause: count } => {
-                Some(format!("Purging NuGet package cache after {count} uses"))
+                Some(format!("Purging package cache after {count} uses"))
             }
         },
     };
