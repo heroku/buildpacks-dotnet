@@ -36,7 +36,7 @@ pub(crate) fn handle(
             launch: false,
             invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
             restored_layer_action: &|metadata: &NugetCacheLayerMetadata, _path| {
-                if metadata.restore_count > MAX_NUGET_CACHE_RESTORE_COUNT {
+                if metadata.restore_count >= MAX_NUGET_CACHE_RESTORE_COUNT {
                     (RestoredLayerAction::DeleteLayer, metadata.restore_count)
                 } else {
                     (RestoredLayerAction::KeepLayer, metadata.restore_count)
@@ -48,7 +48,7 @@ pub(crate) fn handle(
     nuget_cache_layer.write_metadata(NugetCacheLayerMetadata {
         restore_count: match nuget_cache_layer.state {
             LayerState::Restored { cause: count } => count + 1.0,
-            LayerState::Empty { .. } => 1.0,
+            LayerState::Empty { .. } => 0.0,
         },
     })?;
 
@@ -60,7 +60,7 @@ pub(crate) fn handle(
                 Some("Purged NuGet package cache due to invalid metadata".to_string())
             }
             EmptyLayerCause::RestoredLayerAction { cause: count } => {
-                Some(format!("Purged NuGet package cache after {count} builds"))
+                Some(format!("Purged NuGet package cache after {count} uses"))
             }
         },
     };
