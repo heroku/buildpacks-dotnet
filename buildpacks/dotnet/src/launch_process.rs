@@ -52,7 +52,7 @@ pub(crate) fn detect_solution_processes(
             );
 
             if project.project_type == ProjectType::WebApplication {
-                command.push_str(" --urls http://0.0.0.0:$PORT");
+                command.push_str(" --urls http://*:$PORT");
             }
 
             project
