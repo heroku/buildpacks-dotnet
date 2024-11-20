@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Web application launch processes now configure Kestrel to bind both IPv4 and IPv6 addresses. ([#156](https://github.com/heroku/buildpacks-dotnet/pull/156))
+
 ## [0.1.6] - 2024-11-12
 
 ### Added
