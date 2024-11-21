@@ -19,8 +19,11 @@ use crate::dotnet_buildpack_configuration::{
 use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
-use bullet_stream::state::{Bullet, SubBullet};
-use bullet_stream::{style, Print};
+use buildpacks_jvm_shared::output::{
+    print_buildpack_name, print_section, print_subsection, print_warning, run_command,
+    track_timing, BuildpackOutputTextSection,
+};
+use bullet_stream::style;
 use fun_run::CommandWithName;
 use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
@@ -34,9 +37,9 @@ use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::inventory;
 use semver::{Version, VersionReq};
 use sha2::Sha512;
-use std::io::{Stdout, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Output};
 use std::{fs, io};
 
 struct DotnetBuildpack;
@@ -65,34 +68,33 @@ impl Buildpack for DotnetBuildpack {
         let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
             .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
 
-        let mut log = Print::new(std::io::stdout()).h2("Heroku .NET Buildpack");
-        let mut log_bullet = log.bullet("SDK version detection");
+        print_buildpack_name("Heroku .NET Buildpack");
+        print_section("SDK version detection");
 
         let solution = get_solution_to_publish(&context.app_dir)?;
 
-        log_bullet = log_bullet.sub_bullet(format!(
-            "Detected .NET file to publish: {}",
-            style::value(solution.path.to_string_lossy())
-        ));
+        print_subsection(vec![
+            BuildpackOutputTextSection::regular("Detected .NET file to publish: "),
+            BuildpackOutputTextSection::value(solution.path.to_string_lossy()),
+        ]);
 
         let sdk_version_requirement = if let Some(version_req) =
             detect_global_json_sdk_version_requirement(&context.app_dir)
         {
-            log_bullet =
-                log_bullet.sub_bullet("Detecting version requirement from root global.json file");
+            print_subsection("Detecting version requirement from root global.json file");
             version_req?
         } else {
-            log_bullet = log_bullet.sub_bullet(format!(
-                "Inferring version requirement from {}",
-                style::value(solution.path.to_string_lossy())
-            ));
+            print_subsection(vec![
+                BuildpackOutputTextSection::regular("Inferring version requirement from "),
+                BuildpackOutputTextSection::value(solution.path.to_string_lossy()),
+            ]);
             get_solution_sdk_version_requirement(&solution)?
         };
 
-        log_bullet = log_bullet.sub_bullet(format!(
-            "Detected version requirement: {}",
-            style::value(sdk_version_requirement.to_string())
-        ));
+        print_subsection(vec![
+            BuildpackOutputTextSection::regular("Detected version requirement: "),
+            BuildpackOutputTextSection::value(sdk_version_requirement.to_string()),
+        ]);
 
         let target_os = context.target.os.parse::<Os>()
             .expect("OS should always be parseable, buildpack will not run on unsupported operating systems.");
@@ -109,18 +111,19 @@ impl Buildpack for DotnetBuildpack {
                 sdk_version_requirement,
             ))?;
 
-        log = log_bullet
-            .sub_bullet(format!(
-                "Resolved .NET SDK version {} {}",
-                style::value(sdk_artifact.version.to_string()),
-                style::details(format!("{}-{}", sdk_artifact.os, sdk_artifact.arch))
-            ))
-            .done();
+        print_subsection(vec![
+            BuildpackOutputTextSection::regular("Resolved .NET SDK version "),
+            BuildpackOutputTextSection::value(sdk_artifact.version.to_string()),
+            BuildpackOutputTextSection::regular(format!(
+                " ({}-{})",
+                sdk_artifact.os, sdk_artifact.arch
+            )),
+        ]);
 
-        let (sdk_layer, log) = layers::sdk::handle(&context, log, sdk_artifact)?;
-        let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
+        let sdk_layer = layers::sdk::handle(&context, sdk_artifact)?;
+        let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
 
-        log_bullet = log.bullet("Publish solution");
+        print_section("Publish solution");
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
             libcnb::layer_env::ModificationBehavior::Override,
@@ -132,7 +135,8 @@ impl Buildpack for DotnetBuildpack {
             .build_configuration
             .clone()
             .unwrap_or_else(|| String::from("Release"));
-        log_bullet = log_bullet.sub_bullet(format!(
+
+        print_subsection(format!(
             "Using {} build configuration",
             style::value(build_configuration.clone())
         ));
@@ -147,38 +151,40 @@ impl Buildpack for DotnetBuildpack {
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current()));
 
-        log_bullet
-            .stream_with(
-                format!("Running {}", style::command(publish_command.name())),
-                |stdout, stderr| publish_command.stream_output(stdout, stderr),
+        print_subsection(format!(
+            "Running {}",
+            style::command(publish_command.name())
+        ));
+        track_timing(|| {
+            run_command(
+                publish_command,
+                false,
+                DotnetBuildpackError::PublishCommandIoError,
+                DotnetBuildpackError::PublishCommandNonZeroExitCode,
             )
-            .map_err(DotnetBuildpackError::PublishCommand)?;
-        log = log_bullet.done();
+        })?;
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
-        log_bullet = log
-            .bullet("Setting launch table")
-            .sub_bullet("Detecting process types from published artifacts");
+        print_section("Setting launch table");
+        print_subsection("Detecting process types from published artifacts");
         let mut launch_builder = LaunchBuilder::new();
-        log = match launch_process::detect_solution_processes(&solution) {
+        match launch_process::detect_solution_processes(&solution) {
             Ok(processes) => {
                 if processes.is_empty() {
-                    log_bullet = log_bullet.sub_bullet("No processes were detected");
+                    print_subsection("No processes were detected");
                 }
                 for process in processes {
-                    log_bullet = log_bullet.sub_bullet(format!(
+                    print_subsection(format!(
                         "Added {}: {}",
                         style::value(process.r#type.to_string()),
                         process.command.join(" ")
                     ));
                     launch_builder.process(process);
                 }
-                log_bullet.done()
             }
-            Err(error) => log_launch_process_detection_warning(error, log_bullet),
+            Err(error) => log_launch_process_detection_warning(error),
         };
-        log.done();
 
         BuildResultBuilder::new()
             .launch(launch_builder.build())
@@ -250,16 +256,12 @@ fn detect_global_json_sdk_version_requirement(
     })
 }
 
-fn log_launch_process_detection_warning(
-    error: LaunchProcessDetectionError,
-    log: Print<SubBullet<Stdout>>,
-) -> Print<Bullet<Stdout>> {
+fn log_launch_process_detection_warning(error: LaunchProcessDetectionError) {
     match error {
-        LaunchProcessDetectionError::ProcessType(process_type_error) => log
-            .warning(formatdoc! {"
+        LaunchProcessDetectionError::ProcessType(process_type_error) => print_warning(
+            "Launch process detection error",
+            formatdoc! {"
                 {process_type_error}
-
-                Launch process detection error
 
                 We detected an invalid launch process type.
 
@@ -279,8 +281,8 @@ fn log_launch_process_detection_warning(
                 If you think you found a bug in the buildpack, or have feedback on improving
                 the behavior for your use case, file an issue here:
                 https://github.com/heroku/buildpacks-dotnet/issues/new
-            "})
-            .done(),
+            "},
+        ),
     }
 }
 
@@ -300,7 +302,8 @@ enum DotnetBuildpackError {
     ResolveSdkVersion(VersionReq),
     SdkLayer(SdkLayerError),
     ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),
-    PublishCommand(fun_run::CmdError),
+    PublishCommandIoError(io::Error),
+    PublishCommandNonZeroExitCode(Output),
     CopyRuntimeFiles(io::Error),
 }
 
