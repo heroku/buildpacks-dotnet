@@ -1,5 +1,6 @@
 use crate::{dotnet_layer_env, DotnetBuildpack, DotnetBuildpackError};
-use bullet_stream::{state, style, Print};
+use buildpacks_jvm_shared::output;
+use bullet_stream::style;
 use inventory::artifact::Artifact;
 use inventory::checksum::Checksum;
 use libcnb::data::layer_name;
@@ -16,7 +17,6 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use std::env::temp_dir;
 use std::fs::{self, File};
-use std::io::Stdout;
 use std::path::Path;
 use std::thread;
 use std::time::Duration;
@@ -31,21 +31,12 @@ pub(crate) enum CustomCause {
     DifferentSdkArtifact(Artifact<Version, Sha512, Option<()>>),
 }
 
-type HandleResult = Result<
-    (
-        LayerRef<DotnetBuildpack, (), CustomCause>,
-        Print<state::Bullet<Stdout>>,
-    ),
-    libcnb::Error<DotnetBuildpackError>,
->;
-
 const MAX_RETRIES: u8 = 4;
 
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
-    log: Print<state::Bullet<Stdout>>,
     artifact: &Artifact<Version, Sha512, Option<()>>,
-) -> HandleResult {
+) -> Result<LayerRef<DotnetBuildpack, (), CustomCause>, libcnb::Error<DotnetBuildpackError>> {
     let sdk_layer = context.cached_layer(
         layer_name!("sdk"),
         CachedLayerDefinition {
@@ -65,19 +56,18 @@ pub(crate) fn handle(
         },
     )?;
 
-    let mut log_bullet = log.bullet("SDK installation");
+    output::print_section("SDK installation");
 
     match sdk_layer.state {
         LayerState::Restored { .. } => {
-            log_bullet =
-                log_bullet.sub_bullet(format!("Reusing cached SDK (version {})", artifact.version));
+            output::print_subsection(format!("Reusing cached SDK (version {})", artifact.version));
         }
         LayerState::Empty { ref cause } => {
             if let EmptyLayerCause::RestoredLayerAction {
                 cause: CustomCause::DifferentSdkArtifact(old_artifact),
             } = cause
             {
-                log_bullet = log_bullet.sub_bullet(format!(
+                output::print_subsection(format!(
                     "Deleting cached .NET SDK (version {})",
                     old_artifact.version
                 ));
@@ -87,33 +77,33 @@ pub(crate) fn handle(
                 artifact: artifact.clone(),
             })?;
 
-            let mut log_background_bullet = log_bullet.start_timer(format!(
-                "Downloading SDK from {}",
-                style::url(artifact.clone().url)
-            ));
-
             let tarball_path = temp_dir().join("dotnetsdk.tar.gz");
             let mut download_attempts = 0;
-            while download_attempts <= MAX_RETRIES {
-                match download_file(&artifact.url, &tarball_path) {
-                    Err(DownloadError::IoError(error)) if download_attempts < MAX_RETRIES => {
-                        log_bullet = log_background_bullet.cancel(format!("{error}"));
-                        download_attempts += 1;
-                        thread::sleep(Duration::from_secs(1));
-                        log_background_bullet = log_bullet.start_timer("Retrying");
+            output::track_timing(|| {
+                while download_attempts <= MAX_RETRIES {
+                    output::print_subsection(format!(
+                        "Downloading SDK from {}",
+                        style::url(artifact.clone().url)
+                    ));
+                    match download_file(&artifact.url, &tarball_path) {
+                        Err(DownloadError::IoError(error)) if download_attempts < MAX_RETRIES => {
+                            output::print_subsection(format!("Error: {error}"));
+                        }
+                        result => {
+                            return result.map_err(SdkLayerError::DownloadArchive);
+                        }
                     }
-                    result => {
-                        result.map_err(SdkLayerError::DownloadArchive)?;
-                        break;
-                    }
+                    download_attempts += 1;
+                    thread::sleep(Duration::from_secs(1));
+                    output::print_subsection("Retrying...");
                 }
-            }
-            log_bullet = log_background_bullet.done();
+                Ok(())
+            })?;
 
-            log_bullet = log_bullet.sub_bullet("Verifying SDK checksum");
+            output::print_subsection("Verifying SDK checksum");
             verify_checksum(&artifact.checksum, &tarball_path)?;
 
-            log_bullet = log_bullet.sub_bullet("Installing SDK");
+            output::print_subsection("Installing SDK");
             decompress_tarball(
                 &mut File::open(&tarball_path).map_err(SdkLayerError::OpenArchive)?,
                 sdk_layer.path(),
@@ -127,7 +117,7 @@ pub(crate) fn handle(
         }
     }
 
-    Ok((sdk_layer, log_bullet.done()))
+    Ok(sdk_layer)
 }
 
 fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>

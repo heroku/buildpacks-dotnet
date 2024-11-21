@@ -3,9 +3,10 @@ use crate::dotnet::{project, solution};
 use crate::dotnet_buildpack_configuration::DotnetBuildpackConfigurationError;
 use crate::layers::sdk::SdkLayerError;
 use crate::DotnetBuildpackError;
-use bullet_stream::{style, Print};
+use buildpacks_jvm_shared::output;
+use bullet_stream::style;
 use indoc::formatdoc;
-use std::io::{self, stderr};
+use std::io::{self};
 
 pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
     match error {
@@ -231,30 +232,27 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 );
             }
         },
-        DotnetBuildpackError::PublishCommand(error) => match error {
-            fun_run::CmdError::SystemError(_message, io_error) => log_io_error(
-                "Unable to publish",
-                "running the command to publish the .NET solution/project",
-                io_error,
-            ),
-            fun_run::CmdError::NonZeroExitNotStreamed(output)
-            | fun_run::CmdError::NonZeroExitAlreadyStreamed(output) => log_error(
-                "Unable to publish",
-                formatdoc! {"
-                    The `dotnet publish` command exited unsuccessfully ({exit_status}).
+        DotnetBuildpackError::PublishCommandIoError(io_error) => log_io_error(
+            "Unable to publish",
+            "running the command to publish the .NET solution/project",
+            io_error,
+        ),
+        DotnetBuildpackError::PublishCommandNonZeroExitCode(output) => log_error(
+            "Unable to publish",
+            formatdoc! {"
+                The `dotnet publish` command exited unsuccessfully ({exit_status}).
 
-                    This error usually happens due to compilation errors. Use the command output
-                    above to troubleshoot and retry your build.
+                This error usually happens due to compilation errors. Use the command output
+                above to troubleshoot and retry your build.
 
-                    The publish process can also fail for a number of other reasons, such as
-                    intermittent network issues, unavailability of the NuGet package feed and/or
-                    other external dependencies, etc.
+                The publish process can also fail for a number of other reasons, such as
+                intermittent network issues, unavailability of the NuGet package feed and/or
+                other external dependencies, etc.
 
-                    Try again to see if the error resolves itself.
-                ", exit_status = output.status()},
-                None,
-            ),
-        },
+                Try again to see if the error resolves itself.
+            ", exit_status = output.status},
+            None,
+        ),
         DotnetBuildpackError::CopyRuntimeFiles(io_error) => log_io_error(
             "Error copying .NET runtime files",
             "copying .NET runtime files from the SDK layer to the runtime layer",
@@ -308,15 +306,9 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
 }
 
 fn log_error(header: impl AsRef<str>, body: impl AsRef<str>, error: Option<String>) {
-    let mut log = Print::new(stderr()).without_header();
     if let Some(error) = error {
-        let bullet = log.bullet(style::important("Debug info"));
-        log = bullet.sub_bullet(error).done();
+        output::print_section(style::important("Debug info"));
+        output::print_subsection(error);
     }
-    log.error(formatdoc! {"
-        {header}
-
-        {body}
-    ", header = header.as_ref(), body = body.as_ref(),
-    });
+    output::print_error(header, body.as_ref());
 }
