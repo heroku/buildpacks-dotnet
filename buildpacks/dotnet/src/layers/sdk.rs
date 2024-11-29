@@ -39,7 +39,7 @@ type HandleResult = Result<
     libcnb::Error<DotnetBuildpackError>,
 >;
 
-const MAX_RETRIES: u8 = 1;
+const MAX_RETRIES: u8 = 4;
 
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
