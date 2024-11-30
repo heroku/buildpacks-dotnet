@@ -8,7 +8,7 @@ for .NET and ASP.NET Core applications. It builds .NET and ASP.NET Core applicat
 minimal configuration.
 
 > [!IMPORTANT]
-> This is a [Cloud Native Buildpack][cnb], and is a component of the [Heroku Cloud Native Buildpacks][heroku-buildpacks] project, which is in preview.
+> This is a [Cloud Native Buildpack][cnb], and is a component of the [Heroku Cloud Native Buildpacks][heroku-buildpacks] project, which is in preview. If you are instead looking for the Heroku Classic Buildpack for .NET (for use on the Heroku platform), you may find it [here][classic-buildpack].
 
 ## Usage
 
@@ -58,6 +58,7 @@ Issues and pull requests are welcome. See our [contributing guidelines](./CONTRI
 
 [ci-badge]: https://github.com/heroku/buildpacks-dotnet/actions/workflows/ci.yml/badge.svg
 [ci-url]: https://github.com/heroku/buildpacks-dotnet/actions/workflows/ci.yml
+[classic-buildpack]: https://github.com/heroku/heroku-buildpack-dotnet
 [cnb]: https://buildpacks.io
 [heroku-buildpacks]: https://github.com/heroku/buildpacks
 [pack-install]: https://buildpacks.io/docs/for-platform-operators/how-to/integrate-ci/pack/
