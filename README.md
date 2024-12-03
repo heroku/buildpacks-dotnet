@@ -1,3 +1,5 @@
+![dotnet-buildpack-github-banner](https://github.com/user-attachments/assets/8ca5a70e-0157-4cbd-90d1-d612fa5b92b7)
+
 # Heroku Cloud Native Buildpack: .NET
 
 [![Cloud Native Buildpacks Registry: heroku/dotnet][registry-badge]][registry-url]
