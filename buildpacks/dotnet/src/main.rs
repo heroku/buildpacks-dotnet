@@ -152,10 +152,10 @@ impl Buildpack for DotnetBuildpack {
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current()));
 
-        print_subsection(format!(
-            "Running {}",
-            style::command(publish_command.name())
-        ));
+        print_subsection(vec![
+            BuildpackOutputTextSection::regular("Running "),
+            BuildpackOutputTextSection::Command(publish_command.name()),
+        ]);
         track_timing(|| {
             run_command(
                 publish_command,
