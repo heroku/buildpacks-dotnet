@@ -1,6 +1,5 @@
 use crate::{dotnet_layer_env, DotnetBuildpack, DotnetBuildpackError};
-use buildpacks_jvm_shared::output;
-use bullet_stream::style;
+use buildpacks_jvm_shared::output::{self, BuildpackOutputTextSection};
 use inventory::artifact::Artifact;
 use inventory::checksum::Checksum;
 use libcnb::data::layer_name;
@@ -81,10 +80,10 @@ pub(crate) fn handle(
             let mut download_attempts = 0;
             output::track_timing(|| {
                 while download_attempts <= MAX_RETRIES {
-                    output::print_subsection(format!(
-                        "Downloading SDK from {}",
-                        style::url(artifact.clone().url)
-                    ));
+                    output::print_subsection(vec![
+                        BuildpackOutputTextSection::regular("Downloading SDK from "),
+                        BuildpackOutputTextSection::Url(artifact.clone().url),
+                    ]);
                     match download_file(&artifact.url, &tarball_path) {
                         Err(DownloadError::IoError(error)) if download_attempts < MAX_RETRIES => {
                             output::print_subsection(format!("Error: {error}"));
