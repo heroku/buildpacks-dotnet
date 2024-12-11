@@ -23,7 +23,6 @@ use buildpacks_jvm_shared::output::{
     print_buildpack_name, print_section, print_subsection, print_warning, run_command,
     track_timing, BuildpackOutputTextSection,
 };
-use fun_run::CommandWithName;
 use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
 use inventory::{Inventory, ParseInventoryError};
@@ -153,7 +152,7 @@ impl Buildpack for DotnetBuildpack {
 
         print_subsection(vec![
             BuildpackOutputTextSection::regular("Running "),
-            BuildpackOutputTextSection::Command(publish_command.name()),
+            BuildpackOutputTextSection::Command(command_to_string(&publish_command)),
         ]);
         track_timing(|| {
             run_command(
@@ -197,6 +196,15 @@ impl Buildpack for DotnetBuildpack {
     fn on_error(&self, error: libcnb::Error<Self::Error>) {
         errors::on_error(error);
     }
+}
+
+fn command_to_string(cmd: &Command) -> String {
+    let mut result = cmd.get_program().to_string_lossy().to_string();
+    for arg in cmd.get_args() {
+        result.push(' ');
+        result.push_str(&arg.to_string_lossy());
+    }
+    result
 }
 
 fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackError> {
