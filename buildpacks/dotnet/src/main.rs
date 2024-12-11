@@ -23,7 +23,6 @@ use buildpacks_jvm_shared::output::{
     print_buildpack_name, print_section, print_subsection, print_warning, run_command,
     track_timing, BuildpackOutputTextSection,
 };
-use bullet_stream::style;
 use fun_run::CommandWithName;
 use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
@@ -176,11 +175,14 @@ impl Buildpack for DotnetBuildpack {
                     print_subsection("No processes were detected");
                 }
                 for process in processes {
-                    print_subsection(format!(
-                        "Added {}: {}",
-                        style::value(process.r#type.to_string()),
-                        process.command.join(" ")
-                    ));
+                    print_subsection(vec![
+                        BuildpackOutputTextSection::regular("Added "),
+                        BuildpackOutputTextSection::value(process.r#type.to_string()),
+                        BuildpackOutputTextSection::regular(format!(
+                            ": {}",
+                            process.command.join(" ")
+                        )),
+                    ]);
                     launch_builder.process(process);
                 }
             }
