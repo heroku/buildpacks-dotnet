@@ -108,11 +108,11 @@ dependencies = [
 [[package]]
 name = "buildpacks-jvm-shared"
 version = "0.0.0"
-source = "git+https://github.com/heroku/buildpacks-jvm?branch=malax/output#c90195beca5f0654357c73d5944b2009ea8c9aee"
+source = "git+https://github.com/heroku/buildpacks-jvm?branch=malax/output#3ccb47f2943c3348029d9751fc1955586b4fe3f0"
 dependencies = [
  "indoc",
  "java-properties",
- "libherokubuildpack 0.24.0",
+ "libherokubuildpack 0.26.0",
 ]
 
 [[package]]
@@ -637,16 +637,6 @@ dependencies = [
 
 [[package]]
 name = "libherokubuildpack"
-version = "0.24.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bec33ef08ce0508ced826f7bdfcd0538bdfc2270632915e447d1ea72bce5645d"
-dependencies = [
- "crossbeam-utils",
- "termcolor",
-]
-
-[[package]]
-name = "libherokubuildpack"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a806c455b7c8dd231b62aa43f51b35ed74b3814a14e81e3a14a5bfd7260e1e1"
@@ -660,6 +650,16 @@ dependencies = [
  "thiserror",
  "toml",
  "ureq",
+]
+
+[[package]]
+name = "libherokubuildpack"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45070d23cda8614758579eddae211a6267e86bcef8ab75a1cd239eac45a6778d"
+dependencies = [
+ "crossbeam-utils",
+ "termcolor",
 ]
 
 [[package]]
@@ -1273,7 +1273,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
