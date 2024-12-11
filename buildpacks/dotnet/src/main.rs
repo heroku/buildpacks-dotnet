@@ -136,10 +136,11 @@ impl Buildpack for DotnetBuildpack {
             .clone()
             .unwrap_or_else(|| String::from("Release"));
 
-        print_subsection(format!(
-            "Using {} build configuration",
-            style::value(build_configuration.clone())
-        ));
+        print_subsection(vec![
+            BuildpackOutputTextSection::regular("Using "),
+            BuildpackOutputTextSection::value(build_configuration.clone()),
+            BuildpackOutputTextSection::regular(" build configuration"),
+        ]);
 
         let mut publish_command = Command::from(DotnetPublishCommand {
             path: solution.path.clone(),
