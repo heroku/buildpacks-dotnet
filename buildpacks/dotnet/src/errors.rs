@@ -4,7 +4,6 @@ use crate::dotnet_buildpack_configuration::DotnetBuildpackConfigurationError;
 use crate::layers::sdk::SdkLayerError;
 use crate::DotnetBuildpackError;
 use buildpacks_jvm_shared::output;
-use bullet_stream::style;
 use indoc::formatdoc;
 use std::io::{self};
 
@@ -307,7 +306,7 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
 
 fn log_error(header: impl AsRef<str>, body: impl AsRef<str>, error: Option<String>) {
     if let Some(error) = error {
-        output::print_section(style::important("Debug info"));
+        output::print_section("Debug info");
         output::print_subsection(error);
     }
     output::print_error(header, body.as_ref());

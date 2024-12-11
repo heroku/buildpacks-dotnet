@@ -10,7 +10,6 @@ autotests = false
 workspace = true
 
 [dependencies]
-bullet_stream = "0.3.0"
 fun_run = "0.2.0"
 hex = "0.4"
 indoc = "2"
