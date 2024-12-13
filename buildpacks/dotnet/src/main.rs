@@ -77,11 +77,17 @@ impl Buildpack for DotnetBuildpack {
             "Arch should always be parseable, buildpack will not run on unsupported architectures.",
         );
 
-        let sdk_command = DotnetSdkCommand::Publish {
-            path: solution.path.clone(),
-            configuration: buildpack_configuration.build_configuration.clone(),
-            runtime_identifier: runtime_identifier::get_runtime_identifier(target_os, target_arch),
-            verbosity_level: buildpack_configuration.msbuild_verbosity_level,
+        let sdk_command = match buildpack_configuration.sdk_command {
+            Some(_) => todo!(),
+            None => DotnetSdkCommand::Publish {
+                path: solution.path.clone(),
+                configuration: buildpack_configuration.build_configuration.clone(),
+                runtime_identifier: runtime_identifier::get_runtime_identifier(
+                    target_os,
+                    target_arch,
+                ),
+                verbosity_level: buildpack_configuration.msbuild_verbosity_level,
+            },
         };
         let sdk_command_name = sdk_command.name().to_string();
 

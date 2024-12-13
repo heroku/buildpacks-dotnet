@@ -3,6 +3,7 @@ use std::fmt;
 pub(crate) struct DotnetBuildpackConfiguration {
     pub(crate) build_configuration: Option<String>,
     pub(crate) msbuild_verbosity_level: Option<VerbosityLevel>,
+    pub(crate) sdk_command: Option<String>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -19,6 +20,9 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
                 .get("BUILD_CONFIGURATION")
                 .map(|value| value.to_string_lossy().to_string()),
             msbuild_verbosity_level: detect_msbuild_verbosity_level(env).transpose()?,
+            sdk_command: env
+                .get("DOTNET_SDK_COMMAND")
+                .map(|value| value.to_string_lossy().to_string()),
         })
     }
 }
