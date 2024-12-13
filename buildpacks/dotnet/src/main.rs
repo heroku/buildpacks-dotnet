@@ -70,6 +70,12 @@ impl Buildpack for DotnetBuildpack {
 
         let solution = get_solution_to_publish(&context.app_dir)?;
 
+        let target_os = context.target.os.parse::<Os>()
+        .expect("OS should always be parseable, buildpack will not run on unsupported operating systems.");
+        let target_arch = context.target.arch.parse::<Arch>().expect(
+            "Arch should always be parseable, buildpack will not run on unsupported architectures.",
+        );
+
         log_bullet = log_bullet.sub_bullet(format!(
             "Detected .NET file to publish: {}",
             style::value(solution.path.to_string_lossy())
@@ -93,12 +99,6 @@ impl Buildpack for DotnetBuildpack {
             "Detected version requirement: {}",
             style::value(sdk_version_requirement.to_string())
         ));
-
-        let target_os = context.target.os.parse::<Os>()
-            .expect("OS should always be parseable, buildpack will not run on unsupported operating systems.");
-        let target_arch = context.target.arch.parse::<Arch>().expect(
-            "Arch should always be parseable, buildpack will not run on unsupported architectures.",
-        );
 
         let sdk_inventory = include_str!("../inventory.toml")
             .parse::<Inventory<Version, Sha512, Option<()>>>()
