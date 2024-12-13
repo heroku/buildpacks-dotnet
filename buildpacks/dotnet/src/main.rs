@@ -76,7 +76,7 @@ impl Buildpack for DotnetBuildpack {
             "Arch should always be parseable, buildpack will not run on unsupported architectures.",
         );
 
-        let publish_command = DotnetSdkCommand::Publish {
+        let sdk_command = DotnetSdkCommand::Publish {
             path: solution.path.clone(),
             configuration: buildpack_configuration.build_configuration.clone(),
             runtime_identifier: runtime_identifier::get_runtime_identifier(target_os, target_arch),
@@ -85,7 +85,7 @@ impl Buildpack for DotnetBuildpack {
 
         log_bullet = log_bullet.sub_bullet(format!(
             "Detected .NET file to {}: {}",
-            publish_command.name().to_lowercase(),
+            sdk_command.name().to_lowercase(),
             style::value(solution.path.to_string_lossy())
         ));
 
@@ -139,13 +139,13 @@ impl Buildpack for DotnetBuildpack {
             .build_configuration
             .unwrap_or_else(|| String::from("Release"));
 
-        log_bullet = log.bullet(format!("{} solution", publish_command.name()));
+        log_bullet = log.bullet(format!("{} solution", sdk_command.name()));
         log_bullet = log_bullet.sub_bullet(format!(
             "Using {} build configuration",
             style::value(build_configuration.clone())
         ));
 
-        let mut command = Command::from(publish_command);
+        let mut command = Command::from(sdk_command);
         command
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current()));
