@@ -5,7 +5,7 @@ use crate::layers::sdk::SdkLayerError;
 use crate::DotnetBuildpackError;
 use bullet_stream::{style, Print};
 use indoc::formatdoc;
-use std::io::{self, stdout};
+use std::io::{self, stderr};
 
 pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
     match error {
@@ -308,7 +308,7 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
 }
 
 fn log_error(header: impl AsRef<str>, body: impl AsRef<str>, error: Option<String>) {
-    let mut log = Print::new(stdout()).without_header();
+    let mut log = Print::new(stderr()).without_header();
     if let Some(error) = error {
         let bullet = log.bullet(style::important("Debug info"));
         log = bullet.sub_bullet(error).done();
