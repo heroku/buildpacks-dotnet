@@ -78,7 +78,18 @@ impl Buildpack for DotnetBuildpack {
         );
 
         let sdk_command = match buildpack_configuration.sdk_command {
-            Some(_) => todo!(),
+            Some(command) => match command.as_str() {
+                "test" => DotnetSdkCommand::Test {
+                    path: solution.path.clone(),
+                    configuration: buildpack_configuration.build_configuration.clone(),
+                    runtime_identifier: runtime_identifier::get_runtime_identifier(
+                        target_os,
+                        target_arch,
+                    ),
+                    verbosity_level: buildpack_configuration.msbuild_verbosity_level,
+                },
+                _ => unimplemented!(),
+            },
             None => DotnetSdkCommand::Publish {
                 path: solution.path.clone(),
                 configuration: buildpack_configuration.build_configuration.clone(),
@@ -151,7 +162,7 @@ impl Buildpack for DotnetBuildpack {
                 style::value(build_configuration.clone())
             ));
         }
-
+        let is_publish_command = matches!(sdk_command, DotnetSdkCommand::Publish { .. });
         let mut command = Command::from(sdk_command);
         command
             .current_dir(&context.app_dir)
@@ -165,30 +176,32 @@ impl Buildpack for DotnetBuildpack {
             .map_err(|error| DotnetBuildpackError::SdkCommand(sdk_command_name, error))?;
         log = log_bullet.done();
 
-        layers::runtime::handle(&context, &sdk_layer.path())?;
-
-        log_bullet = log
-            .bullet("Setting launch table")
-            .sub_bullet("Detecting process types from published artifacts");
         let mut launch_builder = LaunchBuilder::new();
-        log = match launch_process::detect_solution_processes(&solution) {
-            Ok(processes) => {
-                if processes.is_empty() {
-                    log_bullet = log_bullet.sub_bullet("No processes were detected");
+        if is_publish_command {
+            layers::runtime::handle(&context, &sdk_layer.path())?;
+
+            log_bullet = log
+                .bullet("Setting launch table")
+                .sub_bullet("Detecting process types from published artifacts");
+            log = match launch_process::detect_solution_processes(&solution) {
+                Ok(processes) => {
+                    if processes.is_empty() {
+                        log_bullet = log_bullet.sub_bullet("No processes were detected");
+                    }
+                    for process in processes {
+                        log_bullet = log_bullet.sub_bullet(format!(
+                            "Added {}: {}",
+                            style::value(process.r#type.to_string()),
+                            process.command.join(" ")
+                        ));
+                        launch_builder.process(process);
+                    }
+                    log_bullet.done()
                 }
-                for process in processes {
-                    log_bullet = log_bullet.sub_bullet(format!(
-                        "Added {}: {}",
-                        style::value(process.r#type.to_string()),
-                        process.command.join(" ")
-                    ));
-                    launch_builder.process(process);
-                }
-                log_bullet.done()
-            }
-            Err(error) => log_launch_process_detection_warning(error, log_bullet),
-        };
-        log.done();
+                Err(error) => log_launch_process_detection_warning(error, log_bullet),
+            };
+            log.done();
+        }
 
         BuildResultBuilder::new()
             .launch(launch_builder.build())
