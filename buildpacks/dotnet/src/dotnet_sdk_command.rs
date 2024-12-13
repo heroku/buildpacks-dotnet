@@ -21,8 +21,8 @@ impl DotnetSdkCommand {
     }
 }
 
-impl From<&DotnetSdkCommand> for Command {
-    fn from(value: &DotnetSdkCommand) -> Self {
+impl From<DotnetSdkCommand> for Command {
+    fn from(value: DotnetSdkCommand) -> Self {
         let mut command = Command::new("dotnet");
         match &value {
             DotnetSdkCommand::Publish {

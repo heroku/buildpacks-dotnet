@@ -231,18 +231,16 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 );
             }
         },
-        DotnetBuildpackError::SdkCommand(sdk_command, error) => {
-            let command_name = sdk_command.name().to_lowercase();
-            match error {
-                fun_run::CmdError::SystemError(_message, io_error) => log_io_error(
-                    &format!("Unable to {command_name}"),
-                    &format!("running the command to {command_name} the .NET solution/project"),
-                    io_error,
-                ),
-                fun_run::CmdError::NonZeroExitNotStreamed(output)
-                | fun_run::CmdError::NonZeroExitAlreadyStreamed(output) => log_error(
-                    format!("Unable to {command_name}"),
-                    formatdoc! {"
+        DotnetBuildpackError::SdkCommand(command_name, error) => match error {
+            fun_run::CmdError::SystemError(_message, io_error) => log_io_error(
+                &format!("Unable to {command_name}"),
+                &format!("running the command to {command_name} the .NET solution/project"),
+                io_error,
+            ),
+            fun_run::CmdError::NonZeroExitNotStreamed(output)
+            | fun_run::CmdError::NonZeroExitAlreadyStreamed(output) => log_error(
+                format!("Unable to {command_name}"),
+                formatdoc! {"
                     The `dotnet {command_name}` command exited unsuccessfully ({exit_status}).
 
                     This error usually happens due to compilation errors. Use the command output
@@ -254,10 +252,9 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
 
                     Try again to see if the error resolves itself.
                 ", exit_status = output.status()},
-                    None,
-                ),
-            }
-        }
+                None,
+            ),
+        },
         DotnetBuildpackError::CopyRuntimeFiles(io_error) => log_io_error(
             "Error copying .NET runtime files",
             "copying .NET runtime files from the SDK layer to the runtime layer",

@@ -82,10 +82,11 @@ impl Buildpack for DotnetBuildpack {
             runtime_identifier: runtime_identifier::get_runtime_identifier(target_os, target_arch),
             verbosity_level: buildpack_configuration.msbuild_verbosity_level,
         };
+        let sdk_command_name = sdk_command.name().to_string();
 
         log_bullet = log_bullet.sub_bullet(format!(
             "Detected .NET file to {}: {}",
-            sdk_command.name().to_lowercase(),
+            sdk_command_name.to_lowercase(),
             style::value(solution.path.to_string_lossy())
         ));
 
@@ -135,7 +136,7 @@ impl Buildpack for DotnetBuildpack {
             nuget_cache_layer.path(),
         );
 
-        log_bullet = log.bullet(format!("{} solution", sdk_command.name()));
+        log_bullet = log.bullet(format!("{sdk_command_name} solution"));
 
         if let Some(build_configuration) = buildpack_configuration.build_configuration {
             log_bullet = log_bullet.sub_bullet(format!(
@@ -144,7 +145,7 @@ impl Buildpack for DotnetBuildpack {
             ));
         }
 
-        let mut command = Command::from(&sdk_command);
+        let mut command = Command::from(sdk_command);
         command
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current()));
@@ -154,7 +155,7 @@ impl Buildpack for DotnetBuildpack {
                 format!("Running {}", style::command(command.name())),
                 |stdout, stderr| command.stream_output(stdout, stderr),
             )
-            .map_err(|error| DotnetBuildpackError::SdkCommand(Box::new(sdk_command), error))?;
+            .map_err(|error| DotnetBuildpackError::SdkCommand(sdk_command_name, error))?;
         log = log_bullet.done();
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
@@ -302,7 +303,7 @@ enum DotnetBuildpackError {
     ResolveSdkVersion(VersionReq),
     SdkLayer(SdkLayerError),
     ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),
-    SdkCommand(Box<DotnetSdkCommand>, fun_run::CmdError),
+    SdkCommand(String, fun_run::CmdError),
     CopyRuntimeFiles(io::Error),
 }
 
