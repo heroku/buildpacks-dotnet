@@ -37,24 +37,8 @@ impl From<DotnetSdkCommand> for Command {
                 runtime_identifier,
                 configuration,
                 verbosity_level,
-            } => {
-                command.args([
-                    value.name(),
-                    &path.to_string_lossy(),
-                    "--runtime",
-                    &runtime_identifier.to_string(),
-                    "-p:PublishDir=bin/publish",
-                ]);
-
-                if let Some(configuration) = configuration {
-                    command.args(["--configuration", configuration]);
-                }
-                if let Some(verbosity_level) = verbosity_level {
-                    command.args(["--verbosity", &verbosity_level.to_string()]);
-                };
-                command
             }
-            DotnetSdkCommand::Test {
+            | DotnetSdkCommand::Test {
                 path,
                 runtime_identifier,
                 configuration,
@@ -73,8 +57,11 @@ impl From<DotnetSdkCommand> for Command {
                 if let Some(verbosity_level) = verbosity_level {
                     command.args(["--verbosity", &verbosity_level.to_string()]);
                 };
-                command
             }
         }
+        if matches!(value, DotnetSdkCommand::Publish { .. }) {
+            command.arg("-p:PublishDir=bin/publish");
+        }
+        command
     }
 }
