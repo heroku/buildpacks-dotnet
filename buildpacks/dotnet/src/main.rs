@@ -155,7 +155,9 @@ impl Buildpack for DotnetBuildpack {
                 format!("Running {}", style::command(command.name())),
                 |stdout, stderr| command.stream_output(stdout, stderr),
             )
-            .map_err(|error| DotnetBuildpackError::SdkCommand(sdk_command_name, error))?;
+            .map_err(|error| {
+                DotnetBuildpackError::SdkCommand(sdk_command_name.to_lowercase(), error)
+            })?;
         log = log_bullet.done();
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
