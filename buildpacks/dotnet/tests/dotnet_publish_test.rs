@@ -1,6 +1,6 @@
 use crate::tests::default_build_config;
-use indoc::formatdoc;
-use libcnb_test::{assert_contains, assert_empty, TestRunner};
+use indoc::{formatdoc, indoc};
+use libcnb_test::{assert_contains, assert_empty, PackResult, TestRunner};
 use regex::Regex;
 
 #[test]
@@ -26,6 +26,33 @@ fn test_dotnet_publish_multi_tfm_solution() {
                 &format! {"web -> /workspace/web/bin/Release/net8.0/{rid}/web.dll" }
             );
             assert_contains!(context.pack_stdout, "web -> /workspace/web/bin/publish/");
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
+fn test_dotnet_publish_with_compilation_error() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/console_with_compilation_error")
+            .expected_pack_result(PackResult::Failure),
+        |context| {
+            assert_contains!(
+                &context.pack_stderr,
+                &indoc! {r"
+                  ! Unable to publish
+                  !
+                  ! The `dotnet publish` command exited unsuccessfully (exit status: 1).
+                  !
+                  ! This error usually happens due to compilation errors. Use the command output
+                  ! above to troubleshoot and retry your build.
+                  !
+                  ! The publish process can also fail for a number of other reasons, such as
+                  ! intermittent network issues, unavailability of the NuGet package feed and/or
+                  ! other external dependencies, etc.
+                  !
+                  ! Try again to see if the error resolves itself."}
+            );
         },
     );
 }
