@@ -67,6 +67,7 @@ fn test_dotnet_publish_with_debug_configuration() {
             assert_empty!(context.pack_stderr);
 
             let rid = get_rid();
+            assert_contains!(&context.pack_stdout, "Using `Debug` build configuration");
             assert_contains!(
                 replace_msbuild_log_patterns_with_placeholder(
                     &context.pack_stdout,
@@ -97,7 +98,6 @@ fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
               replace_msbuild_log_patterns_with_placeholder(&context.pack_stdout, "<PLACEHOLDER>"), 
               &formatdoc! {r#"
                 - Publish solution
-                  - Using `Release` build configuration
                   - Running `dotnet publish /workspace/foo.csproj --runtime {rid} "-p:PublishDir=bin/publish" --verbosity normal`
                 
                       MSBuild version 17.8.3+195e7f5a3 for .NET

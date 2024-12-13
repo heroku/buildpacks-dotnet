@@ -135,15 +135,14 @@ impl Buildpack for DotnetBuildpack {
             nuget_cache_layer.path(),
         );
 
-        let build_configuration = buildpack_configuration
-            .build_configuration
-            .unwrap_or_else(|| String::from("Release"));
-
         log_bullet = log.bullet(format!("{} solution", sdk_command.name()));
-        log_bullet = log_bullet.sub_bullet(format!(
-            "Using {} build configuration",
-            style::value(build_configuration.clone())
-        ));
+
+        if let Some(build_configuration) = buildpack_configuration.build_configuration {
+            log_bullet = log_bullet.sub_bullet(format!(
+                "Using {} build configuration",
+                style::value(build_configuration.clone())
+            ));
+        }
 
         let mut command = Command::from(sdk_command);
         command
