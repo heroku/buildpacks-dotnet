@@ -144,15 +144,15 @@ impl Buildpack for DotnetBuildpack {
             style::value(build_configuration.clone())
         ));
 
-        let mut sdk_command = Command::from(publish_command);
-        sdk_command
+        let mut command = Command::from(publish_command);
+        command
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current()));
 
         log_bullet
             .stream_with(
-                format!("Running {}", style::command(sdk_command.name())),
-                |stdout, stderr| sdk_command.stream_output(stdout, stderr),
+                format!("Running {}", style::command(command.name())),
+                |stdout, stderr| command.stream_output(stdout, stderr),
             )
             .map_err(DotnetBuildpackError::PublishCommand)?;
         log = log_bullet.done();
