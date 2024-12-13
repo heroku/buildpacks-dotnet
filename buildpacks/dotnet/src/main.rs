@@ -120,7 +120,6 @@ impl Buildpack for DotnetBuildpack {
         let (sdk_layer, log) = layers::sdk::handle(&context, log, sdk_artifact)?;
         let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
 
-        log_bullet = log.bullet("Publish solution");
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
             libcnb::layer_env::ModificationBehavior::Override,
@@ -132,6 +131,8 @@ impl Buildpack for DotnetBuildpack {
             .build_configuration
             .clone()
             .unwrap_or_else(|| String::from("Release"));
+
+        log_bullet = log.bullet("Publish solution");
         log_bullet = log_bullet.sub_bullet(format!(
             "Using {} build configuration",
             style::value(build_configuration.clone())
