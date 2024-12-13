@@ -16,7 +16,7 @@ pub(crate) enum DotnetSdkCommand {
 impl DotnetSdkCommand {
     pub(crate) fn name(&self) -> &str {
         match self {
-            DotnetSdkCommand::Publish { .. } => "Publish",
+            DotnetSdkCommand::Publish { .. } => "publish",
         }
     }
 }
@@ -32,7 +32,7 @@ impl From<DotnetSdkCommand> for Command {
                 verbosity_level,
             } => {
                 command.args([
-                    value.name().to_lowercase().as_str(),
+                    value.name(),
                     &path.to_string_lossy(),
                     "--runtime",
                     &runtime_identifier.to_string(),

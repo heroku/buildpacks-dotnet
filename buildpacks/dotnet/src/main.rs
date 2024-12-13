@@ -21,6 +21,7 @@ use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use bullet_stream::state::{Bullet, SubBullet};
 use bullet_stream::{style, Print};
+use capitalize::Capitalize;
 use fun_run::CommandWithName;
 use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
@@ -86,7 +87,7 @@ impl Buildpack for DotnetBuildpack {
 
         log_bullet = log_bullet.sub_bullet(format!(
             "Detected .NET file to {}: {}",
-            sdk_command_name.to_lowercase(),
+            sdk_command_name,
             style::value(solution.path.to_string_lossy())
         ));
 
@@ -136,7 +137,7 @@ impl Buildpack for DotnetBuildpack {
             nuget_cache_layer.path(),
         );
 
-        log_bullet = log.bullet(format!("{sdk_command_name} solution"));
+        log_bullet = log.bullet(format!("{} solution", sdk_command_name.capitalize()));
 
         if let Some(build_configuration) = buildpack_configuration.build_configuration {
             log_bullet = log_bullet.sub_bullet(format!(
@@ -155,9 +156,7 @@ impl Buildpack for DotnetBuildpack {
                 format!("Running {}", style::command(command.name())),
                 |stdout, stderr| command.stream_output(stdout, stderr),
             )
-            .map_err(|error| {
-                DotnetBuildpackError::SdkCommand(sdk_command_name.to_lowercase(), error)
-            })?;
+            .map_err(|error| DotnetBuildpackError::SdkCommand(sdk_command_name, error))?;
         log = log_bullet.done();
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
