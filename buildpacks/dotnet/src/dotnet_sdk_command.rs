@@ -3,6 +3,7 @@ use crate::dotnet_buildpack_configuration::VerbosityLevel;
 use std::path::PathBuf;
 use std::process::Command;
 
+#[derive(Debug)]
 pub(crate) enum DotnetSdkCommand {
     Publish {
         path: PathBuf,
@@ -20,8 +21,8 @@ impl DotnetSdkCommand {
     }
 }
 
-impl From<DotnetSdkCommand> for Command {
-    fn from(value: DotnetSdkCommand) -> Self {
+impl From<&DotnetSdkCommand> for Command {
+    fn from(value: &DotnetSdkCommand) -> Self {
         let mut command = Command::new("dotnet");
         match &value {
             DotnetSdkCommand::Publish {

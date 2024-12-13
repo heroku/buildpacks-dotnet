@@ -144,7 +144,7 @@ impl Buildpack for DotnetBuildpack {
             ));
         }
 
-        let mut command = Command::from(sdk_command);
+        let mut command = Command::from(&sdk_command);
         command
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current()));
@@ -154,7 +154,7 @@ impl Buildpack for DotnetBuildpack {
                 format!("Running {}", style::command(command.name())),
                 |stdout, stderr| command.stream_output(stdout, stderr),
             )
-            .map_err(DotnetBuildpackError::PublishCommand)?;
+            .map_err(|error| DotnetBuildpackError::SdkCommand(Box::new(sdk_command), error))?;
         log = log_bullet.done();
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
@@ -302,7 +302,7 @@ enum DotnetBuildpackError {
     ResolveSdkVersion(VersionReq),
     SdkLayer(SdkLayerError),
     ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),
-    PublishCommand(fun_run::CmdError),
+    SdkCommand(Box<DotnetSdkCommand>, fun_run::CmdError),
     CopyRuntimeFiles(io::Error),
 }
 
