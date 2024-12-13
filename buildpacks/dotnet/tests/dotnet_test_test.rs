@@ -40,3 +40,22 @@ fn test_dotnet_test_success() {
         },
     );
 }
+
+#[test]
+#[ignore = "integration test"]
+fn test_dotnet_test_failure() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/xunit_project_fail")
+            .env("DOTNET_SDK_COMMAND", "test")
+            .expected_pack_result(libcnb_test::PackResult::Failure),
+        |context| {
+            assert_contains!(
+                context.pack_stdout,
+                "- Detected .NET file to test: `/workspace/foo.csproj`"
+            );
+            assert_contains!(
+                context.pack_stdout,
+                "Failed!  - Failed:     1, Passed:     0, Skipped:     0, Total:     1, Duration: < 1 ms - foo.dll (net8.0)");
+        },
+    );
+}
