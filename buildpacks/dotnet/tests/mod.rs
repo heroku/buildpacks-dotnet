@@ -16,3 +16,16 @@ pub(crate) fn default_build_config(fixture_path: impl AsRef<Path>) -> BuildConfi
     config.target_triple(target_triple);
     config
 }
+
+fn get_rid() -> String {
+    format!("linux-{}", get_dotnet_arch())
+}
+
+fn get_dotnet_arch() -> String {
+    #[cfg(target_arch = "x86_64")]
+    let arch = "x64";
+    #[cfg(target_arch = "aarch64")]
+    let arch = "arm64";
+
+    arch.to_string()
+}
