@@ -76,6 +76,13 @@ impl Buildpack for DotnetBuildpack {
             "Arch should always be parseable, buildpack will not run on unsupported architectures.",
         );
 
+        let publish_command = DotnetPublishCommand {
+            path: solution.path.clone(),
+            configuration: buildpack_configuration.build_configuration.clone(),
+            runtime_identifier: runtime_identifier::get_runtime_identifier(target_os, target_arch),
+            verbosity_level: buildpack_configuration.msbuild_verbosity_level,
+        };
+
         log_bullet = log_bullet.sub_bullet(format!(
             "Detected .NET file to publish: {}",
             style::value(solution.path.to_string_lossy())
@@ -129,7 +136,6 @@ impl Buildpack for DotnetBuildpack {
 
         let build_configuration = buildpack_configuration
             .build_configuration
-            .clone()
             .unwrap_or_else(|| String::from("Release"));
 
         log_bullet = log.bullet("Publish solution");
@@ -138,20 +144,15 @@ impl Buildpack for DotnetBuildpack {
             style::value(build_configuration.clone())
         ));
 
-        let mut publish_command = Command::from(DotnetPublishCommand {
-            path: solution.path.clone(),
-            configuration: buildpack_configuration.build_configuration,
-            runtime_identifier: runtime_identifier::get_runtime_identifier(target_os, target_arch),
-            verbosity_level: buildpack_configuration.msbuild_verbosity_level,
-        });
-        publish_command
+        let mut sdk_command = Command::from(publish_command);
+        sdk_command
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current()));
 
         log_bullet
             .stream_with(
-                format!("Running {}", style::command(publish_command.name())),
-                |stdout, stderr| publish_command.stream_output(stdout, stderr),
+                format!("Running {}", style::command(sdk_command.name())),
+                |stdout, stderr| sdk_command.stream_output(stdout, stderr),
             )
             .map_err(DotnetBuildpackError::PublishCommand)?;
         log = log_bullet.done();
