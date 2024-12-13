@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Error messages are now printed to stderr. [#173](https://github.com/heroku/buildpacks-dotnet/pull/173)
+
 ## [0.1.9] - 2024-12-04
 
 ### Added
