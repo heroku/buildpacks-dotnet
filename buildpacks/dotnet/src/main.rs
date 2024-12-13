@@ -2,7 +2,7 @@ mod detect;
 mod dotnet;
 mod dotnet_buildpack_configuration;
 mod dotnet_layer_env;
-mod dotnet_publish_command;
+mod dotnet_sdk_command;
 mod errors;
 mod launch_process;
 mod layers;
@@ -16,11 +16,12 @@ use crate::dotnet::target_framework_moniker::{ParseTargetFrameworkError, TargetF
 use crate::dotnet_buildpack_configuration::{
     DotnetBuildpackConfiguration, DotnetBuildpackConfigurationError,
 };
-use crate::dotnet_publish_command::DotnetPublishCommand;
+use crate::dotnet_sdk_command::DotnetSdkCommand;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use bullet_stream::state::{Bullet, SubBullet};
 use bullet_stream::{style, Print};
+use capitalize::Capitalize;
 use fun_run::CommandWithName;
 use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
@@ -70,8 +71,40 @@ impl Buildpack for DotnetBuildpack {
 
         let solution = get_solution_to_publish(&context.app_dir)?;
 
+        let target_os = context.target.os.parse::<Os>()
+        .expect("OS should always be parseable, buildpack will not run on unsupported operating systems.");
+        let target_arch = context.target.arch.parse::<Arch>().expect(
+            "Arch should always be parseable, buildpack will not run on unsupported architectures.",
+        );
+
+        let sdk_command = match buildpack_configuration.sdk_command {
+            Some(command) => match command.as_str() {
+                "test" => DotnetSdkCommand::Test {
+                    path: solution.path.clone(),
+                    configuration: buildpack_configuration.build_configuration.clone(),
+                    runtime_identifier: runtime_identifier::get_runtime_identifier(
+                        target_os,
+                        target_arch,
+                    ),
+                    verbosity_level: buildpack_configuration.msbuild_verbosity_level,
+                },
+                _ => unimplemented!(),
+            },
+            None => DotnetSdkCommand::Publish {
+                path: solution.path.clone(),
+                configuration: buildpack_configuration.build_configuration.clone(),
+                runtime_identifier: runtime_identifier::get_runtime_identifier(
+                    target_os,
+                    target_arch,
+                ),
+                verbosity_level: buildpack_configuration.msbuild_verbosity_level,
+            },
+        };
+        let sdk_command_name = sdk_command.name().to_string();
+
         log_bullet = log_bullet.sub_bullet(format!(
-            "Detected .NET file to publish: {}",
+            "Detected .NET file to {}: {}",
+            sdk_command_name,
             style::value(solution.path.to_string_lossy())
         ));
 
@@ -94,12 +127,6 @@ impl Buildpack for DotnetBuildpack {
             style::value(sdk_version_requirement.to_string())
         ));
 
-        let target_os = context.target.os.parse::<Os>()
-            .expect("OS should always be parseable, buildpack will not run on unsupported operating systems.");
-        let target_arch = context.target.arch.parse::<Arch>().expect(
-            "Arch should always be parseable, buildpack will not run on unsupported architectures.",
-        );
-
         let sdk_inventory = include_str!("../inventory.toml")
             .parse::<Inventory<Version, Sha512, Option<()>>>()
             .map_err(DotnetBuildpackError::ParseInventory)?;
@@ -120,7 +147,6 @@ impl Buildpack for DotnetBuildpack {
         let (sdk_layer, log) = layers::sdk::handle(&context, log, sdk_artifact)?;
         let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
 
-        log_bullet = log.bullet("Publish solution");
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
             libcnb::layer_env::ModificationBehavior::Override,
@@ -128,57 +154,54 @@ impl Buildpack for DotnetBuildpack {
             nuget_cache_layer.path(),
         );
 
-        let build_configuration = buildpack_configuration
-            .build_configuration
-            .clone()
-            .unwrap_or_else(|| String::from("Release"));
-        log_bullet = log_bullet.sub_bullet(format!(
-            "Using {} build configuration",
-            style::value(build_configuration.clone())
-        ));
+        log_bullet = log.bullet(format!("{} solution", sdk_command_name.capitalize()));
 
-        let mut publish_command = Command::from(DotnetPublishCommand {
-            path: solution.path.clone(),
-            configuration: buildpack_configuration.build_configuration,
-            runtime_identifier: runtime_identifier::get_runtime_identifier(target_os, target_arch),
-            verbosity_level: buildpack_configuration.msbuild_verbosity_level,
-        });
-        publish_command
+        if let Some(build_configuration) = buildpack_configuration.build_configuration {
+            log_bullet = log_bullet.sub_bullet(format!(
+                "Using {} build configuration",
+                style::value(build_configuration.clone())
+            ));
+        }
+        let is_publish_command = matches!(sdk_command, DotnetSdkCommand::Publish { .. });
+        let mut command = Command::from(sdk_command);
+        command
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current()));
 
         log_bullet
             .stream_with(
-                format!("Running {}", style::command(publish_command.name())),
-                |stdout, stderr| publish_command.stream_output(stdout, stderr),
+                format!("Running {}", style::command(command.name())),
+                |stdout, stderr| command.stream_output(stdout, stderr),
             )
-            .map_err(DotnetBuildpackError::PublishCommand)?;
+            .map_err(|error| DotnetBuildpackError::SdkCommand(sdk_command_name, error))?;
         log = log_bullet.done();
 
-        layers::runtime::handle(&context, &sdk_layer.path())?;
-
-        log_bullet = log
-            .bullet("Setting launch table")
-            .sub_bullet("Detecting process types from published artifacts");
         let mut launch_builder = LaunchBuilder::new();
-        log = match launch_process::detect_solution_processes(&solution) {
-            Ok(processes) => {
-                if processes.is_empty() {
-                    log_bullet = log_bullet.sub_bullet("No processes were detected");
+        if is_publish_command {
+            layers::runtime::handle(&context, &sdk_layer.path())?;
+
+            log_bullet = log
+                .bullet("Setting launch table")
+                .sub_bullet("Detecting process types from published artifacts");
+            log = match launch_process::detect_solution_processes(&solution) {
+                Ok(processes) => {
+                    if processes.is_empty() {
+                        log_bullet = log_bullet.sub_bullet("No processes were detected");
+                    }
+                    for process in processes {
+                        log_bullet = log_bullet.sub_bullet(format!(
+                            "Added {}: {}",
+                            style::value(process.r#type.to_string()),
+                            process.command.join(" ")
+                        ));
+                        launch_builder.process(process);
+                    }
+                    log_bullet.done()
                 }
-                for process in processes {
-                    log_bullet = log_bullet.sub_bullet(format!(
-                        "Added {}: {}",
-                        style::value(process.r#type.to_string()),
-                        process.command.join(" ")
-                    ));
-                    launch_builder.process(process);
-                }
-                log_bullet.done()
-            }
-            Err(error) => log_launch_process_detection_warning(error, log_bullet),
-        };
-        log.done();
+                Err(error) => log_launch_process_detection_warning(error, log_bullet),
+            };
+            log.done();
+        }
 
         BuildResultBuilder::new()
             .launch(launch_builder.build())
@@ -300,7 +323,7 @@ enum DotnetBuildpackError {
     ResolveSdkVersion(VersionReq),
     SdkLayer(SdkLayerError),
     ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),
-    PublishCommand(fun_run::CmdError),
+    SdkCommand(String, fun_run::CmdError),
     CopyRuntimeFiles(io::Error),
 }
 

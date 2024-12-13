@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 bullet_stream = "0.3.0"
+capitalize = "0.3.4"
 fun_run = "0.2.0"
 hex = "0.4"
 indoc = "2"
