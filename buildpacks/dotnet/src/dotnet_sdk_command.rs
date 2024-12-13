@@ -3,15 +3,15 @@ use crate::dotnet_buildpack_configuration::VerbosityLevel;
 use std::path::PathBuf;
 use std::process::Command;
 
-pub(crate) struct DotnetPublishCommand {
+pub(crate) struct DotnetSdkCommand {
     pub(crate) path: PathBuf,
     pub(crate) runtime_identifier: RuntimeIdentifier,
     pub(crate) configuration: Option<String>,
     pub(crate) verbosity_level: Option<VerbosityLevel>,
 }
 
-impl From<DotnetPublishCommand> for Command {
-    fn from(value: DotnetPublishCommand) -> Self {
+impl From<DotnetSdkCommand> for Command {
+    fn from(value: DotnetSdkCommand) -> Self {
         let mut command = Command::new("dotnet");
         command.args([
             "publish",

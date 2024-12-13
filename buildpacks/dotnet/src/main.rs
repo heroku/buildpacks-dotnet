@@ -2,7 +2,7 @@ mod detect;
 mod dotnet;
 mod dotnet_buildpack_configuration;
 mod dotnet_layer_env;
-mod dotnet_publish_command;
+mod dotnet_sdk_command;
 mod errors;
 mod launch_process;
 mod layers;
@@ -16,7 +16,7 @@ use crate::dotnet::target_framework_moniker::{ParseTargetFrameworkError, TargetF
 use crate::dotnet_buildpack_configuration::{
     DotnetBuildpackConfiguration, DotnetBuildpackConfigurationError,
 };
-use crate::dotnet_publish_command::DotnetPublishCommand;
+use crate::dotnet_sdk_command::DotnetSdkCommand;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use bullet_stream::state::{Bullet, SubBullet};
@@ -76,7 +76,7 @@ impl Buildpack for DotnetBuildpack {
             "Arch should always be parseable, buildpack will not run on unsupported architectures.",
         );
 
-        let publish_command = DotnetPublishCommand {
+        let publish_command = DotnetSdkCommand {
             path: solution.path.clone(),
             configuration: buildpack_configuration.build_configuration.clone(),
             runtime_identifier: runtime_identifier::get_runtime_identifier(target_os, target_arch),
