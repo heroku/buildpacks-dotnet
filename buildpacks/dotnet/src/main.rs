@@ -84,7 +84,8 @@ impl Buildpack for DotnetBuildpack {
         };
 
         log_bullet = log_bullet.sub_bullet(format!(
-            "Detected .NET file to publish: {}",
+            "Detected .NET file to {}: {}",
+            publish_command.name().to_lowercase(),
             style::value(solution.path.to_string_lossy())
         ));
 
@@ -138,7 +139,7 @@ impl Buildpack for DotnetBuildpack {
             .build_configuration
             .unwrap_or_else(|| String::from("Release"));
 
-        log_bullet = log.bullet("Publish solution");
+        log_bullet = log.bullet(format!("{} solution", publish_command.name()));
         log_bullet = log_bullet.sub_bullet(format!(
             "Using {} build configuration",
             style::value(build_configuration.clone())

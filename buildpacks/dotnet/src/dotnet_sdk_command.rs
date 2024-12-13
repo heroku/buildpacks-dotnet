@@ -12,10 +12,18 @@ pub(crate) enum DotnetSdkCommand {
     },
 }
 
+impl DotnetSdkCommand {
+    pub(crate) fn name(&self) -> &str {
+        match self {
+            DotnetSdkCommand::Publish { .. } => "Publish",
+        }
+    }
+}
+
 impl From<DotnetSdkCommand> for Command {
     fn from(value: DotnetSdkCommand) -> Self {
         let mut command = Command::new("dotnet");
-        match value {
+        match &value {
             DotnetSdkCommand::Publish {
                 path,
                 runtime_identifier,
@@ -23,7 +31,7 @@ impl From<DotnetSdkCommand> for Command {
                 verbosity_level,
             } => {
                 command.args([
-                    "publish",
+                    value.name().to_lowercase().as_str(),
                     &path.to_string_lossy(),
                     "--runtime",
                     &runtime_identifier.to_string(),
@@ -31,7 +39,7 @@ impl From<DotnetSdkCommand> for Command {
                 ]);
 
                 if let Some(configuration) = configuration {
-                    command.args(["--configuration", &configuration]);
+                    command.args(["--configuration", configuration]);
                 }
                 if let Some(verbosity_level) = verbosity_level {
                     command.args(["--verbosity", &verbosity_level.to_string()]);
