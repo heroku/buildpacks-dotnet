@@ -74,10 +74,10 @@ fn test_dotnet_publish_with_debug_configuration() {
                 ),
                 &formatdoc! {r"
                   MSBuild version 17.8.3+195e7f5a3 for .NET
-                        Determining projects to restore...
-                        Restored /workspace/foo.csproj <PLACEHOLDER>.
-                        foo -> /workspace/bin/Debug/net8.0/{rid}/foo.dll
-                        foo -> /workspace/bin/publish/"}
+                          Determining projects to restore...
+                          Restored /workspace/foo.csproj <PLACEHOLDER>.
+                          foo -> /workspace/bin/Debug/net8.0/{rid}/foo.dll
+                          foo -> /workspace/bin/publish/"}
             );
         },
     );
@@ -92,22 +92,22 @@ fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
         |context| {
             assert_empty!(context.pack_stderr);
             let rid = get_rid();
-
             assert_contains!(
               replace_msbuild_log_patterns_with_placeholder(&context.pack_stdout, "<PLACEHOLDER>"), 
               &formatdoc! {r#"
                 - Publish solution
                   - Using `Release` build configuration
-                  - Running dotnet publish /workspace/foo.csproj --runtime {rid} -p:PublishDir=bin/publish --verbosity normal
-                    MSBuild version 17.8.3+195e7f5a3 for .NET
-                    Build started <PLACEHOLDER>.
-                         1>Project "/workspace/foo.csproj" on node 1 (Restore target(s)).
-                         1>_GetAllRestoreProjectPathItems:
-                             Determining projects to restore...
-                           Restore:
-                             X.509 certificate chain validation will use the fallback certificate bundle at '/layers/heroku_dotnet/sdk/sdk/8.0.101/trustedroots/codesignctl.pem'.
-                             X.509 certificate chain validation will use the fallback certificate bundle at '/layers/heroku_dotnet/sdk/sdk/8.0.101/trustedroots/timestampctl.pem'.
-                             Restoring packages for /workspace/foo.csproj..."#}
+                  - Running `dotnet publish /workspace/foo.csproj --runtime {rid} -p:PublishDir=bin/publish --verbosity normal`
+
+                      MSBuild version 17.8.3+195e7f5a3 for .NET
+                      Build started <PLACEHOLDER>.
+                           1>Project "/workspace/foo.csproj" on node 1 (Restore target(s)).
+                           1>_GetAllRestoreProjectPathItems:
+                               Determining projects to restore...
+                             Restore:
+                               X.509 certificate chain validation will use the fallback certificate bundle at '/layers/heroku_dotnet/sdk/sdk/8.0.101/trustedroots/codesignctl.pem'.
+                               X.509 certificate chain validation will use the fallback certificate bundle at '/layers/heroku_dotnet/sdk/sdk/8.0.101/trustedroots/timestampctl.pem'.
+                               Restoring packages for /workspace/foo.csproj..."#}
             );
 
             assert_contains!(

@@ -78,7 +78,7 @@ fn test_sdk_installation_with_global_json() {
                       - Detected version requirement: `=8.0.101`
                       - Resolved .NET SDK version `8.0.101` (linux-amd64)
                     - SDK installation
-                      - Downloading SDK from https://download.visualstudio.microsoft.com/download/pr/9454f7dc-b98e-4a64-a96d-4eb08c7b6e66/da76f9c6bc4276332b587b771243ae34/dotnet-sdk-8.0.101-linux-x64.tar.gz"
+                      - Downloading SDK from `https://download.visualstudio.microsoft.com/download/pr/9454f7dc-b98e-4a64-a96d-4eb08c7b6e66/da76f9c6bc4276332b587b771243ae34/dotnet-sdk-8.0.101-linux-x64.tar.gz`"
                 }
             );
             assert_contains!(
@@ -106,14 +106,14 @@ fn test_sdk_installation_with_global_json() {
             assert_empty!(context.pack_stderr);
             assert_contains!(
                 context.pack_stdout,
-                &indoc! {r"
+                &indoc! {"
                     - SDK version detection
                       - Detected .NET file to publish: `/workspace/foo.csproj`
                       - Detecting version requirement from root global.json file
                       - Detected version requirement: `=8.0.101`
                       - Resolved .NET SDK version `8.0.101` (linux-arm64)
                     - SDK installation
-                      - Downloading SDK from https://download.visualstudio.microsoft.com/download/pr/092bec24-9cad-421d-9b43-458b3a7549aa/84280dbd1eef750f9ed1625339235c22/dotnet-sdk-8.0.101-linux-arm64.tar.gz"
+                      - Downloading SDK from `https://download.visualstudio.microsoft.com/download/pr/092bec24-9cad-421d-9b43-458b3a7549aa/84280dbd1eef750f9ed1625339235c22/dotnet-sdk-8.0.101-linux-arm64.tar.gz`"
                 }
             );
             assert_contains!(
