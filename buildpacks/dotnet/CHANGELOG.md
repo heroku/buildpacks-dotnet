@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Error messages are now printed to stderr. [#173](https://github.com/heroku/buildpacks-dotnet/pull/173)
 
+### Added
+
+- Support for .NET SDK versions: 8.0.112 (linux-amd64), 8.0.112 (linux-arm64), 8.0.308 (linux-amd64), 8.0.308 (linux-arm64), 8.0.405 (linux-amd64), 8.0.405 (linux-arm64), 9.0.102 (linux-amd64), 9.0.102 (linux-arm64).
+
 ## [0.1.9] - 2024-12-04
 
 ### Added
