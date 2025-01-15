@@ -72,12 +72,12 @@ fn test_dotnet_publish_with_debug_configuration() {
                     &context.pack_stdout,
                     "<PLACEHOLDER>"
                 ),
-                &formatdoc! {r#"
+                &formatdoc! {r"
                   MSBuild version 17.8.3+195e7f5a3 for .NET
                           Determining projects to restore...
                           Restored /workspace/foo.csproj <PLACEHOLDER>.
                           foo -> /workspace/bin/Debug/net8.0/{rid}/foo.dll
-                          foo -> /workspace/bin/publish/"#}
+                          foo -> /workspace/bin/publish/"}
             );
         },
     );
