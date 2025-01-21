@@ -20,8 +20,7 @@ pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
 
                 Use the debug information above to troubleshoot and retry your build. If you think you found a
                 bug in the buildpack, reproduce the issue locally with a minimal example and file an issue here:
-                https://github.com/heroku/buildpacks-dotnet/issues/new
-            "},
+                https://github.com/heroku/buildpacks-dotnet/issues/new"},
             Some(libcnb_error.to_string()),
         ),
     }
@@ -46,9 +45,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
 
                 To resolve this issue,
                 * Delete the solution file to build a root project file instead.
-                * Or reference the projects to build from the solution file.
-
-                ", solution_path.to_string_lossy()},
+                * Or reference the projects to build from the solution file.", solution_path.to_string_lossy()},
                 None,
             );
         }
@@ -63,8 +60,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
 
                 If you’re porting an application from .NET Framework to .NET, or compiling both
                 side-by-side, see Microsoft’s documentation for project organization guidance:
-                https://learn.microsoft.com/en-us/dotnet/core/porting/project-structure
-                ", project_file_paths.iter()
+                https://learn.microsoft.com/en-us/dotnet/core/porting/project-structure", project_file_paths.iter()
                     .map(|f| f.to_string_lossy().to_string())
                     .collect::<Vec<String>>()
                     .join("`, `"),
@@ -94,8 +90,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                         buildpack currently supports the following TFMs: `net5.0`, `net6.0`, `net7.0`, `net8.0`.
 
                         For more information, see:
-                        https://github.com/heroku/buildpacks-dotnet#net-version
-                    "},
+                        https://github.com/heroku/buildpacks-dotnet#net-version"},
                     None,
                 );
             }
@@ -110,8 +105,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
             formatdoc! {"
                 We can’t parse the root directory `global.json` file because it contains invalid JSON.
 
-                Use the debug information above to troubleshoot and retry your build.
-            "},
+                Use the debug information above to troubleshoot and retry your build."},
             Some(error.to_string()),
         ),
         // TODO: Consider adding more specific errors for the parsed values (e.g. an invalid rollForward value)
@@ -122,8 +116,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
 
                 Use the debug information above to troubleshoot and retry your build. For more
                 information, see:
-                https://github.com/heroku/buildpacks-dotnet#net-version
-            "},
+                https://github.com/heroku/buildpacks-dotnet#net-version"},
             Some(error.to_string()),
         ),
         DotnetBuildpackError::ParseInventory(error) => log_error(
@@ -133,9 +126,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 is almost always a buildpack bug.
 
                 If you see this error, please file an issue here:
-                https://github.com/heroku/buildpacks-dotnet/issues/new
-
-            "},
+                https://github.com/heroku/buildpacks-dotnet/issues/new"},
             Some(error.to_string()),
         ),
         DotnetBuildpackError::ParseSolutionVersionRequirement(error) => log_error(
@@ -146,9 +137,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 Use the debug information above to troubleshoot and retry your build. If you think
                 you found a bug in the buildpack, reproduce the issue locally with a minimal
                 example and file an issue here:
-                https://github.com/heroku/buildpacks-dotnet/issues/new
-
-            "},
+                https://github.com/heroku/buildpacks-dotnet/issues/new"},
             Some(error.to_string()),
         ),
         DotnetBuildpackError::ResolveSdkVersion(version_req) => log_error(
@@ -158,8 +147,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 requirement ({version_req}).
 
                 For a complete inventory of supported .NET SDK versions and platforms, see:
-                https://github.com/heroku/buildpacks-dotnet/blob/main/buildpacks/dotnet/inventory.toml
-            "},
+                https://github.com/heroku/buildpacks-dotnet/blob/main/buildpacks/dotnet/inventory.toml"},
             None,
         ),
         DotnetBuildpackError::SdkLayer(error) => match error {
@@ -169,8 +157,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     An unexpected error occurred while downloading the .NET SDK. This error can occur
                     due to an unstable network connection.
 
-                    Use the debug information above to troubleshoot and retry your build.
-                "},
+                    Use the debug information above to troubleshoot and retry your build."},
                 Some(error.to_string()),
             ),
             SdkLayerError::ReadArchive(io_error) => {
@@ -191,8 +178,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     https://github.com/heroku/buildpacks-dotnet/issues/new
 
                     Expected: {expected}
-                    Actual: {actual}
-                ", expected = hex::encode(expected), actual = hex::encode(actual) },
+                    Actual: {actual}", expected = hex::encode(expected), actual = hex::encode(actual) },
                 None,
             ),
             SdkLayerError::OpenArchive(io_error) => {
@@ -225,8 +211,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                         n
                         normal
                         q
-                        quiet
-                    "},
+                        quiet"},
                     None,
                 );
             }
@@ -248,8 +233,7 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 intermittent network issues, unavailability of the NuGet package feed and/or
                 other external dependencies, etc.
 
-                Try again to see if the error resolves itself.
-            ", exit_status = output.status},
+                Try again to see if the error resolves itself.", exit_status = output.status},
             None,
         ),
         DotnetBuildpackError::CopyRuntimeFiles(io_error) => log_io_error(
@@ -282,8 +266,7 @@ fn on_load_dotnet_project_error(error: &project::LoadError, occurred_while: &str
                     You must set this required property.
 
                     For more information, see:
-                    https://github.com/heroku/buildpacks-dotnet#net-version
-                ", project_path = project_path.to_string_lossy()},
+                    https://github.com/heroku/buildpacks-dotnet#net-version", project_path = project_path.to_string_lossy()},
                 None,
             );
         }
@@ -298,8 +281,7 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
 
             Use the debug information above to troubleshoot and retry your build. If the
             issue persists, file an issue here:
-            https://github.com/heroku/buildpacks-dotnet/issues/new
-        "},
+            https://github.com/heroku/buildpacks-dotnet/issues/new"},
         Some(io_error.to_string()),
     );
 }
