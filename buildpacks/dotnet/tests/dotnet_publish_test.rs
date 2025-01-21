@@ -40,17 +40,17 @@ fn test_dotnet_publish_with_compilation_error() {
             assert_contains!(
                 &context.pack_stderr,
                 &indoc! {r"
-                  ! Unable to publish
-                  !
+                  ! ERROR: Unable to publish
+                  ! 
                   ! The `dotnet publish` command exited unsuccessfully (exit status: 1).
-                  !
+                  ! 
                   ! This error usually happens due to compilation errors. Use the command output
                   ! above to troubleshoot and retry your build.
-                  !
+                  ! 
                   ! The publish process can also fail for a number of other reasons, such as
                   ! intermittent network issues, unavailability of the NuGet package feed and/or
                   ! other external dependencies, etc.
-                  !
+                  ! 
                   ! Try again to see if the error resolves itself."}
             );
         },
@@ -92,14 +92,13 @@ fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
         |context| {
             assert_empty!(context.pack_stderr);
             let rid = get_rid();
-
             assert_contains!(
               replace_msbuild_log_patterns_with_placeholder(&context.pack_stdout, "<PLACEHOLDER>"), 
               &formatdoc! {r#"
                 - Publish solution
                   - Using `Release` build configuration
-                  - Running `dotnet publish /workspace/foo.csproj --runtime {rid} "-p:PublishDir=bin/publish" --verbosity normal`
-                
+                  - Running `dotnet publish /workspace/foo.csproj --runtime {rid} -p:PublishDir=bin/publish --verbosity normal`
+
                       MSBuild version 17.8.3+195e7f5a3 for .NET
                       Build started <PLACEHOLDER>.
                            1>Project "/workspace/foo.csproj" on node 1 (Restore target(s)).
