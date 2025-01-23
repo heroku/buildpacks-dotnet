@@ -94,7 +94,10 @@ fn test_dotnet_publish_process_registration_with_procfile() {
                 &context.pack_stdout,
                 indoc! { r"
                     - Process types
-                      - Skipping process type registration (Procfile detected)"}
+                      - Detecting process types from published artifacts
+                      - Found `foo`: bash -c cd bin/publish; ./foo --urls http://*:$PORT
+                      - Skipping process type registration (Procfile detected)
+                        Manually add detected process types to Procfile as needed"}
             );
         },
     );
@@ -112,7 +115,8 @@ fn test_dotnet_publish_process_registration_without_procfile() {
                 indoc! { r"
                 - Process types
                   - Detecting process types from published artifacts
-                  - Added `foo`: bash -c cd bin/publish; ./foo --urls http://*:$PORT"}
+                  - Found `foo`: bash -c cd bin/publish; ./foo --urls http://*:$PORT
+                  - Registering detected launch processes"}
             );
         },
     );

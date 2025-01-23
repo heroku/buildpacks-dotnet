@@ -158,31 +158,34 @@ impl Buildpack for DotnetBuildpack {
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
         let mut launch_builder = LaunchBuilder::new();
+        let procfile_exists = Path::exists(&context.app_dir.join("Procfile"));
+
         log_bullet = log.bullet("Process types");
-        if Path::exists(&context.app_dir.join("Procfile")) {
-            log = log_bullet
-                .sub_bullet("Skipping process type registration (Procfile detected)")
-                .done();
-        } else {
-            log_bullet = log_bullet.sub_bullet("Detecting process types from published artifacts");
-            log = match launch_process::detect_solution_processes(&solution) {
-                Ok(processes) => {
-                    if processes.is_empty() {
-                        log_bullet = log_bullet.sub_bullet("No processes were detected");
-                    }
-                    for process in processes {
-                        log_bullet = log_bullet.sub_bullet(format!(
-                            "Added {}: {}",
-                            style::value(process.r#type.to_string()),
-                            process.command.join(" ")
-                        ));
+        log_bullet = log_bullet.sub_bullet("Detecting process types from published artifacts");
+        log = match launch_process::detect_solution_processes(&solution) {
+            Ok(processes) => {
+                if processes.is_empty() {
+                    log_bullet = log_bullet.sub_bullet("No processes were detected");
+                }
+                for process in processes {
+                    log_bullet = log_bullet.sub_bullet(format!(
+                        "Found {}: {}",
+                        style::value(process.r#type.to_string()),
+                        process.command.join(" ")
+                    ));
+                    if !procfile_exists {
                         launch_builder.process(process);
                     }
-                    log_bullet.done()
                 }
-                Err(error) => log_launch_process_detection_warning(error, log_bullet),
-            };
-        }
+                log_bullet = if procfile_exists {
+                    log_bullet.sub_bullet("Skipping process type registration (Procfile detected)\nManually add detected process types to Procfile as needed")
+                } else {
+                    log_bullet.sub_bullet("Registering detected launch processes")
+                };
+                log_bullet.done()
+            }
+            Err(error) => log_launch_process_detection_warning(error, log_bullet),
+        };
         log.done();
 
         BuildResultBuilder::new()
