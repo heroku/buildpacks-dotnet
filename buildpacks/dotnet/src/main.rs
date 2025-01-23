@@ -160,8 +160,9 @@ impl Buildpack for DotnetBuildpack {
         let mut launch_builder = LaunchBuilder::new();
         let procfile_exists = Path::exists(&context.app_dir.join("Procfile"));
 
-        log_bullet = log.bullet("Process types");
-        log_bullet = log_bullet.sub_bullet("Detecting process types from published artifacts");
+        log_bullet = log
+            .bullet("Process types")
+            .sub_bullet("Detecting process types from published artifacts");
         log = match launch_process::detect_solution_processes(&solution) {
             Ok(processes) => {
                 if processes.is_empty() {
