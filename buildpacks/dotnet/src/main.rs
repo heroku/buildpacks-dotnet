@@ -178,8 +178,9 @@ impl Buildpack for DotnetBuildpack {
                         }
                     }
                     log_bullet = if procfile_exists {
-                        log_bullet.sub_bullet("Procfile detected")
-                        .sub_bullet("Skipping process type registration (add process types to your Procfile as needed)")
+                        log_bullet
+                            .sub_bullet("Procfile detected")
+                            .sub_bullet("Skipping process type registration (add process types to your Procfile as needed)")
                     } else {
                         log_bullet
                             .sub_bullet("No Procfile detected")
