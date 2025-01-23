@@ -92,7 +92,9 @@ fn test_dotnet_publish_with_procfile() {
             assert_empty!(context.pack_stderr);
             assert_contains!(
                 &context.pack_stdout,
-                "Skipping launch process registration (Procfile detected)"
+                indoc! { r"
+                    - Process types
+                      - Skipping process type registration (Procfile detected)"}
             );
         },
     );
@@ -132,7 +134,7 @@ fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
             );
 
             assert_contains!(&context.pack_stdout, indoc! { r"
-                - Setting launch table
+                - Process types
                   - Detecting process types from published artifacts
                   - Added `foo`: bash -c cd bin/publish; ./foo --urls http://*:$PORT"});
         },

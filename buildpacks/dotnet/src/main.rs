@@ -158,14 +158,13 @@ impl Buildpack for DotnetBuildpack {
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
         let mut launch_builder = LaunchBuilder::new();
+        log_bullet = log.bullet("Process types");
         if Path::exists(&context.app_dir.join("Procfile")) {
-            log = log
-                .bullet("Skipping launch process registration (Procfile detected)")
+            log = log_bullet
+                .sub_bullet("Skipping process type registration (Procfile detected)")
                 .done();
         } else {
-            log_bullet = log
-                .bullet("Setting launch table")
-                .sub_bullet("Detecting process types from published artifacts");
+            log_bullet = log_bullet.sub_bullet("Detecting process types from published artifacts");
             log = match launch_process::detect_solution_processes(&solution) {
                 Ok(processes) => {
                     if processes.is_empty() {
