@@ -1,8 +1,9 @@
-use crate::dotnet_publish_command::VerbosityLevel;
+use std::fmt;
 
 pub(crate) struct DotnetBuildpackConfiguration {
     pub(crate) build_configuration: Option<String>,
     pub(crate) msbuild_verbosity_level: Option<VerbosityLevel>,
+    pub(crate) sdk_command: Option<String>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -19,6 +20,9 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
                 .get("BUILD_CONFIGURATION")
                 .map(|value| value.to_string_lossy().to_string()),
             msbuild_verbosity_level: detect_msbuild_verbosity_level(env).transpose()?,
+            sdk_command: env
+                .get("DOTNET_SDK_COMMAND")
+                .map(|value| value.to_string_lossy().to_string()),
         })
     }
 }
@@ -38,6 +42,27 @@ fn detect_msbuild_verbosity_level(
                 DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(value.to_string()),
             ),
         })
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) enum VerbosityLevel {
+    Quiet,
+    Minimal,
+    Normal,
+    Detailed,
+    Diagnostic,
+}
+
+impl fmt::Display for VerbosityLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            VerbosityLevel::Quiet => write!(f, "quiet"),
+            VerbosityLevel::Minimal => write!(f, "minimal"),
+            VerbosityLevel::Normal => write!(f, "normal"),
+            VerbosityLevel::Detailed => write!(f, "detailed"),
+            VerbosityLevel::Diagnostic => write!(f, "diagnostic"),
+        }
+    }
 }
 
 #[cfg(test)]

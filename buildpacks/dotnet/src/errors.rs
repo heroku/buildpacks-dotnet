@@ -231,22 +231,22 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 );
             }
         },
-        DotnetBuildpackError::PublishCommand(error) => match error {
+        DotnetBuildpackError::SdkCommand(command_name, error) => match error {
             fun_run::CmdError::SystemError(_message, io_error) => log_io_error(
-                "Unable to publish",
-                "running the command to publish the .NET solution/project",
+                &format!("Unable to {command_name}"),
+                &format!("running the command to {command_name} the .NET solution/project"),
                 io_error,
             ),
             fun_run::CmdError::NonZeroExitNotStreamed(output)
             | fun_run::CmdError::NonZeroExitAlreadyStreamed(output) => log_error(
-                "Unable to publish",
+                format!("Unable to {command_name}"),
                 formatdoc! {"
-                    The `dotnet publish` command exited unsuccessfully ({exit_status}).
+                    The `dotnet {command_name}` command exited unsuccessfully ({exit_status}).
 
                     This error usually happens due to compilation errors. Use the command output
                     above to troubleshoot and retry your build.
 
-                    The publish process can also fail for a number of other reasons, such as
+                    The {command_name} process can also fail for a number of other reasons, such as
                     intermittent network issues, unavailability of the NuGet package feed and/or
                     other external dependencies, etc.
 
