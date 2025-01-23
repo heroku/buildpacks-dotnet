@@ -115,6 +115,11 @@ fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
               replace_msbuild_log_patterns_with_placeholder(&context.pack_stdout, "<PLACEHOLDER>"), 
               "Time Elapsed <PLACEHOLDER>"
             );
+
+            assert_contains!(&context.pack_stdout, indoc! { r"
+                - Setting launch table
+                  - Detecting process types from published artifacts
+                  - Added `foo`: bash -c cd bin/publish; ./foo --urls http://*:$PORT"});
         },
     );
 }
