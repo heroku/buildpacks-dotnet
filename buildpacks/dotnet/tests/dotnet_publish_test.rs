@@ -85,7 +85,7 @@ fn test_dotnet_publish_with_debug_configuration() {
 
 #[test]
 #[ignore = "integration test"]
-fn test_dotnet_publish_with_procfile() {
+fn test_dotnet_publish_process_registration_with_procfile() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/basic_web_9.0_with_procfile"),
         |context| {
