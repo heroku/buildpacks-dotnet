@@ -102,6 +102,24 @@ fn test_dotnet_publish_process_registration_with_procfile() {
 
 #[test]
 #[ignore = "integration test"]
+fn test_dotnet_publish_process_registration_without_procfile() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/basic_web_9.0"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            assert_contains!(
+                &context.pack_stdout,
+                indoc! { r"
+                - Process types
+                  - Detecting process types from published artifacts
+                  - Added `foo`: bash -c cd bin/publish; ./foo --urls http://*:$PORT"}
+            );
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
 fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/basic_web_8.0_with_global_json")
@@ -132,11 +150,6 @@ fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
               replace_msbuild_log_patterns_with_placeholder(&context.pack_stdout, "<PLACEHOLDER>"), 
               "Time Elapsed <PLACEHOLDER>"
             );
-
-            assert_contains!(&context.pack_stdout, indoc! { r"
-                - Process types
-                  - Detecting process types from published artifacts
-                  - Added `foo`: bash -c cd bin/publish; ./foo --urls http://*:$PORT"});
         },
     );
 }
