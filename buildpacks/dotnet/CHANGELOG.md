@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Detected process types are now only registered as launch processes when no Procfile is present. [#185](https://github.com/heroku/buildpacks-dotnet/pull/185)
+
 ### Added
 
 - Enabled `libcnb`'s `trace` feature. [#184](https://github.com/heroku/buildpacks-dotnet/pull/184)
