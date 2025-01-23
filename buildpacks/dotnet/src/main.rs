@@ -157,10 +157,10 @@ impl Buildpack for DotnetBuildpack {
 
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
-        let mut launch_builder = LaunchBuilder::new();
         log_bullet = log
             .bullet("Process types")
             .sub_bullet("Detecting process types from published artifacts");
+        let mut launch_builder = LaunchBuilder::new();
         log = match launch_process::detect_solution_processes(&solution) {
             Ok(processes) => {
                 if processes.is_empty() {
