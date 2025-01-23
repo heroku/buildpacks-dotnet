@@ -165,27 +165,28 @@ impl Buildpack for DotnetBuildpack {
         log = match launch_process::detect_solution_processes(&solution) {
             Ok(processes) => {
                 if processes.is_empty() {
-                    log_bullet = log_bullet.sub_bullet("No processes were detected");
-                }
-                for process in processes {
-                    log_bullet = log_bullet.sub_bullet(format!(
-                        "Found {}: {}",
-                        style::value(process.r#type.to_string()),
-                        process.command.join(" ")
-                    ));
-                    if !procfile_exists {
-                        launch_builder.process(process);
-                    }
-                }
-                log_bullet = if procfile_exists {
-                    log_bullet.sub_bullet("Procfile detected")
-                        .sub_bullet("Skipping process type registration (add process types to your Procfile as needed)")
+                    log_bullet.sub_bullet("No processes were detected").done()
                 } else {
-                    log_bullet
-                        .sub_bullet("No Procfile detected")
-                        .sub_bullet("Registering detected process types as launch processes")
-                };
-                log_bullet.done()
+                    for process in processes {
+                        log_bullet = log_bullet.sub_bullet(format!(
+                            "Found {}: {}",
+                            style::value(process.r#type.to_string()),
+                            process.command.join(" ")
+                        ));
+                        if !procfile_exists {
+                            launch_builder.process(process);
+                        }
+                    }
+                    log_bullet = if procfile_exists {
+                        log_bullet.sub_bullet("Procfile detected")
+                        .sub_bullet("Skipping process type registration (add process types to your Procfile as needed)")
+                    } else {
+                        log_bullet
+                            .sub_bullet("No Procfile detected")
+                            .sub_bullet("Registering detected process types as launch processes")
+                    };
+                    log_bullet.done()
+                }
             }
             Err(error) => log_launch_process_detection_warning(error, log_bullet),
         };
