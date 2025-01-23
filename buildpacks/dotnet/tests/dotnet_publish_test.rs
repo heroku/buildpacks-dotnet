@@ -85,6 +85,21 @@ fn test_dotnet_publish_with_debug_configuration() {
 
 #[test]
 #[ignore = "integration test"]
+fn test_dotnet_publish_with_procfile() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/basic_web_9.0_with_procfile"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            assert_contains!(
+                &context.pack_stdout,
+                "Skipping launch process registration (Procfile detected)"
+            );
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
 fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/basic_web_8.0_with_global_json")
