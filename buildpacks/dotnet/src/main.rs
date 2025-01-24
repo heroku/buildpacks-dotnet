@@ -166,7 +166,6 @@ impl Buildpack for DotnetBuildpack {
                 if processes.is_empty() {
                     log_bullet.sub_bullet("No processes were detected").done()
                 } else {
-                    let procfile_exists = Path::exists(&context.app_dir.join("Procfile"));
                     for process in &processes {
                         log_bullet = log_bullet.sub_bullet(format!(
                             "Found {}: {}",
@@ -174,8 +173,7 @@ impl Buildpack for DotnetBuildpack {
                             process.command.join(" ")
                         ));
                     }
-
-                    log_bullet = if procfile_exists {
+                    log_bullet = if Path::exists(&context.app_dir.join("Procfile")) {
                         log_bullet
                             .sub_bullet("Procfile detected")
                             .sub_bullet("Skipping process type registration (add process types to your Procfile as needed)")
