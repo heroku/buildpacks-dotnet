@@ -158,23 +158,33 @@ impl Buildpack for DotnetBuildpack {
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
         log_bullet = log
-            .bullet("Setting launch table")
+            .bullet("Process types")
             .sub_bullet("Detecting process types from published artifacts");
         let mut launch_builder = LaunchBuilder::new();
         log = match launch_process::detect_solution_processes(&solution) {
             Ok(processes) => {
                 if processes.is_empty() {
-                    log_bullet = log_bullet.sub_bullet("No processes were detected");
+                    log_bullet.sub_bullet("No processes were detected").done()
+                } else {
+                    for process in &processes {
+                        log_bullet = log_bullet.sub_bullet(format!(
+                            "Found {}: {}",
+                            style::value(process.r#type.to_string()),
+                            process.command.join(" ")
+                        ));
+                    }
+                    log_bullet = if Path::exists(&context.app_dir.join("Procfile")) {
+                        log_bullet
+                            .sub_bullet("Procfile detected")
+                            .sub_bullet("Skipping process type registration (add process types to your Procfile as needed)")
+                    } else {
+                        launch_builder.processes(processes);
+                        log_bullet
+                            .sub_bullet("No Procfile detected")
+                            .sub_bullet("Registering detected process types as launch processes")
+                    };
+                    log_bullet.done()
                 }
-                for process in processes {
-                    log_bullet = log_bullet.sub_bullet(format!(
-                        "Added {}: {}",
-                        style::value(process.r#type.to_string()),
-                        process.command.join(" ")
-                    ));
-                    launch_builder.process(process);
-                }
-                log_bullet.done()
             }
             Err(error) => log_launch_process_detection_warning(error, log_bullet),
         };
