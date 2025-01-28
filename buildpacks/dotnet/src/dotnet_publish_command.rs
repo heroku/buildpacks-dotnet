@@ -1,4 +1,5 @@
 use crate::dotnet::runtime_identifier::RuntimeIdentifier;
+use std::env::temp_dir;
 use std::fmt;
 use std::path::PathBuf;
 use std::process::Command;
@@ -19,6 +20,8 @@ impl From<DotnetPublishCommand> for Command {
             "--runtime",
             &value.runtime_identifier.to_string(),
             "-p:PublishDir=bin/publish",
+            "--artifacts-path",
+            &temp_dir().join("build_artifacts").to_string_lossy(),
         ]);
 
         if let Some(configuration) = value.configuration {
