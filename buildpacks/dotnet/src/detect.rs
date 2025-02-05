@@ -32,18 +32,9 @@ pub(crate) fn global_json_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
     config_file(dir, "global.json")
 }
 
-fn config_file<P: AsRef<Path>, F: AsRef<Path>>(dir: P, path: F) -> Option<PathBuf> {
-    let dir = dir.as_ref();
-    if !dir.is_dir() {
-        return None;
-    }
-
-    let config_path = dir.join(path);
-    if config_path.exists() && config_path.is_file() {
-        Some(config_path)
-    } else {
-        None
-    }
+fn config_file<P: AsRef<Path>, F: AsRef<Path>>(dir: P, filename: F) -> Option<PathBuf> {
+    let path = dir.as_ref().join(filename);
+    path.is_file().then_some(path)
 }
 
 #[cfg(test)]
