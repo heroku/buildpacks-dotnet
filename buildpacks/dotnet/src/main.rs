@@ -21,7 +21,7 @@ use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use buildpacks_jvm_shared::output::{
     print_buildpack_name, print_section, print_subsection, print_warning, run_command,
-    track_timing, BuildpackOutputTextSection,
+    track_subsection_timing, BuildpackOutputTextSection,
 };
 use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
@@ -155,7 +155,7 @@ impl Buildpack for DotnetBuildpack {
             BuildpackOutputTextSection::regular("Running "),
             BuildpackOutputTextSection::Command(command_to_string(&publish_command)),
         ]);
-        track_timing(|| {
+        track_subsection_timing(|| {
             run_command(
                 publish_command,
                 false,

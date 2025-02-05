@@ -78,7 +78,7 @@ pub(crate) fn handle(
 
             let tarball_path = temp_dir().join("dotnetsdk.tar.gz");
             let mut download_attempts = 0;
-            output::track_timing(|| {
+            output::track_subsection_timing(|| {
                 while download_attempts <= MAX_RETRIES {
                     output::print_subsection(vec![
                         BuildpackOutputTextSection::regular("Downloading SDK from "),

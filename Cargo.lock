@@ -107,7 +107,7 @@ dependencies = [
 [[package]]
 name = "buildpacks-jvm-shared"
 version = "0.0.0"
-source = "git+https://github.com/heroku/buildpacks-jvm?branch=malax%2Foutput#3b140fce22ba8f186f393676fb3f02acfee03b68"
+source = "git+https://github.com/heroku/buildpacks-jvm?branch=malax%2Foutput#0668ca33ee60e400ac1d811be788c6e4fe23dfad"
 dependencies = [
  "indoc",
  "java-properties",
