@@ -29,16 +29,13 @@ pub(crate) fn get_files_with_extensions(
 
 /// Returns the path to `global.json` if it exists in the given directory.
 pub(crate) fn global_json_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
-    config_file(dir, "global.json")
+    let path = dir.as_ref().join("global.json");
+    path.is_file().then_some(path)
 }
 
 /// Returns the path to `.config/dotnet-tools.json` if it exists.
 pub(crate) fn dotnet_tools_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
-    config_file(dir, ".config/dotnet-tools.json")
-}
-
-fn config_file<P: AsRef<Path>, F: AsRef<Path>>(dir: P, filename: F) -> Option<PathBuf> {
-    let path = dir.as_ref().join(filename);
+    let path = dir.as_ref().join(".config/dotnet-tools.json");
     path.is_file().then_some(path)
 }
 
