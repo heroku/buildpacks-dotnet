@@ -127,14 +127,14 @@ impl Buildpack for DotnetBuildpack {
             nuget_cache_layer.path(),
         );
 
-        if let Some(dotnet_tools_path) = detect::dotnet_tools_file(&context.app_dir) {
+        if let Some(manifest_path) = detect::dotnet_tools_manifest_file(&context.app_dir) {
             let mut restore_tools_command = Command::new("dotnet");
             restore_tools_command
                 .args([
                     "tool",
                     "restore",
                     "--tool-manifest",
-                    &dotnet_tools_path.to_string_lossy(),
+                    &manifest_path.to_string_lossy(),
                 ])
                 .current_dir(&context.app_dir)
                 .envs(&command_env.apply(Scope::Build, &Env::from_current()));

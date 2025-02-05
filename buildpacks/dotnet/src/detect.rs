@@ -34,7 +34,7 @@ pub(crate) fn global_json_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
 }
 
 /// Returns the path to `.config/dotnet-tools.json` if it exists.
-pub(crate) fn dotnet_tools_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
+pub(crate) fn dotnet_tools_manifest_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
     let path = dir.as_ref().join(".config/dotnet-tools.json");
     path.is_file().then_some(path)
 }
@@ -93,7 +93,7 @@ mod tests {
     }
 
     #[test]
-    fn test_dotnet_tools_file_exists() {
+    fn test_dotnet_tools_manifest_file_exists() {
         let temp_dir = TempDir::new().unwrap();
         let config_dir = temp_dir.path().join(".config");
         create_dir(&config_dir).unwrap();
@@ -101,14 +101,14 @@ mod tests {
         let dotnet_tools_path = config_dir.join("dotnet-tools.json");
         File::create(&dotnet_tools_path).unwrap();
 
-        let result = dotnet_tools_file(temp_dir.path());
+        let result = dotnet_tools_manifest_file(temp_dir.path());
         assert_eq!(result, Some(dotnet_tools_path));
     }
 
     #[test]
-    fn test_dotnet_tools_file_does_not_exist() {
+    fn test_dotnet_tools_manifest_file_does_not_exist() {
         let temp_dir = TempDir::new().unwrap();
-        let result = dotnet_tools_file(temp_dir.path());
+        let result = dotnet_tools_manifest_file(temp_dir.path());
         assert_eq!(result, None);
     }
 
