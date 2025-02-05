@@ -69,3 +69,37 @@ jobs:
       # we run all integration tests, but on older stacks we only run stack-specific tests.
       - name: Run integration tests (all tests)
         run: cargo test --locked -- --ignored --test-threads 10
+
+  print-output:
+    runs-on: 'pub-hk-ubuntu-24.04-arm-medium'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install musl-tools
+        run: sudo apt-get install -y --no-install-recommends musl-tools
+      - name: Update Rust toolchain
+        run: rustup update
+      - name: Install Rust linux-musl target
+        run: rustup target add aarch64-unknown-linux-musl
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2.7.7
+      - name: Install Pack CLI
+        uses: buildpacks/github-actions/setup-pack@v5.8.8
+      - name: Clone getting started guide
+        uses: actions/checkout@v4
+        with:
+          repository: heroku/dotnet-getting-started
+          path: tmp/guide
+      # The images are pulled up front to prevent duplicate pulls due to the tests being run concurrently.
+      - name: Pull builder image
+        run: docker pull heroku/builder:24
+      - name: Pull run image
+        run: docker pull heroku/heroku:24
+      - name: Install libcnb-cargo for `cargo libcnb package` command
+        run: cargo install libcnb-cargo
+      - name: Compile buildpack
+        run: cargo libcnb package --target aarch64-unknown-linux-musl
+      - name: "PRINT: Getting started guide output"
+        run: pack build my-image --force-color --builder heroku/builder:24 --trust-extra-buildpacks --buildpack packaged/aarch64-unknown-linux-musl/debug/heroku_dotnet --path tmp/guide --pull-policy never
+      - name: "PRINT: Cached getting started guide output"
+        run: pack build my-image --force-color --builder heroku/builder:24 --trust-extra-buildpacks --buildpack packaged/aarch64-unknown-linux-musl/debug/heroku_dotnet --path tmp/guide --pull-policy never
