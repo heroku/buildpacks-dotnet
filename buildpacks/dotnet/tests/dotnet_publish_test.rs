@@ -97,7 +97,7 @@ fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
               &formatdoc! {r#"
                 - Publish solution
                   - Using `Release` build configuration
-                  - Running `dotnet publish /workspace/foo.csproj --runtime {rid} -p:PublishDir=bin/publish --verbosity normal`
+                  - Running `dotnet publish /workspace/foo.csproj --runtime {rid} '-p:PublishDir=bin/publish' --verbosity normal`
 
                       MSBuild version 17.8.3+195e7f5a3 for .NET
                       Build started <PLACEHOLDER>.

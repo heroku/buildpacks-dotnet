@@ -35,6 +35,7 @@ use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::inventory;
 use semver::{Version, VersionReq};
 use sha2::Sha512;
+use std::ffi::OsStr;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -199,12 +200,11 @@ impl Buildpack for DotnetBuildpack {
 }
 
 fn command_to_string(cmd: &Command) -> String {
-    let mut result = cmd.get_program().to_string_lossy().to_string();
-    for arg in cmd.get_args() {
-        result.push(' ');
-        result.push_str(&arg.to_string_lossy());
-    }
-    result
+    shell_words::join(
+        std::iter::once(cmd.get_program())
+            .chain(cmd.get_args())
+            .map(OsStr::to_string_lossy),
+    )
 }
 
 fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackError> {
