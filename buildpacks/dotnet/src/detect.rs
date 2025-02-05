@@ -29,12 +29,13 @@ pub(crate) fn get_files_with_extensions(
 
 /// Returns the path to `global.json` if it exists in the given directory.
 pub(crate) fn global_json_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
+    let filename = "global.json";
     let dir = dir.as_ref();
     if !dir.is_dir() {
         return None;
     }
 
-    let global_json_path = dir.join("global.json");
+    let global_json_path = dir.join(filename);
     if global_json_path.exists() && global_json_path.is_file() {
         Some(global_json_path)
     } else {
