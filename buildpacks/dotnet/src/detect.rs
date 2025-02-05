@@ -32,6 +32,11 @@ pub(crate) fn global_json_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
     config_file(dir, "global.json")
 }
 
+/// Returns the path to `.config/dotnet-tools.json` if it exists.
+pub(crate) fn dotnet_tools_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
+    config_file(dir, ".config/dotnet-tools.json")
+}
+
 fn config_file<P: AsRef<Path>, F: AsRef<Path>>(dir: P, filename: F) -> Option<PathBuf> {
     let path = dir.as_ref().join(filename);
     path.is_file().then_some(path)
@@ -40,7 +45,7 @@ fn config_file<P: AsRef<Path>, F: AsRef<Path>>(dir: P, filename: F) -> Option<Pa
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::File;
+    use std::fs::{create_dir, File};
     use tempfile::TempDir;
 
     #[test]
@@ -87,6 +92,26 @@ mod tests {
     fn test_global_json_file_does_not_exist() {
         let temp_dir = TempDir::new().unwrap();
         let result = global_json_file(temp_dir.path());
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_dotnet_tools_file_exists() {
+        let temp_dir = TempDir::new().unwrap();
+        let config_dir = temp_dir.path().join(".config");
+        create_dir(&config_dir).unwrap();
+
+        let dotnet_tools_path = config_dir.join("dotnet-tools.json");
+        File::create(&dotnet_tools_path).unwrap();
+
+        let result = dotnet_tools_file(temp_dir.path());
+        assert_eq!(result, Some(dotnet_tools_path));
+    }
+
+    #[test]
+    fn test_dotnet_tools_file_does_not_exist() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = dotnet_tools_file(temp_dir.path());
         assert_eq!(result, None);
     }
 
