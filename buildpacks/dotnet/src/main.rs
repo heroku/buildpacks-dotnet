@@ -120,7 +120,6 @@ impl Buildpack for DotnetBuildpack {
         let (sdk_layer, log) = layers::sdk::handle(&context, log, sdk_artifact)?;
         let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
 
-        log_bullet = log.bullet("Publish solution");
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
             libcnb::layer_env::ModificationBehavior::Override,
@@ -128,6 +127,31 @@ impl Buildpack for DotnetBuildpack {
             nuget_cache_layer.path(),
         );
 
+        if let Some(dotnet_tools_path) = detect::dotnet_tools_file(&context.app_dir) {
+            let mut restore_tools_command = Command::new("dotnet");
+            restore_tools_command
+                .args([
+                    "tool",
+                    "restore",
+                    "--tool-manifest",
+                    &dotnet_tools_path.to_string_lossy(),
+                ])
+                .current_dir(&context.app_dir)
+                .envs(&command_env.apply(Scope::Build, &Env::from_current()));
+
+            log_bullet = log
+                .bullet("Restore .NET tools")
+                .sub_bullet("Tool manifest file detected");
+            log_bullet
+                .stream_with(
+                    format!("Running {}", style::command(restore_tools_command.name())),
+                    |stdout, stderr| restore_tools_command.stream_output(stdout, stderr),
+                )
+                .map_err(DotnetBuildpackError::RestoreDotnetToolsCommand)?;
+            log = log_bullet.done();
+        }
+
+        log_bullet = log.bullet("Publish solution");
         let build_configuration = buildpack_configuration
             .build_configuration
             .clone()
@@ -309,6 +333,7 @@ enum DotnetBuildpackError {
     ParseSolutionVersionRequirement(semver::Error),
     ResolveSdkVersion(VersionReq),
     SdkLayer(SdkLayerError),
+    RestoreDotnetToolsCommand(fun_run::CmdError),
     ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),
     PublishCommand(fun_run::CmdError),
     CopyRuntimeFiles(io::Error),

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "dotnetsay": {
+      "version": "0.0.0-foobar",
+      "commands": [
+        "dotnetsay"
+      ],
+      "rollForward": false
+    }
+  }
+}

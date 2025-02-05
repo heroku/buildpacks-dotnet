@@ -3,6 +3,7 @@ use std::path::Path;
 
 mod detect_test;
 mod dotnet_publish_test;
+mod dotnet_restore_tools_test;
 mod nuget_layer_test;
 mod sdk_installation_test;
 

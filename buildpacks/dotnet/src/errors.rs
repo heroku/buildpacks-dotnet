@@ -231,6 +231,30 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                 );
             }
         },
+        DotnetBuildpackError::RestoreDotnetToolsCommand(error) => match error {
+            fun_run::CmdError::SystemError(_message, io_error) => log_io_error(
+                "Unable to restore .NET tools",
+                "running the command to restore .NET tools",
+                io_error,
+            ),
+            fun_run::CmdError::NonZeroExitNotStreamed(output)
+            | fun_run::CmdError::NonZeroExitAlreadyStreamed(output) => log_error(
+                "Unable to restore .NET tools",
+                formatdoc! {"
+                    The `dotnet tool restore` command exited unsuccessfully ({exit_status}).
+
+                    This error usually happens due to configuration errors. Use the command output
+                    above to troubleshoot and retry your build.
+
+                    The .NET tool restore command can also fail for a number of other reasons, such
+                    as intermittent network issues, unavailability of the NuGet package feed and/or
+                    other external dependencies, etc.
+
+                    Try again to see if the error resolves itself.
+                ", exit_status = output.status()},
+                None,
+            ),
+        },
         DotnetBuildpackError::PublishCommand(error) => match error {
             fun_run::CmdError::SystemError(_message, io_error) => log_io_error(
                 "Unable to publish",
