@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The buildpack will now restore .NET tools when a tool manifest file is detected. ([#194](https://github.com/heroku/buildpacks-dotnet/pull/194))
+
 ## [0.2.1] - 2025-02-12
 
 ### Changed
