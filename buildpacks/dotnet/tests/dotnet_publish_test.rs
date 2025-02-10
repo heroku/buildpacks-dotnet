@@ -15,7 +15,7 @@ fn test_dotnet_publish_multi_tfm_solution() {
             assert_contains!(context.pack_stdout, "Detected version requirement: `^8.0`");
             assert_contains!(
                 context.pack_stdout,
-                &format! {"worker -> /workspace/worker/bin/Release/net6.0/{rid}/worker.dll"}
+                &format! {"worker -> /tmp/build_artifacts/bin/worker/release_{rid}/worker.dll"}
             );
             assert_contains!(
                 context.pack_stdout,
@@ -23,7 +23,7 @@ fn test_dotnet_publish_multi_tfm_solution() {
             );
             assert_contains!(
                 context.pack_stdout,
-                &format! {"web -> /workspace/web/bin/Release/net8.0/{rid}/web.dll" }
+                &format! {"web -> /tmp/build_artifacts/bin/web/release_{rid}/web.dll" }
             );
             assert_contains!(context.pack_stdout, "web -> /workspace/web/bin/publish/");
         },
@@ -76,7 +76,7 @@ fn test_dotnet_publish_with_debug_configuration() {
                   MSBuild version 17.8.3+195e7f5a3 for .NET
                           Determining projects to restore...
                           Restored /workspace/foo.csproj <PLACEHOLDER>.
-                          foo -> /workspace/bin/Debug/net8.0/{rid}/foo.dll
+                          foo -> /tmp/build_artifacts/bin/foo/debug_{rid}/foo.dll
                           foo -> /workspace/bin/publish/"}
             );
         },
@@ -156,7 +156,7 @@ fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
               &formatdoc! {r#"
                 - Publish solution
                   - Using `Release` build configuration
-                  - Running `dotnet publish /workspace/foo.csproj --runtime {rid} "-p:PublishDir=bin/publish" --verbosity normal`
+                  - Running `dotnet publish /workspace/foo.csproj --runtime {rid} "-p:PublishDir=bin/publish" --artifacts-path /tmp/build_artifacts --verbosity normal`
                 
                       MSBuild version 17.8.3+195e7f5a3 for .NET
                       Build started <PLACEHOLDER>.
