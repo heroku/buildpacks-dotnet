@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Enabled `libcnb`'s `trace` feature. [#184](https://github.com/heroku/buildpacks-dotnet/pull/184)
 
+### Changed
+
+- The .NET SDK inventory was updated with new download URLs for version 9.0 release artifacts. [#193](https://github.com/heroku/buildpacks-dotnet/pull/193)
+
 ## [0.1.10] - 2025-01-15
 
 ### Changed
