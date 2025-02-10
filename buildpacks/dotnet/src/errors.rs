@@ -246,8 +246,8 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     This error usually happens due to configuration errors. Use the command output
                     above to troubleshoot and retry your build.
 
-                    The .NET tool restore command can also fail for a number of other reasons, such
-                    as intermittent network issues, unavailability of the NuGet package feed and/or
+                    Restoring .NET tools can also fail for a number of other reasons, such as
+                    intermittent network issues, unavailability of the NuGet package feed and/or
                     other external dependencies, etc.
 
                     Try again to see if the error resolves itself.
