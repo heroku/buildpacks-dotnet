@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-02-10
+
 ### Changed
 
 - Detected process types are now only registered as launch processes when no Procfile is present. [#185](https://github.com/heroku/buildpacks-dotnet/pull/185)
@@ -94,7 +96,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.1.10...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.1.10...v0.2.0
 [0.1.10]: https://github.com/heroku/buildpacks-dotnet/compare/v0.1.9...v0.1.10
 [0.1.9]: https://github.com/heroku/buildpacks-dotnet/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/heroku/buildpacks-dotnet/compare/v0.1.7...v0.1.8
