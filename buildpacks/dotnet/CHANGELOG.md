@@ -7,19 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The .NET SDK inventory was updated with new download URLs for version 9.0 release artifacts. [#197](https://github.com/heroku/buildpacks-dotnet/pull/197)
+
+### Added
+
+- Support for .NET SDK versions: 8.0.113 (linux-amd64), 8.0.113 (linux-arm64), 8.0.309 (linux-amd64), 8.0.309 (linux-arm64), 8.0.406 (linux-amd64), 8.0.406 (linux-arm64), 9.0.103 (linux-amd64), 9.0.103 (linux-arm64), 9.0.200 (linux-amd64), 9.0.200 (linux-arm64). [#197](https://github.com/heroku/buildpacks-dotnet/pull/197)
+
 ## [0.2.0] - 2025-02-10
 
 ### Changed
 
 - Detected process types are now only registered as launch processes when no Procfile is present. [#185](https://github.com/heroku/buildpacks-dotnet/pull/185)
+- The .NET SDK inventory was updated with new download URLs for version 9.0 release artifacts. [#193](https://github.com/heroku/buildpacks-dotnet/pull/193)
 
 ### Added
 
 - Enabled `libcnb`'s `trace` feature. [#184](https://github.com/heroku/buildpacks-dotnet/pull/184)
-
-### Changed
-
-- The .NET SDK inventory was updated with new download URLs for version 9.0 release artifacts. [#193](https://github.com/heroku/buildpacks-dotnet/pull/193)
 
 ## [0.1.10] - 2025-01-15
 
