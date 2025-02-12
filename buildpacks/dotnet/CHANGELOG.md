@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2025-02-12
+
 ### Changed
 
 - The .NET SDK inventory was updated with new download URLs for version 9.0 release artifacts. [#197](https://github.com/heroku/buildpacks-dotnet/pull/197)
@@ -101,7 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.2.0...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/heroku/buildpacks-dotnet/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.1.10...v0.2.0
 [0.1.10]: https://github.com/heroku/buildpacks-dotnet/compare/v0.1.9...v0.1.10
 [0.1.9]: https://github.com/heroku/buildpacks-dotnet/compare/v0.1.8...v0.1.9
