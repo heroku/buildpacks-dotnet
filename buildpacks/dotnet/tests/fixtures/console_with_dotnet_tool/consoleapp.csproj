@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <Target Name="PostPublishStep" AfterTargets="Publish">
+    <Message Text="Running dotnetsay post-publish" Importance="High" />
+    <Exec Command="dotnet tool run dotnetsay" />
+  </Target>
+
+</Project>
