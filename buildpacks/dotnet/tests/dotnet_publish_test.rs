@@ -177,6 +177,17 @@ fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
     );
 }
 
+#[test]
+#[ignore = "integration test"]
+fn test_dotnet_publish_with_global_json_project_sdk_version_config() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/project_with_nuget_sdk_and_global_json"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+        },
+    );
+}
+
 fn get_rid() -> String {
     format!("linux-{}", get_dotnet_arch())
 }
