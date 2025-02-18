@@ -6,7 +6,7 @@ use std::str::FromStr;
 /// Represents the root structure of a global.json file.
 #[derive(Deserialize)]
 pub(crate) struct GlobalJson {
-    sdk: SdkConfig,
+    sdk: Option<SdkConfig>,
 }
 
 /// Represents the SDK configuration in a global.json file.
@@ -30,7 +30,7 @@ impl TryFrom<GlobalJson> for VersionReq {
 
     // TODO: Factor in pre-release logic
     fn try_from(global_json: GlobalJson) -> Result<Self, Self::Error> {
-        let sdk_config = global_json.sdk;
+        let sdk_config = global_json.sdk.unwrap();
         let version = &sdk_config.version;
         let roll_forward = sdk_config.roll_forward.as_deref();
 
@@ -135,7 +135,9 @@ mod tests {
                 version: case.version.to_string(),
                 roll_forward: case.roll_forward.map(ToString::to_string),
             };
-            let global_json = GlobalJson { sdk: sdk_config };
+            let global_json = GlobalJson {
+                sdk: Some(sdk_config),
+            };
             let result = VersionReq::try_from(global_json).unwrap();
             assert_eq!(
                 result.to_string(),
@@ -182,8 +184,7 @@ mod tests {
         {
         }
         ";
-
         let global_json = GlobalJson::from_str(json_content).unwrap();
-        // assert!(global_json.sdk.is_none());
+        assert!(global_json.sdk.is_none());
     }
 }
