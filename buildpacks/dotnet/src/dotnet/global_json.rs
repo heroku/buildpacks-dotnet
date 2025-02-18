@@ -175,4 +175,15 @@ mod tests {
         let version_req = VersionReq::try_from(global_json).unwrap();
         assert_eq!(version_req, VersionReq::parse("6.0.100").unwrap());
     }
+
+    #[test]
+    fn test_parse_empty_global_json() {
+        let json_content = r"
+        {
+        }
+        ";
+
+        let global_json = GlobalJson::from_str(json_content).unwrap();
+        // assert!(global_json.sdk.is_none());
+    }
 }
