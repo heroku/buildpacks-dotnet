@@ -8,7 +8,7 @@ mod launch_process;
 mod layers;
 mod utils;
 
-use crate::dotnet::global_json::GlobalJson;
+use crate::dotnet::global_json::{GlobalJson, SdkConfig};
 use crate::dotnet::project::Project;
 use crate::dotnet::runtime_identifier;
 use crate::dotnet::solution::Solution;
@@ -75,12 +75,13 @@ impl Buildpack for DotnetBuildpack {
             style::value(solution.path.to_string_lossy())
         ));
 
-        let sdk_version_requirement = if let Some(version_req) =
-            detect_global_json_sdk_version_requirement(&context.app_dir)
+        let sdk_version_requirement = if let Some(sdk_configuration) =
+            detect_global_json_sdk_configuration(&context.app_dir)?
         {
             log_bullet =
                 log_bullet.sub_bullet("Detecting version requirement from root global.json file");
-            version_req?
+            VersionReq::try_from(sdk_configuration)
+                .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?
         } else {
             log_bullet = log_bullet.sub_bullet(format!(
                 "Inferring version requirement from {}",
@@ -270,18 +271,22 @@ fn get_solution_sdk_version_requirement(
         })?
 }
 
-fn detect_global_json_sdk_version_requirement(
+fn detect_global_json_sdk_configuration(
     app_dir: &Path,
-) -> Option<Result<VersionReq, DotnetBuildpackError>> {
-    detect::global_json_file(app_dir).map(|file| {
-        VersionReq::try_from(
-            fs::read_to_string(file.as_path())
-                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)?
-                .parse::<GlobalJson>()
-                .map_err(DotnetBuildpackError::ParseGlobalJson)?,
-        )
-        .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)
-    })
+) -> Result<Option<SdkConfig>, DotnetBuildpackError> {
+    detect::global_json_file(app_dir).map_or_else(
+        || Ok(None),
+        |file| {
+            fs::read_to_string(file)
+                .map_err(DotnetBuildpackError::ReadGlobalJsonFile)
+                .and_then(|content| {
+                    content
+                        .parse::<GlobalJson>()
+                        .map_err(DotnetBuildpackError::ParseGlobalJson)
+                        .map(|global_json| global_json.sdk)
+                })
+        },
+    )
 }
 
 fn log_launch_process_detection_warning(
