@@ -59,7 +59,7 @@ mod tests {
     use std::str::FromStr;
 
     #[test]
-    fn test_construct_version_req() {
+    fn test_construct_version_req_from_sdk() {
         #[derive(Debug)]
         struct TestCase {
             version: &'static str,
@@ -146,7 +146,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_global_json() {
+    fn test_parse_global_json_with_sdk() {
         let json_content = r#"
         {
             "sdk": {
@@ -162,7 +162,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_global_json_without_rollforward() {
+    fn test_parse_global_json_without_sdk_rollforward() {
         let json_content = r#"
         {
             "sdk": {
