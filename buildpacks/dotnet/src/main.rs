@@ -14,7 +14,7 @@ use crate::dotnet::runtime_identifier;
 use crate::dotnet::solution::Solution;
 use crate::dotnet::target_framework_moniker::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::dotnet_buildpack_configuration::{
-    DotnetBuildpackConfiguration, DotnetBuildpackConfigurationError,
+    DotnetBuildpackConfiguration, DotnetBuildpackConfigurationError, ExecutionEnvironment,
 };
 use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
@@ -153,66 +153,74 @@ impl Buildpack for DotnetBuildpack {
         }
 
         let mut launch_builder = LaunchBuilder::new();
-        log_bullet = log.bullet("Publish solution");
-        let build_configuration = buildpack_configuration
-            .build_configuration
-            .clone()
-            .unwrap_or_else(|| String::from("Release"));
-        log_bullet = log_bullet.sub_bullet(format!(
-            "Using {} build configuration",
-            style::value(build_configuration.clone())
-        ));
+        match buildpack_configuration.execution_environment {
+            ExecutionEnvironment::Production => {
+                log_bullet = log.bullet("Publish solution");
+                let build_configuration = buildpack_configuration
+                    .build_configuration
+                    .clone()
+                    .unwrap_or_else(|| String::from("Release"));
+                log_bullet = log_bullet.sub_bullet(format!(
+                    "Using {} build configuration",
+                    style::value(build_configuration.clone())
+                ));
 
-        let mut publish_command = Command::from(DotnetPublishCommand {
-            path: solution.path.clone(),
-            configuration: buildpack_configuration.build_configuration,
-            runtime_identifier: runtime_identifier::get_runtime_identifier(target_os, target_arch),
-            verbosity_level: buildpack_configuration.msbuild_verbosity_level,
-        });
-        publish_command
-            .current_dir(&context.app_dir)
-            .envs(&command_env.apply(Scope::Build, &Env::from_current()));
+                let mut publish_command = Command::from(DotnetPublishCommand {
+                    path: solution.path.clone(),
+                    configuration: buildpack_configuration.build_configuration,
+                    runtime_identifier: runtime_identifier::get_runtime_identifier(
+                        target_os,
+                        target_arch,
+                    ),
+                    verbosity_level: buildpack_configuration.msbuild_verbosity_level,
+                });
+                publish_command
+                    .current_dir(&context.app_dir)
+                    .envs(&command_env.apply(Scope::Build, &Env::from_current()));
 
-        log_bullet
-            .stream_with(
-                format!("Running {}", style::command(publish_command.name())),
-                |stdout, stderr| publish_command.stream_output(stdout, stderr),
-            )
-            .map_err(DotnetBuildpackError::PublishCommand)?;
-        log = log_bullet.done();
+                log_bullet
+                    .stream_with(
+                        format!("Running {}", style::command(publish_command.name())),
+                        |stdout, stderr| publish_command.stream_output(stdout, stderr),
+                    )
+                    .map_err(DotnetBuildpackError::PublishCommand)?;
+                log = log_bullet.done();
 
-        layers::runtime::handle(&context, &sdk_layer.path())?;
+                layers::runtime::handle(&context, &sdk_layer.path())?;
 
-        log_bullet = log
-            .bullet("Process types")
-            .sub_bullet("Detecting process types from published artifacts");
-        log = match launch_process::detect_solution_processes(&solution) {
-            Ok(processes) => {
-                if processes.is_empty() {
-                    log_bullet.sub_bullet("No processes were detected").done()
-                } else {
-                    for process in &processes {
-                        log_bullet = log_bullet.sub_bullet(format!(
-                            "Found {}: {}",
-                            style::value(process.r#type.to_string()),
-                            process.command.join(" ")
-                        ));
+                log_bullet = log
+                    .bullet("Process types")
+                    .sub_bullet("Detecting process types from published artifacts");
+                log = match launch_process::detect_solution_processes(&solution) {
+                    Ok(processes) => {
+                        if processes.is_empty() {
+                            log_bullet.sub_bullet("No processes were detected").done()
+                        } else {
+                            for process in &processes {
+                                log_bullet = log_bullet.sub_bullet(format!(
+                                    "Found {}: {}",
+                                    style::value(process.r#type.to_string()),
+                                    process.command.join(" ")
+                                ));
+                            }
+                            log_bullet = if Path::exists(&context.app_dir.join("Procfile")) {
+                                log_bullet
+                                    .sub_bullet("Procfile detected")
+                                    .sub_bullet("Skipping process type registration (add process types to your Procfile as needed)")
+                            } else {
+                                launch_builder.processes(processes);
+                                log_bullet.sub_bullet("No Procfile detected").sub_bullet(
+                                    "Registering detected process types as launch processes",
+                                )
+                            };
+                            log_bullet.done()
+                        }
                     }
-                    log_bullet = if Path::exists(&context.app_dir.join("Procfile")) {
-                        log_bullet
-                            .sub_bullet("Procfile detected")
-                            .sub_bullet("Skipping process type registration (add process types to your Procfile as needed)")
-                    } else {
-                        launch_builder.processes(processes);
-                        log_bullet
-                            .sub_bullet("No Procfile detected")
-                            .sub_bullet("Registering detected process types as launch processes")
-                    };
-                    log_bullet.done()
-                }
+                    Err(error) => log_launch_process_detection_warning(error, log_bullet),
+                };
             }
-            Err(error) => log_launch_process_detection_warning(error, log_bullet),
-        };
+            ExecutionEnvironment::Test => todo!(),
+        }
         log.done();
 
         BuildResultBuilder::new()
