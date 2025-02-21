@@ -26,7 +26,14 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
             build_configuration: env
                 .get("BUILD_CONFIGURATION")
                 .map(|value| value.to_string_lossy().to_string()),
-            execution_environment: ExecutionEnvironment::Production,
+            execution_environment: env.get_string_lossy("CNB_EXEC_ENV").map_or(
+                ExecutionEnvironment::Production,
+                |value| match value.as_str() {
+                    "test" => ExecutionEnvironment::Test,
+                    "production" => ExecutionEnvironment::Production,
+                    _ => unimplemented!(),
+                },
+            ),
             msbuild_verbosity_level: detect_msbuild_verbosity_level(env).transpose()?,
         })
     }
