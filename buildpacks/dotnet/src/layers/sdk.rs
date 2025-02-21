@@ -42,6 +42,7 @@ const MAX_RETRIES: u8 = 4;
 
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
+    available_at_launch: bool,
     log: Print<state::Bullet<Stdout>>,
     artifact: &Artifact<Version, Sha512, Option<()>>,
 ) -> HandleResult {
@@ -49,7 +50,7 @@ pub(crate) fn handle(
         layer_name!("sdk"),
         CachedLayerDefinition {
             build: true,
-            launch: false,
+            launch: available_at_launch,
             invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
             restored_layer_action: &|metadata: &SdkLayerMetadata, _path| {
                 if metadata.artifact == *artifact {

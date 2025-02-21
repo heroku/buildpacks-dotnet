@@ -27,13 +27,14 @@ type HandleResult = Result<
 
 pub(crate) fn handle(
     context: &BuildContext<DotnetBuildpack>,
+    available_at_launch: bool,
     mut log: Print<state::Bullet<Stdout>>,
 ) -> HandleResult {
     let nuget_cache_layer = context.cached_layer(
         layer_name!("nuget-cache"),
         CachedLayerDefinition {
             build: true,
-            launch: false,
+            launch: available_at_launch,
             invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
             restored_layer_action: &|metadata: &NugetCacheLayerMetadata, _path| {
                 if metadata.restore_count >= MAX_NUGET_CACHE_RESTORE_COUNT {

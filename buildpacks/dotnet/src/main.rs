@@ -123,13 +123,15 @@ impl Buildpack for DotnetBuildpack {
             ExecutionEnvironment::Test => (Scope::Launch, true),
         };
 
-        let (sdk_layer, log) = layers::sdk::handle(&context, log, sdk_artifact)?;
+        let (sdk_layer, log) =
+            layers::sdk::handle(&context, sdk_available_at_launch, log, sdk_artifact)?;
         sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
             sdk_layer.path().as_path(),
             &scope,
         ))?;
 
-        let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
+        let (nuget_cache_layer, mut log) =
+            layers::nuget_cache::handle(&context, sdk_available_at_launch, log)?;
         nuget_cache_layer.write_env(LayerEnv::new().chainable_insert(
             scope.clone(),
             libcnb::layer_env::ModificationBehavior::Override,
