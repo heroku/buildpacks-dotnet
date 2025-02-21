@@ -85,18 +85,24 @@ mod tests {
     }
 
     #[test]
-    fn test_buildpack_configuration_test_execution_environment() {
-        let env = create_env(&[("CNB_EXEC_ENV", "test")]);
-        let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
+    fn test_parse_execution_environment_env_var() {
+        let cases = [
+            ("test", ExecutionEnvironment::Test),
+            ("production", ExecutionEnvironment::Production),
+        ];
+        for (input, expected) in cases {
+            let env = create_env(&[("CNB_EXEC_ENV", input)]);
+            let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
 
-        assert_eq!(
-            result,
-            DotnetBuildpackConfiguration {
-                build_configuration: None,
-                execution_environment: ExecutionEnvironment::Test,
-                msbuild_verbosity_level: None
-            }
-        );
+            assert_eq!(
+                result,
+                DotnetBuildpackConfiguration {
+                    build_configuration: None,
+                    execution_environment: expected,
+                    msbuild_verbosity_level: None
+                }
+            );
+        }
     }
 
     #[test]
