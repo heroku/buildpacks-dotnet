@@ -10,6 +10,7 @@ pub(crate) struct DotnetBuildpackConfiguration {
 #[derive(Debug, PartialEq)]
 pub(crate) enum ExecutionEnvironment {
     Production,
+    Test,
 }
 
 #[derive(Debug, PartialEq)]
@@ -71,6 +72,21 @@ mod tests {
             DotnetBuildpackConfiguration {
                 build_configuration: None,
                 execution_environment: ExecutionEnvironment::Production,
+                msbuild_verbosity_level: None
+            }
+        );
+    }
+
+    #[test]
+    fn test_buildpack_configuration_test_execution_environment() {
+        let env = create_env(&[("CNB_EXEC_ENV", "test")]);
+        let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
+
+        assert_eq!(
+            result,
+            DotnetBuildpackConfiguration {
+                build_configuration: None,
+                execution_environment: ExecutionEnvironment::Test,
                 msbuild_verbosity_level: None
             }
         );
