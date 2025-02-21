@@ -31,7 +31,7 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
                 |value| match value.as_str() {
                     "test" => ExecutionEnvironment::Test,
                     "production" => ExecutionEnvironment::Production,
-                    _ => unimplemented!(),
+                    _ => unimplemented!("Unsupported CNB execution environment \"{value}\""),
                 },
             ),
             msbuild_verbosity_level: detect_msbuild_verbosity_level(env).transpose()?,
