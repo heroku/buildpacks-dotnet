@@ -23,9 +23,7 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
 
     fn try_from(env: &libcnb::Env) -> Result<Self, Self::Error> {
         Ok(Self {
-            build_configuration: env
-                .get("BUILD_CONFIGURATION")
-                .map(|value| value.to_string_lossy().to_string()),
+            build_configuration: env.get_string_lossy("BUILD_CONFIGURATION"),
             execution_environment: env.get_string_lossy("CNB_EXEC_ENV").map_or(
                 ExecutionEnvironment::Production,
                 |value| match value.as_str() {
@@ -42,8 +40,7 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
 fn detect_msbuild_verbosity_level(
     env: &libcnb::Env,
 ) -> Option<Result<VerbosityLevel, DotnetBuildpackConfigurationError>> {
-    env.get("MSBUILD_VERBOSITY_LEVEL")
-        .map(|value| value.to_string_lossy())
+    env.get_string_lossy("MSBUILD_VERBOSITY_LEVEL")
         .map(|value| match value.to_lowercase().as_str() {
             "q" | "quiet" => Ok(VerbosityLevel::Quiet),
             "m" | "minimal" => Ok(VerbosityLevel::Minimal),
