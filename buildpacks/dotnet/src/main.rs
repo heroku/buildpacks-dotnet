@@ -120,7 +120,7 @@ impl Buildpack for DotnetBuildpack {
             .done();
         let (scope, sdk_available_at_launch) = match buildpack_configuration.execution_environment {
             ExecutionEnvironment::Production => (Scope::Build, false),
-            ExecutionEnvironment::Test => (Scope::Launch, true),
+            ExecutionEnvironment::Test => (Scope::All, true),
         };
 
         let (sdk_layer, log) =
