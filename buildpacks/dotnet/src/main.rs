@@ -152,6 +152,7 @@ impl Buildpack for DotnetBuildpack {
             log = log_bullet.done();
         }
 
+        let mut launch_builder = LaunchBuilder::new();
         log_bullet = log.bullet("Publish solution");
         let build_configuration = buildpack_configuration
             .build_configuration
@@ -185,7 +186,6 @@ impl Buildpack for DotnetBuildpack {
         log_bullet = log
             .bullet("Process types")
             .sub_bullet("Detecting process types from published artifacts");
-        let mut launch_builder = LaunchBuilder::new();
         log = match launch_process::detect_solution_processes(&solution) {
             Ok(processes) => {
                 if processes.is_empty() {
