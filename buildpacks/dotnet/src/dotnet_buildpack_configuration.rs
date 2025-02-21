@@ -1,5 +1,6 @@
 use crate::dotnet_publish_command::VerbosityLevel;
 
+#[derive(Debug, PartialEq)]
 pub(crate) struct DotnetBuildpackConfiguration {
     pub(crate) build_configuration: Option<String>,
     pub(crate) msbuild_verbosity_level: Option<VerbosityLevel>,
@@ -51,6 +52,20 @@ mod tests {
             env.insert(key, value);
         }
         env
+    }
+
+    #[test]
+    fn test_default_buildpack_configuration() {
+        let env = create_env(&[]);
+        let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
+
+        assert_eq!(
+            result,
+            DotnetBuildpackConfiguration {
+                build_configuration: None,
+                msbuild_verbosity_level: None
+            }
+        );
     }
 
     #[test]
