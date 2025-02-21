@@ -30,7 +30,7 @@ use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
 use libcnb::data::process_type;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
-use libcnb::layer_env::Scope;
+use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::inventory;
 use semver::{Version, VersionReq};
@@ -124,14 +124,22 @@ impl Buildpack for DotnetBuildpack {
             sdk_layer.path().as_path(),
             &Scope::Build,
         ))?;
-        let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
 
-        let command_env = sdk_layer.read_env()?.chainable_insert(
+        let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
+        nuget_cache_layer.write_env(LayerEnv::new().chainable_insert(
             Scope::Build,
             libcnb::layer_env::ModificationBehavior::Override,
             "NUGET_PACKAGES",
             nuget_cache_layer.path(),
-        );
+        ))?;
+
+        let mut command_env = sdk_layer
+            .read_env()?
+            .apply(Scope::Build, &Env::from_current());
+
+        command_env = nuget_cache_layer
+            .read_env()?
+            .apply(Scope::Build, &command_env);
 
         if let Some(manifest_path) = detect::dotnet_tools_manifest_file(&context.app_dir) {
             let mut restore_tools_command = Command::new("dotnet");
@@ -143,7 +151,7 @@ impl Buildpack for DotnetBuildpack {
                     &manifest_path.to_string_lossy(),
                 ])
                 .current_dir(&context.app_dir)
-                .envs(&command_env.apply(Scope::Build, &Env::from_current()));
+                .envs(&command_env);
 
             log_bullet = log
                 .bullet("Restore .NET tools")
@@ -181,7 +189,7 @@ impl Buildpack for DotnetBuildpack {
                 });
                 publish_command
                     .current_dir(&context.app_dir)
-                    .envs(&command_env.apply(Scope::Build, &Env::from_current()));
+                    .envs(&command_env);
 
                 log_bullet
                     .stream_with(
