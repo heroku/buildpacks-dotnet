@@ -22,7 +22,7 @@ pub(crate) fn handle(
     let nuget_cache_layer = context.cached_layer(
         layer_name!("nuget-cache"),
         CachedLayerDefinition {
-            build: false,
+            build: true,
             launch: false,
             invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
             restored_layer_action: &|metadata: &NugetCacheLayerMetadata, _path| {
