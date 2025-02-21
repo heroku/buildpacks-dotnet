@@ -120,6 +120,10 @@ impl Buildpack for DotnetBuildpack {
             .done();
 
         let (sdk_layer, log) = layers::sdk::handle(&context, log, sdk_artifact)?;
+        sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
+            sdk_layer.path().as_path(),
+            &Scope::Build,
+        ))?;
         let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
 
         let command_env = sdk_layer.read_env()?.chainable_insert(
