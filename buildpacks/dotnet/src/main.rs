@@ -118,16 +118,20 @@ impl Buildpack for DotnetBuildpack {
                 style::details(format!("{}-{}", sdk_artifact.os, sdk_artifact.arch))
             ))
             .done();
+        let (scope, sdk_available_at_launch) = match buildpack_configuration.execution_environment {
+            ExecutionEnvironment::Production => (Scope::Build, false),
+            ExecutionEnvironment::Test => (Scope::Launch, true),
+        };
 
         let (sdk_layer, log) = layers::sdk::handle(&context, log, sdk_artifact)?;
         sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
             sdk_layer.path().as_path(),
-            &Scope::Build,
+            &scope,
         ))?;
 
         let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
         nuget_cache_layer.write_env(LayerEnv::new().chainable_insert(
-            Scope::Build,
+            scope.clone(),
             libcnb::layer_env::ModificationBehavior::Override,
             "NUGET_PACKAGES",
             nuget_cache_layer.path(),
@@ -135,11 +139,9 @@ impl Buildpack for DotnetBuildpack {
 
         let mut command_env = sdk_layer
             .read_env()?
-            .apply(Scope::Build, &Env::from_current());
+            .apply(scope.clone(), &Env::from_current());
 
-        command_env = nuget_cache_layer
-            .read_env()?
-            .apply(Scope::Build, &command_env);
+        command_env = nuget_cache_layer.read_env()?.apply(scope, &command_env);
 
         if let Some(manifest_path) = detect::dotnet_tools_manifest_file(&context.app_dir) {
             let mut restore_tools_command = Command::new("dotnet");
