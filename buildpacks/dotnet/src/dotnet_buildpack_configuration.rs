@@ -1,4 +1,4 @@
-use crate::dotnet_publish_command::VerbosityLevel;
+use std::fmt;
 
 pub(crate) struct DotnetBuildpackConfiguration {
     pub(crate) build_configuration: Option<String>,
@@ -38,6 +38,27 @@ fn detect_msbuild_verbosity_level(
                 DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(value.to_string()),
             ),
         })
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) enum VerbosityLevel {
+    Quiet,
+    Minimal,
+    Normal,
+    Detailed,
+    Diagnostic,
+}
+
+impl fmt::Display for VerbosityLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            VerbosityLevel::Quiet => write!(f, "quiet"),
+            VerbosityLevel::Minimal => write!(f, "minimal"),
+            VerbosityLevel::Normal => write!(f, "normal"),
+            VerbosityLevel::Detailed => write!(f, "detailed"),
+            VerbosityLevel::Diagnostic => write!(f, "diagnostic"),
+        }
+    }
 }
 
 #[cfg(test)]
