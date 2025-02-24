@@ -197,12 +197,7 @@ impl Buildpack for DotnetBuildpack {
 
                 layers::runtime::handle(&context, &sdk_layer.path())?;
 
-                log = handle_published_launch_processes(
-                    &context,
-                    &solution,
-                    &mut launch_builder,
-                    log,
-                );
+                log = handle_solution_processes(&context, &solution, &mut launch_builder, log);
             }
             ExecutionEnvironment::Test => {
                 let mut args = vec![format!("dotnet test {}", solution.path.to_string_lossy())];
@@ -295,7 +290,7 @@ fn detect_global_json_sdk_configuration(
     )
 }
 
-fn handle_published_launch_processes(
+fn handle_solution_processes(
     context: &BuildContext<DotnetBuildpack>,
     solution: &Solution,
     launch_builder: &mut LaunchBuilder,
