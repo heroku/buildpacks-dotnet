@@ -151,3 +151,18 @@ fn test_sdk_installation_with_global_json_prerelease_sdk() {
         },
     );
 }
+
+#[test]
+#[ignore = "integration test"]
+fn test_sdk_installation_with_global_json_project_sdk_version_config() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/project_with_nuget_sdk_and_global_json"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            assert_contains!(
+                context.pack_stdout,
+                "- Inferring version requirement from `/workspace/foo.csproj`"
+            );
+        },
+    );
+}

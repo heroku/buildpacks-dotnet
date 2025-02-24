@@ -6,12 +6,12 @@ use std::str::FromStr;
 /// Represents the root structure of a global.json file.
 #[derive(Deserialize)]
 pub(crate) struct GlobalJson {
-    sdk: SdkConfig,
+    pub(crate) sdk: Option<SdkConfig>,
 }
 
 /// Represents the SDK configuration in a global.json file.
 #[derive(Deserialize)]
-struct SdkConfig {
+pub(crate) struct SdkConfig {
     version: String,
     #[serde(rename = "rollForward")]
     roll_forward: Option<String>,
@@ -25,12 +25,11 @@ impl FromStr for GlobalJson {
     }
 }
 
-impl TryFrom<GlobalJson> for VersionReq {
+impl TryFrom<SdkConfig> for VersionReq {
     type Error = semver::Error;
 
     // TODO: Factor in pre-release logic
-    fn try_from(global_json: GlobalJson) -> Result<Self, Self::Error> {
-        let sdk_config = global_json.sdk;
+    fn try_from(sdk_config: SdkConfig) -> Result<Self, Self::Error> {
         let version = &sdk_config.version;
         let roll_forward = sdk_config.roll_forward.as_deref();
 
@@ -59,7 +58,7 @@ mod tests {
     use std::str::FromStr;
 
     #[test]
-    fn test_construct_version_req() {
+    fn test_construct_version_req_from_sdk() {
         #[derive(Debug)]
         struct TestCase {
             version: &'static str,
@@ -135,8 +134,7 @@ mod tests {
                 version: case.version.to_string(),
                 roll_forward: case.roll_forward.map(ToString::to_string),
             };
-            let global_json = GlobalJson { sdk: sdk_config };
-            let result = VersionReq::try_from(global_json).unwrap();
+            let result = VersionReq::try_from(sdk_config).unwrap();
             assert_eq!(
                 result.to_string(),
                 case.expected,
@@ -146,7 +144,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_global_json() {
+    fn test_parse_global_json_with_sdk() {
         let json_content = r#"
         {
             "sdk": {
@@ -157,22 +155,27 @@ mod tests {
         "#;
 
         let global_json = GlobalJson::from_str(json_content).unwrap();
-        let version_req = VersionReq::try_from(global_json).unwrap();
+        let version_req = VersionReq::try_from(global_json.sdk.unwrap()).unwrap();
         assert_eq!(version_req, VersionReq::parse("^6.0").unwrap());
     }
 
     #[test]
-    fn test_parse_global_json_without_rollforward() {
-        let json_content = r#"
-        {
-            "sdk": {
-                "version": "6.0.100"
-            }
-        }
-        "#;
-
-        let global_json = GlobalJson::from_str(json_content).unwrap();
-        let version_req = VersionReq::try_from(global_json).unwrap();
+    fn test_parse_global_json_without_sdk_rollforward() {
+        let sdk_config = SdkConfig {
+            version: "6.0.100".to_string(),
+            roll_forward: None,
+        };
+        let version_req = VersionReq::try_from(sdk_config).unwrap();
         assert_eq!(version_req, VersionReq::parse("6.0.100").unwrap());
+    }
+
+    #[test]
+    fn test_parse_empty_global_json() {
+        let json_content = r"
+        {
+        }
+        ";
+        let global_json = GlobalJson::from_str(json_content).unwrap();
+        assert!(global_json.sdk.is_none());
     }
 }
