@@ -329,9 +329,8 @@ fn handle_published_launch_processes(
                 log_bullet.done()
             }
         }
-        Err(error) => match error {
-            LaunchProcessDetectionError::ProcessType(process_type_error) => log_bullet
-                .warning(formatdoc! {"
+        Err(LaunchProcessDetectionError::ProcessType(process_type_error)) => log_bullet
+            .warning(formatdoc! {"
                 {process_type_error}
 
                 Launch process detection error
@@ -355,8 +354,7 @@ fn handle_published_launch_processes(
                 the behavior for your use case, file an issue here:
                 https://github.com/heroku/buildpacks-dotnet/issues/new
             "})
-                .done(),
-        },
+            .done(),
     }
 }
 
