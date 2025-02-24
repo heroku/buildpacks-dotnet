@@ -197,36 +197,12 @@ impl Buildpack for DotnetBuildpack {
 
                 layers::runtime::handle(&context, &sdk_layer.path())?;
 
-                log_bullet = log
-                    .bullet("Process types")
-                    .sub_bullet("Detecting process types from published artifacts");
-                log = match launch_process::detect_solution_processes(&solution) {
-                    Ok(processes) => {
-                        if processes.is_empty() {
-                            log_bullet.sub_bullet("No processes were detected").done()
-                        } else {
-                            for process in &processes {
-                                log_bullet = log_bullet.sub_bullet(format!(
-                                    "Found {}: {}",
-                                    style::value(process.r#type.to_string()),
-                                    process.command.join(" ")
-                                ));
-                            }
-                            log_bullet = if Path::exists(&context.app_dir.join("Procfile")) {
-                                log_bullet
-                                    .sub_bullet("Procfile detected")
-                                    .sub_bullet("Skipping process type registration (add process types to your Procfile as needed)")
-                            } else {
-                                launch_builder.processes(processes);
-                                log_bullet.sub_bullet("No Procfile detected").sub_bullet(
-                                    "Registering detected process types as launch processes",
-                                )
-                            };
-                            log_bullet.done()
-                        }
-                    }
-                    Err(error) => log_launch_process_detection_warning(error, log_bullet),
-                };
+                log = handle_published_launch_processes(
+                    &context,
+                    &solution,
+                    &mut launch_builder,
+                    log,
+                );
             }
             ExecutionEnvironment::Test => {
                 let mut args = vec![format!("dotnet test {}", solution.path.to_string_lossy())];
@@ -317,6 +293,44 @@ fn detect_global_json_sdk_configuration(
                 })
         },
     )
+}
+
+fn handle_published_launch_processes(
+    context: &BuildContext<DotnetBuildpack>,
+    solution: &Solution,
+    launch_builder: &mut LaunchBuilder,
+    log: Print<Bullet<Stdout>>,
+) -> Print<Bullet<Stdout>> {
+    let mut log_bullet = log
+        .bullet("Process types")
+        .sub_bullet("Detecting process types from published artifacts");
+    match launch_process::detect_solution_processes(solution) {
+        Ok(processes) => {
+            if processes.is_empty() {
+                log_bullet.sub_bullet("No processes were detected").done()
+            } else {
+                for process in &processes {
+                    log_bullet = log_bullet.sub_bullet(format!(
+                        "Found {}: {}",
+                        style::value(process.r#type.to_string()),
+                        process.command.join(" ")
+                    ));
+                }
+                log_bullet = if Path::exists(&context.app_dir.join("Procfile")) {
+                    log_bullet
+                        .sub_bullet("Procfile detected")
+                        .sub_bullet("Skipping process type registration (add process types to your Procfile as needed)")
+                } else {
+                    launch_builder.processes(processes);
+                    log_bullet
+                        .sub_bullet("No Procfile detected")
+                        .sub_bullet("Registering detected process types as launch processes")
+                };
+                log_bullet.done()
+            }
+        }
+        Err(error) => log_launch_process_detection_warning(error, log_bullet),
+    }
 }
 
 fn log_launch_process_detection_warning(
