@@ -1,6 +1,6 @@
 use crate::dotnet::runtime_identifier::RuntimeIdentifier;
+use crate::dotnet_buildpack_configuration::VerbosityLevel;
 use std::env::temp_dir;
-use std::fmt;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -31,26 +31,5 @@ impl From<DotnetPublishCommand> for Command {
             command.args(["--verbosity", &verbosity_level.to_string()]);
         };
         command
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub(crate) enum VerbosityLevel {
-    Quiet,
-    Minimal,
-    Normal,
-    Detailed,
-    Diagnostic,
-}
-
-impl fmt::Display for VerbosityLevel {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            VerbosityLevel::Quiet => write!(f, "quiet"),
-            VerbosityLevel::Minimal => write!(f, "minimal"),
-            VerbosityLevel::Normal => write!(f, "normal"),
-            VerbosityLevel::Detailed => write!(f, "detailed"),
-            VerbosityLevel::Diagnostic => write!(f, "diagnostic"),
-        }
     }
 }

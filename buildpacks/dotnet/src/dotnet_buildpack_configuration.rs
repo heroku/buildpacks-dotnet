@@ -1,8 +1,16 @@
-use crate::dotnet_publish_command::VerbosityLevel;
+use std::fmt;
 
+#[derive(Debug, PartialEq)]
 pub(crate) struct DotnetBuildpackConfiguration {
     pub(crate) build_configuration: Option<String>,
+    pub(crate) execution_environment: ExecutionEnvironment,
     pub(crate) msbuild_verbosity_level: Option<VerbosityLevel>,
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum ExecutionEnvironment {
+    Production,
+    Test,
 }
 
 #[derive(Debug, PartialEq)]
@@ -15,9 +23,15 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
 
     fn try_from(env: &libcnb::Env) -> Result<Self, Self::Error> {
         Ok(Self {
-            build_configuration: env
-                .get("BUILD_CONFIGURATION")
-                .map(|value| value.to_string_lossy().to_string()),
+            build_configuration: env.get_string_lossy("BUILD_CONFIGURATION"),
+            execution_environment: env.get_string_lossy("CNB_EXEC_ENV").map_or(
+                ExecutionEnvironment::Production,
+                |value| match value.as_str() {
+                    "test" => ExecutionEnvironment::Test,
+                    "production" => ExecutionEnvironment::Production,
+                    _ => unimplemented!("Unsupported CNB execution environment \"{value}\""),
+                },
+            ),
             msbuild_verbosity_level: detect_msbuild_verbosity_level(env).transpose()?,
         })
     }
@@ -26,8 +40,7 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
 fn detect_msbuild_verbosity_level(
     env: &libcnb::Env,
 ) -> Option<Result<VerbosityLevel, DotnetBuildpackConfigurationError>> {
-    env.get("MSBUILD_VERBOSITY_LEVEL")
-        .map(|value| value.to_string_lossy())
+    env.get_string_lossy("MSBUILD_VERBOSITY_LEVEL")
         .map(|value| match value.to_lowercase().as_str() {
             "q" | "quiet" => Ok(VerbosityLevel::Quiet),
             "m" | "minimal" => Ok(VerbosityLevel::Minimal),
@@ -38,6 +51,27 @@ fn detect_msbuild_verbosity_level(
                 DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(value.to_string()),
             ),
         })
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) enum VerbosityLevel {
+    Quiet,
+    Minimal,
+    Normal,
+    Detailed,
+    Diagnostic,
+}
+
+impl fmt::Display for VerbosityLevel {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            VerbosityLevel::Quiet => write!(f, "quiet"),
+            VerbosityLevel::Minimal => write!(f, "minimal"),
+            VerbosityLevel::Normal => write!(f, "normal"),
+            VerbosityLevel::Detailed => write!(f, "detailed"),
+            VerbosityLevel::Diagnostic => write!(f, "diagnostic"),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -51,6 +85,42 @@ mod tests {
             env.insert(key, value);
         }
         env
+    }
+
+    #[test]
+    fn test_default_buildpack_configuration() {
+        let env = create_env(&[]);
+        let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
+
+        assert_eq!(
+            result,
+            DotnetBuildpackConfiguration {
+                build_configuration: None,
+                execution_environment: ExecutionEnvironment::Production,
+                msbuild_verbosity_level: None
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_execution_environment_env_var() {
+        let cases = [
+            ("test", ExecutionEnvironment::Test),
+            ("production", ExecutionEnvironment::Production),
+        ];
+        for (input, expected) in cases {
+            let env = create_env(&[("CNB_EXEC_ENV", input)]);
+            let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
+
+            assert_eq!(
+                result,
+                DotnetBuildpackConfiguration {
+                    build_configuration: None,
+                    execution_environment: expected,
+                    msbuild_verbosity_level: None
+                }
+            );
+        }
     }
 
     #[test]
