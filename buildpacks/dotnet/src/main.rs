@@ -19,7 +19,7 @@ use crate::dotnet_buildpack_configuration::{
 use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
-use bullet_stream::state::{Bullet, SubBullet};
+use bullet_stream::state::Bullet;
 use bullet_stream::{style, Print};
 use fun_run::CommandWithName;
 use indoc::formatdoc;
@@ -329,17 +329,9 @@ fn handle_published_launch_processes(
                 log_bullet.done()
             }
         }
-        Err(error) => log_launch_process_detection_warning(error, log_bullet),
-    }
-}
-
-fn log_launch_process_detection_warning(
-    error: LaunchProcessDetectionError,
-    log: Print<SubBullet<Stdout>>,
-) -> Print<Bullet<Stdout>> {
-    match error {
-        LaunchProcessDetectionError::ProcessType(process_type_error) => log
-            .warning(formatdoc! {"
+        Err(error) => match error {
+            LaunchProcessDetectionError::ProcessType(process_type_error) => log_bullet
+                .warning(formatdoc! {"
                 {process_type_error}
 
                 Launch process detection error
@@ -363,7 +355,8 @@ fn log_launch_process_detection_warning(
                 the behavior for your use case, file an issue here:
                 https://github.com/heroku/buildpacks-dotnet/issues/new
             "})
-            .done(),
+                .done(),
+        },
     }
 }
 
