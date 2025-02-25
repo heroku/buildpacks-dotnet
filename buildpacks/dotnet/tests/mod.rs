@@ -5,6 +5,7 @@ mod detect_test;
 mod dotnet_publish_test;
 mod dotnet_restore_tools_test;
 mod nuget_layer_test;
+mod runtime_dependencies_test;
 mod sdk_installation_test;
 mod test_execution_environment_test;
 
