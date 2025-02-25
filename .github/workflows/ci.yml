@@ -56,8 +56,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        builder: ["builder:24", "builder:22"]
         arch: ["amd64", "arm64"]
+        exclude:
+          - builder: "builder:22"
+            arch: "arm64"
     runs-on: ${{ matrix.arch == 'arm64' && 'pub-hk-ubuntu-24.04-arm-medium' || 'ubuntu-24.04' }}
+    env:
+      INTEGRATION_TEST_BUILDER: heroku/${{ matrix.builder }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -73,9 +79,16 @@ jobs:
         uses: buildpacks/github-actions/setup-pack@c502bcff683efa6f6d56a325df3fbe1722e21881 # v5.8.11
       # The images are pulled up front to prevent duplicate pulls due to the tests being run concurrently.
       - name: Pull builder image
-        run: docker pull heroku/builder:24
+        run: docker pull '${{ env.INTEGRATION_TEST_BUILDER }}'
       - name: Pull run image
-        run: docker pull heroku/heroku:24
+        # Using `docker inspect` rather than `pack builder inspect` since the latter makes
+        # additional requests to Docker Hub even when the image is available locally.
+        run: |
+          RUN_IMAGE=$(
+            docker inspect --format='{{index .Config.Labels "io.buildpacks.builder.metadata"}}' '${{ env.INTEGRATION_TEST_BUILDER }}' \
+              | jq --exit-status --raw-output '.stack.runImage.image'
+          )
+          docker pull "${RUN_IMAGE}"
       # The integration tests are annotated with the `ignore` attribute, allowing us to run
       # only those and not the unit tests, via the `--ignored` option. On the latest stack
       # we run all integration tests, but on older stacks we only run stack-specific tests.
