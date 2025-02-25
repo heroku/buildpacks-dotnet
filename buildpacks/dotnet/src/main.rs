@@ -19,7 +19,7 @@ use crate::dotnet_buildpack_configuration::{
 use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
-use bullet_stream::state::{Bullet, SubBullet};
+use bullet_stream::global::print;
 use bullet_stream::{style, Print};
 use fun_run::CommandWithName;
 use indoc::formatdoc;
@@ -34,7 +34,7 @@ use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::inventory;
 use semver::{Version, VersionReq};
 use sha2::Sha512;
-use std::io::{Stdout, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{fs, io};
@@ -65,7 +65,8 @@ impl Buildpack for DotnetBuildpack {
         let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
             .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
 
-        let mut log = Print::new(std::io::stdout()).h2("Heroku .NET Buildpack");
+        bullet_stream::global::set_writer(std::io::stdout());
+        let mut log = Print::global().h2("Heroku .NET Buildpack");
         let mut log_bullet = log.bullet("SDK version detection");
 
         let solution = get_solution_to_publish(&context.app_dir)?;
@@ -118,8 +119,8 @@ impl Buildpack for DotnetBuildpack {
             ))
             .done();
 
-        let (sdk_layer, log) = layers::sdk::handle(&context, log, sdk_artifact)?;
-        let (nuget_cache_layer, mut log) = layers::nuget_cache::handle(&context, log)?;
+        let sdk_layer = layers::sdk::handle(&context, sdk_artifact)?;
+        let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
 
         let command_env = sdk_layer.read_env()?.chainable_insert(
             Scope::Build,
@@ -211,7 +212,10 @@ impl Buildpack for DotnetBuildpack {
                     log_bullet.done()
                 }
             }
-            Err(error) => log_launch_process_detection_warning(error, log_bullet),
+            Err(error) => {
+                log_launch_process_detection_warning(error);
+                log_bullet.done()
+            }
         };
         log.done();
 
@@ -289,13 +293,10 @@ fn detect_global_json_sdk_configuration(
     )
 }
 
-fn log_launch_process_detection_warning(
-    error: LaunchProcessDetectionError,
-    log: Print<SubBullet<Stdout>>,
-) -> Print<Bullet<Stdout>> {
+fn log_launch_process_detection_warning(error: LaunchProcessDetectionError) {
     match error {
-        LaunchProcessDetectionError::ProcessType(process_type_error) => log
-            .warning(formatdoc! {"
+        LaunchProcessDetectionError::ProcessType(process_type_error) => {
+            print::warning(formatdoc! {"
                 {process_type_error}
 
                 Launch process detection error
@@ -318,8 +319,8 @@ fn log_launch_process_detection_warning(
                 If you think you found a bug in the buildpack, or have feedback on improving
                 the behavior for your use case, file an issue here:
                 https://github.com/heroku/buildpacks-dotnet/issues/new
-            "})
-            .done(),
+            "});
+        }
     }
 }
 
