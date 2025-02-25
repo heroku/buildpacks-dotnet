@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `sdk` element in detected `global.json` files is no longer required. The SDK version to install is now inferred from the solution/project files when `global.json` doesn't define SDK configuration. ([#202](https://github.com/heroku/buildpacks-dotnet/pull/202))
 - The buildpack will now set `--artifacts-path` to a temporary directory during `dotnet publish`. This change reduces the number of unused, duplicated and/or intermediate files in the app directory. Published output for each project is still written to the same location relative to the the project directory (`bin/publish`, as configured using the `PublishDir` property). ([#186](https://github.com/heroku/buildpacks-dotnet/pull/186))
 
+### Added
+
+- Support for .NET SDK versions: 9.0.100-preview.1.24101.2 (linux-amd64), 9.0.100-preview.1.24101.2 (linux-arm64), 9.0.100-preview.2.24157.14 (linux-amd64), 9.0.100-preview.2.24157.14 (linux-arm64), 9.0.100-preview.3.24204.13 (linux-amd64), 9.0.100-preview.3.24204.13 (linux-arm64), 9.0.100-preview.4.24267.66 (linux-amd64), 9.0.100-preview.4.24267.66 (linux-arm64), 9.0.100-preview.5.24307.3 (linux-amd64), 9.0.100-preview.5.24307.3 (linux-arm64), 9.0.100-preview.6.24328.19 (linux-amd64), 9.0.100-preview.6.24328.19 (linux-arm64), 9.0.100-preview.7.24407.12 (linux-amd64), 9.0.100-preview.7.24407.12 (linux-arm64), 9.0.100-rc.1.24452.12 (linux-amd64), 9.0.100-rc.1.24452.12 (linux-arm64), 9.0.100-rc.2.24474.11 (linux-amd64), 9.0.100-rc.2.24474.11 (linux-arm64), 9.0.100 (linux-amd64), 9.0.100 (linux-arm64), 9.0.101 (linux-amd64), 9.0.101 (linux-arm64), 9.0.102 (linux-amd64), 9.0.102 (linux-arm64), 9.0.103 (linux-amd64), 9.0.103 (linux-arm64), 9.0.200 (linux-amd64), 9.0.200 (linux-arm64).
+
+### Removed
+
+- Support for .NET SDK versions: 9.0.100-preview.1.24101.2 (linux-amd64), 9.0.100-preview.1.24101.2 (linux-arm64), 9.0.100-preview.2.24157.14 (linux-amd64), 9.0.100-preview.2.24157.14 (linux-arm64), 9.0.100-preview.3.24204.13 (linux-amd64), 9.0.100-preview.3.24204.13 (linux-arm64), 9.0.100-preview.4.24267.66 (linux-amd64), 9.0.100-preview.4.24267.66 (linux-arm64), 9.0.100-preview.5.24307.3 (linux-amd64), 9.0.100-preview.5.24307.3 (linux-arm64), 9.0.100-preview.6.24328.19 (linux-amd64), 9.0.100-preview.6.24328.19 (linux-arm64), 9.0.100-preview.7.24407.12 (linux-amd64), 9.0.100-preview.7.24407.12 (linux-arm64), 9.0.100-rc.1.24452.12 (linux-amd64), 9.0.100-rc.1.24452.12 (linux-arm64), 9.0.100-rc.2.24474.11 (linux-amd64), 9.0.100-rc.2.24474.11 (linux-arm64), 9.0.100 (linux-amd64), 9.0.100 (linux-arm64), 9.0.101 (linux-amd64), 9.0.101 (linux-arm64), 9.0.102 (linux-amd64), 9.0.102 (linux-arm64), 9.0.103 (linux-amd64), 9.0.103 (linux-arm64), 9.0.200 (linux-amd64), 9.0.200 (linux-arm64).
+
 ## [0.2.2] - 2025-02-12
 
 ### Added
