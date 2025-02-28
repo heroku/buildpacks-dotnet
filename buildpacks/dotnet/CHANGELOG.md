@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-02-28
+
 ### Changed
 
 - The `sdk` element in detected `global.json` files is no longer required. The SDK version to install is now inferred from the solution/project files when `global.json` doesn't define SDK configuration. ([#202](https://github.com/heroku/buildpacks-dotnet/pull/202))
@@ -114,7 +116,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.2.2...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/heroku/buildpacks-dotnet/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/heroku/buildpacks-dotnet/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.1.10...v0.2.0
