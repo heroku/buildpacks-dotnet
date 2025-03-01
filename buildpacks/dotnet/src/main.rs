@@ -20,7 +20,7 @@ use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
 use crate::layers::sdk::SdkLayerError;
 use bullet_stream::global::print;
-use bullet_stream::{style, Print};
+use bullet_stream::style;
 use fun_run::CommandWithName;
 use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
@@ -66,12 +66,13 @@ impl Buildpack for DotnetBuildpack {
             .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
 
         bullet_stream::global::set_writer(std::io::stdout());
-        let mut log = Print::global().h2("Heroku .NET Buildpack");
-        let mut log_bullet = log.bullet("SDK version detection");
+        print::h2("Heroku .NET Buildpack");
+        let started = std::time::Instant::now();
+        print::bullet("SDK version detection");
 
         let solution = get_solution_to_publish(&context.app_dir)?;
 
-        log_bullet = log_bullet.sub_bullet(format!(
+        print::sub_bullet(format!(
             "Detected .NET file to publish: {}",
             style::value(solution.path.to_string_lossy())
         ));
@@ -79,19 +80,18 @@ impl Buildpack for DotnetBuildpack {
         let sdk_version_requirement = if let Some(sdk_configuration) =
             detect_global_json_sdk_configuration(&context.app_dir)?
         {
-            log_bullet =
-                log_bullet.sub_bullet("Detecting version requirement from root global.json file");
+            print::sub_bullet("Detecting version requirement from root global.json file");
             VersionReq::try_from(sdk_configuration)
                 .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?
         } else {
-            log_bullet = log_bullet.sub_bullet(format!(
+            print::sub_bullet(format!(
                 "Inferring version requirement from {}",
                 style::value(solution.path.to_string_lossy())
             ));
             get_solution_sdk_version_requirement(&solution)?
         };
 
-        log_bullet = log_bullet.sub_bullet(format!(
+        print::sub_bullet(format!(
             "Detected version requirement: {}",
             style::value(sdk_version_requirement.to_string())
         ));
@@ -111,13 +111,11 @@ impl Buildpack for DotnetBuildpack {
                 sdk_version_requirement,
             ))?;
 
-        log = log_bullet
-            .sub_bullet(format!(
-                "Resolved .NET SDK version {} {}",
-                style::value(sdk_artifact.version.to_string()),
-                style::details(format!("{}-{}", sdk_artifact.os, sdk_artifact.arch))
-            ))
-            .done();
+        print::sub_bullet(format!(
+            "Resolved .NET SDK version {} {}",
+            style::value(sdk_artifact.version.to_string()),
+            style::details(format!("{}-{}", sdk_artifact.os, sdk_artifact.arch))
+        ));
 
         let sdk_layer = layers::sdk::handle(&context, sdk_artifact)?;
         let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
@@ -141,24 +139,21 @@ impl Buildpack for DotnetBuildpack {
                 .current_dir(&context.app_dir)
                 .envs(&command_env.apply(Scope::Build, &Env::from_current()));
 
-            log_bullet = log
-                .bullet("Restore .NET tools")
-                .sub_bullet("Tool manifest file detected");
-            log_bullet
-                .stream_with(
-                    format!("Running {}", style::command(restore_tools_command.name())),
-                    |stdout, stderr| restore_tools_command.stream_output(stdout, stderr),
-                )
-                .map_err(DotnetBuildpackError::RestoreDotnetToolsCommand)?;
-            log = log_bullet.done();
+            print::bullet("Restore .NET tools");
+            print::sub_bullet("Tool manifest file detected");
+            print::sub_stream_with(
+                format!("Running {}", style::command(restore_tools_command.name())),
+                |stdout, stderr| restore_tools_command.stream_output(stdout, stderr),
+            )
+            .map_err(DotnetBuildpackError::RestoreDotnetToolsCommand)?;
         }
 
-        log_bullet = log.bullet("Publish solution");
+        print::bullet("Publish solution");
         let build_configuration = buildpack_configuration
             .build_configuration
             .clone()
             .unwrap_or_else(|| String::from("Release"));
-        log_bullet = log_bullet.sub_bullet(format!(
+        print::sub_bullet(format!(
             "Using {} build configuration",
             style::value(build_configuration.clone())
         ));
@@ -173,51 +168,43 @@ impl Buildpack for DotnetBuildpack {
             .current_dir(&context.app_dir)
             .envs(&command_env.apply(Scope::Build, &Env::from_current()));
 
-        log_bullet
-            .stream_with(
-                format!("Running {}", style::command(publish_command.name())),
-                |stdout, stderr| publish_command.stream_output(stdout, stderr),
-            )
-            .map_err(DotnetBuildpackError::PublishCommand)?;
-        log = log_bullet.done();
-
+        print::sub_stream_with(
+            format!("Running {}", style::command(publish_command.name())),
+            |stdout, stderr| publish_command.stream_output(stdout, stderr),
+        )
+        .map_err(DotnetBuildpackError::PublishCommand)?;
         layers::runtime::handle(&context, &sdk_layer.path())?;
 
-        log_bullet = log
-            .bullet("Process types")
-            .sub_bullet("Detecting process types from published artifacts");
+        print::bullet("Process types");
+        print::sub_bullet("Detecting process types from published artifacts");
         let mut launch_builder = LaunchBuilder::new();
-        log = match launch_process::detect_solution_processes(&solution) {
+        match launch_process::detect_solution_processes(&solution) {
             Ok(processes) => {
                 if processes.is_empty() {
-                    log_bullet.sub_bullet("No processes were detected").done()
+                    print::sub_bullet("No processes were detected");
                 } else {
                     for process in &processes {
-                        log_bullet = log_bullet.sub_bullet(format!(
+                        print::sub_bullet(format!(
                             "Found {}: {}",
                             style::value(process.r#type.to_string()),
                             process.command.join(" ")
                         ));
                     }
-                    log_bullet = if Path::exists(&context.app_dir.join("Procfile")) {
-                        log_bullet
-                            .sub_bullet("Procfile detected")
-                            .sub_bullet("Skipping process type registration (add process types to your Procfile as needed)")
+                    if Path::exists(&context.app_dir.join("Procfile")) {
+                        print::sub_bullet("Procfile detected");
+                        print::sub_bullet("Skipping process type registration (add process types to your Procfile as needed)");
                     } else {
                         launch_builder.processes(processes);
-                        log_bullet
-                            .sub_bullet("No Procfile detected")
-                            .sub_bullet("Registering detected process types as launch processes")
+                        print::sub_bullet("No Procfile detected");
+                        print::sub_bullet("Registering detected process types as launch processes");
                     };
-                    log_bullet.done()
                 }
             }
             Err(error) => {
                 log_launch_process_detection_warning(error);
-                log_bullet.done()
             }
         };
-        log.done();
+        print::all_done(&Some(started));
 
         BuildResultBuilder::new()
             .launch(launch_builder.build())
