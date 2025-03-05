@@ -157,14 +157,6 @@ impl Buildpack for DotnetBuildpack {
         }
 
         print::bullet("Publish solution");
-        let build_configuration = buildpack_configuration
-            .build_configuration
-            .clone()
-            .unwrap_or_else(|| String::from("Release"));
-        print::sub_bullet(format!(
-            "Using {} build configuration",
-            style::value(build_configuration.clone())
-        ));
 
         let mut publish_command = Command::from(DotnetPublishCommand {
             path: solution.path.clone(),
