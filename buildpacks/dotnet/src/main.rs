@@ -120,12 +120,20 @@ impl Buildpack for DotnetBuildpack {
         let sdk_layer = layers::sdk::handle(&context, sdk_artifact)?;
         let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
 
-        let command_env = sdk_layer.read_env()?.chainable_insert(
-            Scope::Build,
-            libcnb::layer_env::ModificationBehavior::Override,
-            "NUGET_PACKAGES",
-            nuget_cache_layer.path(),
-        );
+        let command_env = sdk_layer
+            .read_env()?
+            .chainable_insert(
+                Scope::Build,
+                libcnb::layer_env::ModificationBehavior::Override,
+                "NUGET_PACKAGES",
+                nuget_cache_layer.path(),
+            )
+            .chainable_insert(
+                Scope::Build,
+                libcnb::layer_env::ModificationBehavior::Default,
+                "NUGET_XMLDOC_MODE",
+                "skip",
+            );
 
         if let Some(manifest_path) = detect::dotnet_tools_manifest_file(&context.app_dir) {
             let mut restore_tools_command = Command::new("dotnet");

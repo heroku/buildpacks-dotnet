@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The .NET SDK inventory was updated with new download URLs for version 9.0 release artifacts. ([#203](https://github.com/heroku/buildpacks-dotnet/pull/203))
+- The buildpack will now skip NuGet package XML doc extraction when running `dotnet publish`. ([#212](https://github.com/heroku/buildpacks-dotnet/pull/212))
 
 ## [0.3.0] - 2025-02-28
 
