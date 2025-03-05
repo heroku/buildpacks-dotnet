@@ -5,7 +5,6 @@ members = [
     "buildpacks/dotnet",
     "shared/inventory-updater"
 ]
-default-members = ["buildpacks/dotnet"]
 
 [workspace.package]
 rust-version = "1.83"
