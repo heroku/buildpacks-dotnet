@@ -132,7 +132,8 @@ fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, Option<()>>> {
             ureq::get(&format!("https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/{major_version}.0/releases.json"))
                 .call()
                 .expect(".NET release feed should be available")
-                .into_json::<DotNetReleaseFeed>()
+                .body_mut()
+                .read_json::<DotNetReleaseFeed>()
                 .expect(".NET release feed should be parsable from JSON")
                 .releases
                 .into_iter()
