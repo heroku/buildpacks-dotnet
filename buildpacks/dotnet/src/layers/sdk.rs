@@ -34,13 +34,14 @@ const MAX_RETRIES: u8 = 4;
 
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
+    available_at_launch: bool,
     artifact: &Artifact<Version, Sha512, Option<()>>,
 ) -> Result<LayerRef<DotnetBuildpack, (), CustomCause>, libcnb::Error<DotnetBuildpackError>> {
     let sdk_layer = context.cached_layer(
         layer_name!("sdk"),
         CachedLayerDefinition {
             build: true,
-            launch: false,
+            launch: available_at_launch,
             invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
             restored_layer_action: &|metadata: &SdkLayerMetadata, _path| {
                 if metadata.artifact == *artifact {

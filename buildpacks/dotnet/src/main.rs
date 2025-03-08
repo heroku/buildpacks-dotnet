@@ -118,7 +118,9 @@ impl Buildpack for DotnetBuildpack {
         ));
 
         let sdk_scope = Scope::Build;
-        let sdk_layer = layers::sdk::handle(&context, sdk_artifact)?;
+        let sdk_available_at_launch = sdk_scope == Scope::Launch;
+
+        let sdk_layer = layers::sdk::handle(&context, sdk_available_at_launch, sdk_artifact)?;
         sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
             sdk_layer.path().as_path(),
             &sdk_scope,
