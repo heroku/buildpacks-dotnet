@@ -6,7 +6,6 @@ use libcnb::layer::{
     CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerRef, LayerState,
     RestoredLayerAction,
 };
-use libcnb::layer_env::{LayerEnv, Scope};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -45,33 +44,15 @@ pub(crate) fn handle(
 
     if let Some(message) = match nuget_cache_layer.state {
         LayerState::Restored { .. } => Some("Reusing package cache".to_string()),
-        LayerState::Empty { cause } => {
-            nuget_cache_layer.write_env(
-                LayerEnv::new()
-                    .chainable_insert(
-                        Scope::Build,
-                        libcnb::layer_env::ModificationBehavior::Override,
-                        "NUGET_PACKAGES",
-                        nuget_cache_layer.path(),
-                    )
-                    .chainable_insert(
-                        Scope::Build,
-                        libcnb::layer_env::ModificationBehavior::Default,
-                        "NUGET_XMLDOC_MODE",
-                        "skip",
-                    ),
-            )?;
-
-            match cause {
-                EmptyLayerCause::NewlyCreated => None,
-                EmptyLayerCause::InvalidMetadataAction { .. } => {
-                    Some("Clearing package cache due to invalid metadata".to_string())
-                }
-                EmptyLayerCause::RestoredLayerAction { cause: count } => {
-                    Some(format!("Clearing package cache after {count} uses"))
-                }
+        LayerState::Empty { cause } => match cause {
+            EmptyLayerCause::NewlyCreated => None,
+            EmptyLayerCause::InvalidMetadataAction { .. } => {
+                Some("Clearing package cache due to invalid metadata".to_string())
             }
-        }
+            EmptyLayerCause::RestoredLayerAction { cause: count } => {
+                Some(format!("Clearing package cache after {count} uses"))
+            }
+        },
     } {
         print::bullet("NuGet cache");
         print::sub_bullet(message);

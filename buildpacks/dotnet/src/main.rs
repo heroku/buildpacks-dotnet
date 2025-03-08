@@ -29,7 +29,7 @@ use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::LaunchBuilder;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
-use libcnb::layer_env::Scope;
+use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::inventory;
 use semver::{Version, VersionReq};
@@ -124,6 +124,21 @@ impl Buildpack for DotnetBuildpack {
         ))?;
 
         let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
+        nuget_cache_layer.write_env(
+            LayerEnv::new()
+                .chainable_insert(
+                    Scope::Build,
+                    libcnb::layer_env::ModificationBehavior::Override,
+                    "NUGET_PACKAGES",
+                    nuget_cache_layer.path(),
+                )
+                .chainable_insert(
+                    Scope::Build,
+                    libcnb::layer_env::ModificationBehavior::Default,
+                    "NUGET_XMLDOC_MODE",
+                    "skip",
+                ),
+        )?;
 
         let command_env = nuget_cache_layer.read_env()?.apply(
             Scope::Build,
