@@ -117,23 +117,24 @@ impl Buildpack for DotnetBuildpack {
             style::details(format!("{}-{}", sdk_artifact.os, sdk_artifact.arch))
         ));
 
+        let sdk_scope = Scope::Build;
         let sdk_layer = layers::sdk::handle(&context, sdk_artifact)?;
         sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
             sdk_layer.path().as_path(),
-            &Scope::Build,
+            &sdk_scope,
         ))?;
 
         let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
         nuget_cache_layer.write_env(
             LayerEnv::new()
                 .chainable_insert(
-                    Scope::Build,
+                    sdk_scope.clone(),
                     libcnb::layer_env::ModificationBehavior::Override,
                     "NUGET_PACKAGES",
                     nuget_cache_layer.path(),
                 )
                 .chainable_insert(
-                    Scope::Build,
+                    sdk_scope.clone(),
                     libcnb::layer_env::ModificationBehavior::Default,
                     "NUGET_XMLDOC_MODE",
                     "skip",
