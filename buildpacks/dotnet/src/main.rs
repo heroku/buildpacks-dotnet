@@ -126,7 +126,7 @@ impl Buildpack for DotnetBuildpack {
             &sdk_scope,
         ))?;
 
-        let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
+        let nuget_cache_layer = layers::nuget_cache::handle(&context, sdk_available_at_launch)?;
         nuget_cache_layer.write_env(
             LayerEnv::new()
                 .chainable_insert(
