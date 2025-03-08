@@ -81,6 +81,8 @@ fn test_sdk_basic_install_build_environment() {
                 DOTNET_NOLOGO=true
                 DOTNET_ROOT=/layers/heroku_dotnet/sdk
                 DOTNET_RUNNING_IN_CONTAINER=true
+                NUGET_PACKAGES=/layers/heroku_dotnet/nuget-cache
+                NUGET_XMLDOC_MODE=skip
                 PATH=/layers/heroku_dotnet/sdk:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"}
         );
     });
