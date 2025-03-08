@@ -133,7 +133,8 @@ impl Buildpack for DotnetBuildpack {
                 libcnb::layer_env::ModificationBehavior::Default,
                 "NUGET_XMLDOC_MODE",
                 "skip",
-            );
+            )
+            .apply(Scope::Build, &Env::from_current());
 
         if let Some(manifest_path) = detect::dotnet_tools_manifest_file(&context.app_dir) {
             let mut restore_tools_command = Command::new("dotnet");
@@ -145,7 +146,7 @@ impl Buildpack for DotnetBuildpack {
                     &manifest_path.to_string_lossy(),
                 ])
                 .current_dir(&context.app_dir)
-                .envs(&command_env.apply(Scope::Build, &Env::from_current()));
+                .envs(&command_env);
 
             print::bullet("Restore .NET tools");
             print::sub_bullet("Tool manifest file detected");
@@ -166,7 +167,7 @@ impl Buildpack for DotnetBuildpack {
         });
         publish_command
             .current_dir(&context.app_dir)
-            .envs(&command_env.apply(Scope::Build, &Env::from_current()));
+            .envs(&command_env);
 
         print::sub_stream_with(
             format!("Running {}", style::command(publish_command.name())),
