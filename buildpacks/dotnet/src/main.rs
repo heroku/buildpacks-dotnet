@@ -188,7 +188,9 @@ impl Buildpack for DotnetBuildpack {
             |stdout, stderr| publish_command.stream_output(stdout, stderr),
         )
         .map_err(DotnetBuildpackError::PublishCommand)?;
-        layers::runtime::handle(&context, &sdk_layer.path())?;
+        if !sdk_available_at_launch {
+            layers::runtime::handle(&context, &sdk_layer.path())?;
+        }
 
         print::bullet("Process types");
         print::sub_bullet("Detecting process types from published artifacts");
