@@ -1,4 +1,4 @@
-use crate::{dotnet_layer_env, DotnetBuildpack, DotnetBuildpackError};
+use crate::{DotnetBuildpack, DotnetBuildpackError};
 use bullet_stream::global::print;
 use bullet_stream::style;
 use inventory::artifact::Artifact;
@@ -8,7 +8,6 @@ use libcnb::layer::{
     CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerRef, LayerState,
     RestoredLayerAction,
 };
-use libcnb::layer_env::Scope;
 use libherokubuildpack::download::{download_file, DownloadError};
 use libherokubuildpack::inventory;
 use libherokubuildpack::tar::decompress_tarball;
@@ -109,11 +108,6 @@ pub(crate) fn handle(
                 sdk_layer.path(),
             )
             .map_err(SdkLayerError::DecompressArchive)?;
-
-            sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
-                sdk_layer.path().as_path(),
-                &Scope::Build,
-            ))?;
         }
     }
 

@@ -118,6 +118,11 @@ impl Buildpack for DotnetBuildpack {
         ));
 
         let sdk_layer = layers::sdk::handle(&context, sdk_artifact)?;
+        sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
+            sdk_layer.path().as_path(),
+            &Scope::Build,
+        ))?;
+
         let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
 
         let command_env = nuget_cache_layer.read_env()?.apply(
