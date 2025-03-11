@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The NuGet cache layer is now a build layer and available for later buildpacks. ([#221](https://github.com/heroku/buildpacks-dotnet/pull/221))
+
 ## [0.3.2] - 2025-03-11
 
 ### Added
