@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# Check that:
+# - The correct env vars are set for later buildpacks.
+
+set -euo pipefail
+
+echo
+echo "## Testing buildpack ##"
+
+printenv | sort | grep -vE '^(_|CNB_.+|HOME|HOSTNAME|OLDPWD|PWD|SHLVL)='
