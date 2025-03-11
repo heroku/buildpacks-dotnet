@@ -17,12 +17,14 @@ fn verify_installed_dotnet_runtime_dependencies() {
                 if grep 'not found' <<<"${ldd_output}" | sort --unique; then
                     echo "The above dynamically linked libraries were not found!"
                     exit 1
+                else
+                    echo "All dynamically linked libraries were found."
                 fi
             "#}
         );
         assert_empty!(command_output.stderr);
         assert_contains!(
-            command_output.stdout, "All required .NET dependencies are installed");
+            command_output.stdout, "All dynamically linked libraries were found.");
         },
     );
 }
