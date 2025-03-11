@@ -1,6 +1,6 @@
 use crate::tests::default_build_config;
 use indoc::indoc;
-use libcnb_test::{assert_contains, assert_empty, TestRunner};
+use libcnb_test::{assert_contains, assert_empty, BuildpackReference, TestRunner};
 
 #[test]
 #[ignore = "integration test"]
@@ -59,6 +59,33 @@ fn test_sdk_resolution_with_solution_file() {
             );
         },
     );
+}
+
+#[test]
+#[ignore = "integration test"]
+fn test_sdk_basic_install_build_environment() {
+    let mut config = default_build_config("tests/fixtures/console_with_nuget_package");
+    config.buildpacks(vec![
+        BuildpackReference::CurrentCrate,
+        BuildpackReference::Other("file://tests/fixtures/testing_buildpack".to_string()),
+    ]);
+
+    TestRunner::default().build(&config, |context| {
+        assert_empty!(context.pack_stderr);
+        assert_contains!(
+            context.pack_stdout,
+            &indoc! {"
+                ## Testing buildpack ##
+                DOTNET_CLI_TELEMETRY_OPTOUT=true
+                DOTNET_EnableWriteXorExecute=0
+                DOTNET_NOLOGO=true
+                DOTNET_ROOT=/layers/heroku_dotnet/sdk
+                DOTNET_RUNNING_IN_CONTAINER=true
+                NUGET_PACKAGES=/layers/heroku_dotnet/nuget-cache
+                NUGET_XMLDOC_MODE=skip
+                PATH=/layers/heroku_dotnet/sdk:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"}
+        );
+    });
 }
 
 #[cfg(target_arch = "x86_64")]

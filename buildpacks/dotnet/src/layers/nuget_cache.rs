@@ -18,12 +18,13 @@ const MAX_NUGET_CACHE_RESTORE_COUNT: f32 = 20.0;
 
 pub(crate) fn handle(
     context: &BuildContext<DotnetBuildpack>,
+    available_at_launch: bool,
 ) -> Result<LayerRef<DotnetBuildpack, (), f32>, libcnb::Error<DotnetBuildpackError>> {
     let nuget_cache_layer = context.cached_layer(
         layer_name!("nuget-cache"),
         CachedLayerDefinition {
-            build: false,
-            launch: false,
+            build: true,
+            launch: available_at_launch,
             invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
             restored_layer_action: &|metadata: &NugetCacheLayerMetadata, _path| {
                 if metadata.restore_count >= MAX_NUGET_CACHE_RESTORE_COUNT {
@@ -57,5 +58,6 @@ pub(crate) fn handle(
         print::bullet("NuGet cache");
         print::sub_bullet(message);
     }
+
     Ok(nuget_cache_layer)
 }

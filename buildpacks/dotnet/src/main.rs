@@ -29,7 +29,7 @@ use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::LaunchBuilder;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
-use libcnb::layer_env::Scope;
+use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::inventory;
 use semver::{Version, VersionReq};
@@ -117,23 +117,38 @@ impl Buildpack for DotnetBuildpack {
             style::details(format!("{}-{}", sdk_artifact.os, sdk_artifact.arch))
         ));
 
-        let sdk_layer = layers::sdk::handle(&context, sdk_artifact)?;
-        let nuget_cache_layer = layers::nuget_cache::handle(&context)?;
+        let sdk_scope = Scope::Build;
+        let sdk_available_at_launch = sdk_scope == Scope::Launch || sdk_scope == Scope::All;
 
-        let command_env = sdk_layer
-            .read_env()?
-            .chainable_insert(
-                Scope::Build,
-                libcnb::layer_env::ModificationBehavior::Override,
-                "NUGET_PACKAGES",
-                nuget_cache_layer.path(),
-            )
-            .chainable_insert(
-                Scope::Build,
-                libcnb::layer_env::ModificationBehavior::Default,
-                "NUGET_XMLDOC_MODE",
-                "skip",
-            );
+        let sdk_layer = layers::sdk::handle(&context, sdk_available_at_launch, sdk_artifact)?;
+        sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
+            sdk_layer.path().as_path(),
+            &sdk_scope,
+        ))?;
+
+        let nuget_cache_layer = layers::nuget_cache::handle(&context, sdk_available_at_launch)?;
+        nuget_cache_layer.write_env(
+            LayerEnv::new()
+                .chainable_insert(
+                    sdk_scope.clone(),
+                    libcnb::layer_env::ModificationBehavior::Override,
+                    "NUGET_PACKAGES",
+                    nuget_cache_layer.path(),
+                )
+                .chainable_insert(
+                    sdk_scope.clone(),
+                    libcnb::layer_env::ModificationBehavior::Default,
+                    "NUGET_XMLDOC_MODE",
+                    "skip",
+                ),
+        )?;
+
+        let command_env = nuget_cache_layer.read_env()?.apply(
+            Scope::Build,
+            &sdk_layer
+                .read_env()?
+                .apply(Scope::Build, &Env::from_current()),
+        );
 
         if let Some(manifest_path) = detect::dotnet_tools_manifest_file(&context.app_dir) {
             let mut restore_tools_command = Command::new("dotnet");
@@ -145,7 +160,7 @@ impl Buildpack for DotnetBuildpack {
                     &manifest_path.to_string_lossy(),
                 ])
                 .current_dir(&context.app_dir)
-                .envs(&command_env.apply(Scope::Build, &Env::from_current()));
+                .envs(&command_env);
 
             print::bullet("Restore .NET tools");
             print::sub_bullet("Tool manifest file detected");
@@ -166,14 +181,16 @@ impl Buildpack for DotnetBuildpack {
         });
         publish_command
             .current_dir(&context.app_dir)
-            .envs(&command_env.apply(Scope::Build, &Env::from_current()));
+            .envs(&command_env);
 
         print::sub_stream_with(
             format!("Running {}", style::command(publish_command.name())),
             |stdout, stderr| publish_command.stream_output(stdout, stderr),
         )
         .map_err(DotnetBuildpackError::PublishCommand)?;
-        layers::runtime::handle(&context, &sdk_layer.path())?;
+        if !sdk_available_at_launch {
+            layers::runtime::handle(&context, &sdk_layer.path())?;
+        }
 
         print::bullet("Process types");
         print::sub_bullet("Detecting process types from published artifacts");

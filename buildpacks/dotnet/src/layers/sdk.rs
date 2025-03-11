@@ -1,4 +1,4 @@
-use crate::{dotnet_layer_env, DotnetBuildpack, DotnetBuildpackError};
+use crate::{DotnetBuildpack, DotnetBuildpackError};
 use bullet_stream::global::print;
 use bullet_stream::style;
 use inventory::artifact::Artifact;
@@ -8,7 +8,6 @@ use libcnb::layer::{
     CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerRef, LayerState,
     RestoredLayerAction,
 };
-use libcnb::layer_env::Scope;
 use libherokubuildpack::download::{download_file, DownloadError};
 use libherokubuildpack::inventory;
 use libherokubuildpack::tar::decompress_tarball;
@@ -35,13 +34,14 @@ const MAX_RETRIES: u8 = 4;
 
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
+    available_at_launch: bool,
     artifact: &Artifact<Version, Sha512, Option<()>>,
 ) -> Result<LayerRef<DotnetBuildpack, (), CustomCause>, libcnb::Error<DotnetBuildpackError>> {
     let sdk_layer = context.cached_layer(
         layer_name!("sdk"),
         CachedLayerDefinition {
             build: true,
-            launch: false,
+            launch: available_at_launch,
             invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
             restored_layer_action: &|metadata: &SdkLayerMetadata, _path| {
                 if metadata.artifact == *artifact {
@@ -109,11 +109,6 @@ pub(crate) fn handle(
                 sdk_layer.path(),
             )
             .map_err(SdkLayerError::DecompressArchive)?;
-
-            sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
-                sdk_layer.path().as_path(),
-                &Scope::Build,
-            ))?;
         }
     }
 
