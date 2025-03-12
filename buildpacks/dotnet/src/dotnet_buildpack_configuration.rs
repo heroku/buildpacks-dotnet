@@ -1,4 +1,5 @@
 use std::fmt;
+use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct DotnetBuildpackConfiguration {
@@ -48,6 +49,24 @@ enum ExecutionEnvironment {
     Production,
 }
 
+impl FromStr for ExecutionEnvironment {
+    type Err = ExecutionEnvironmentError;
+
+    fn from_str(cnb_exec_env: &str) -> Result<Self, Self::Err> {
+        match cnb_exec_env {
+            "production" => Ok(ExecutionEnvironment::Production),
+            _ => Err(ExecutionEnvironmentError::UnsupportedExecutionEnvironment(
+                cnb_exec_env.to_string(),
+            )),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum ExecutionEnvironmentError {
+    UnsupportedExecutionEnvironment(String),
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum VerbosityLevel {
     Quiet,
@@ -95,6 +114,22 @@ mod tests {
                 msbuild_verbosity_level: None
             }
         );
+    }
+
+    #[test]
+    fn test_parse_execution_environment() {
+        let cases = [
+            ("production", Ok(ExecutionEnvironment::Production)),
+            (
+                "foo",
+                Err(ExecutionEnvironmentError::UnsupportedExecutionEnvironment(
+                    "foo".to_string(),
+                )),
+            ),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(ExecutionEnvironment::from_str(input), expected);
+        }
     }
 
     #[test]
