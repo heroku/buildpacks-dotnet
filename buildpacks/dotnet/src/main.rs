@@ -14,7 +14,7 @@ use crate::dotnet::runtime_identifier;
 use crate::dotnet::solution::Solution;
 use crate::dotnet::target_framework_moniker::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::dotnet_buildpack_configuration::{
-    DotnetBuildpackConfiguration, DotnetBuildpackConfigurationError,
+    DotnetBuildpackConfiguration, DotnetBuildpackConfigurationError, ExecutionEnvironment,
 };
 use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
@@ -117,7 +117,10 @@ impl Buildpack for DotnetBuildpack {
             style::details(format!("{}-{}", sdk_artifact.os, sdk_artifact.arch))
         ));
 
-        let sdk_scope = Scope::Build;
+        let sdk_scope = match buildpack_configuration.execution_environment {
+            ExecutionEnvironment::Production => Scope::Build,
+            ExecutionEnvironment::Test => Scope::All,
+        };
         let sdk_available_at_launch = sdk_scope == Scope::Launch || sdk_scope == Scope::All;
 
         let sdk_layer = layers::sdk::handle(&context, sdk_available_at_launch, sdk_artifact)?;

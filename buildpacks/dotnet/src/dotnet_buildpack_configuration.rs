@@ -4,7 +4,7 @@ use std::str::FromStr;
 #[derive(Debug, PartialEq)]
 pub(crate) struct DotnetBuildpackConfiguration {
     pub(crate) build_configuration: Option<String>,
-    execution_environment: ExecutionEnvironment,
+    pub(crate) execution_environment: ExecutionEnvironment,
     pub(crate) msbuild_verbosity_level: Option<VerbosityLevel>,
 }
 
@@ -53,7 +53,7 @@ fn detect_msbuild_verbosity_level(
 }
 
 #[derive(Debug, PartialEq)]
-enum ExecutionEnvironment {
+pub(crate) enum ExecutionEnvironment {
     Production,
     Test,
 }
