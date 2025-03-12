@@ -10,6 +10,7 @@ pub(crate) struct DotnetBuildpackConfiguration {
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum DotnetBuildpackConfigurationError {
+    ExecutionEnvironmentError(ExecutionEnvironmentError),
     InvalidMsbuildVerbosityLevel(String),
 }
 
@@ -21,7 +22,14 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
             build_configuration: env
                 .get("BUILD_CONFIGURATION")
                 .map(|value| value.to_string_lossy().to_string()),
-            execution_environment: ExecutionEnvironment::Production,
+            execution_environment: env
+                .get_string_lossy("CNB_EXEC_ENV")
+                .as_deref()
+                .map_or_else(
+                    || Ok(ExecutionEnvironment::Production),
+                    ExecutionEnvironment::from_str,
+                )
+                .map_err(DotnetBuildpackConfigurationError::ExecutionEnvironmentError)?,
             msbuild_verbosity_level: detect_msbuild_verbosity_level(env).transpose()?,
         })
     }
@@ -63,7 +71,7 @@ impl FromStr for ExecutionEnvironment {
 }
 
 #[derive(Debug, PartialEq)]
-enum ExecutionEnvironmentError {
+pub(crate) enum ExecutionEnvironmentError {
     UnsupportedExecutionEnvironment(String),
 }
 

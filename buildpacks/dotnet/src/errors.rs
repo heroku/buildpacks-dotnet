@@ -1,6 +1,8 @@
 use crate::dotnet::target_framework_moniker::ParseTargetFrameworkError;
 use crate::dotnet::{project, solution};
-use crate::dotnet_buildpack_configuration::DotnetBuildpackConfigurationError;
+use crate::dotnet_buildpack_configuration::{
+    DotnetBuildpackConfigurationError, ExecutionEnvironmentError,
+};
 use crate::layers::sdk::SdkLayerError;
 use crate::DotnetBuildpackError;
 use bullet_stream::{style, Print};
@@ -230,6 +232,21 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                     None,
                 );
             }
+            DotnetBuildpackConfigurationError::ExecutionEnvironmentError(error) => match error {
+                ExecutionEnvironmentError::UnsupportedExecutionEnvironment(
+                    execution_environment,
+                ) => {
+                    log_error(
+                        "Unsupported execution environment'",
+                        formatdoc! {"
+                            The `CNB_EXEC_ENV` environment variable value (`{execution_environment}`)
+                            is not supported. This buildpack currently supports only `production`
+                            execution environments.
+                        "},
+                        None,
+                    );
+                }
+            },
         },
         DotnetBuildpackError::RestoreDotnetToolsCommand(error) => match error {
             fun_run::CmdError::SystemError(_message, io_error) => log_io_error(
