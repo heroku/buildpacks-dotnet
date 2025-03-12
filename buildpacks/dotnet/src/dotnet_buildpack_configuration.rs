@@ -3,6 +3,7 @@ use std::fmt;
 #[derive(Debug, PartialEq)]
 pub(crate) struct DotnetBuildpackConfiguration {
     pub(crate) build_configuration: Option<String>,
+    execution_environment: ExecutionEnvironment,
     pub(crate) msbuild_verbosity_level: Option<VerbosityLevel>,
 }
 
@@ -19,6 +20,7 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
             build_configuration: env
                 .get("BUILD_CONFIGURATION")
                 .map(|value| value.to_string_lossy().to_string()),
+            execution_environment: ExecutionEnvironment::Production,
             msbuild_verbosity_level: detect_msbuild_verbosity_level(env).transpose()?,
         })
     }
@@ -39,6 +41,11 @@ fn detect_msbuild_verbosity_level(
                 DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(value.to_string()),
             ),
         })
+}
+
+#[derive(Debug, PartialEq)]
+enum ExecutionEnvironment {
+    Production,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -84,6 +91,7 @@ mod tests {
             result,
             DotnetBuildpackConfiguration {
                 build_configuration: None,
+                execution_environment: ExecutionEnvironment::Production,
                 msbuild_verbosity_level: None
             }
         );
