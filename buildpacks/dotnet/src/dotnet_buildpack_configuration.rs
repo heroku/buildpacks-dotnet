@@ -55,6 +55,7 @@ fn detect_msbuild_verbosity_level(
 #[derive(Debug, PartialEq)]
 enum ExecutionEnvironment {
     Production,
+    Test,
 }
 
 impl FromStr for ExecutionEnvironment {
@@ -63,6 +64,7 @@ impl FromStr for ExecutionEnvironment {
     fn from_str(cnb_exec_env: &str) -> Result<Self, Self::Err> {
         match cnb_exec_env {
             "production" => Ok(ExecutionEnvironment::Production),
+            "test" => Ok(ExecutionEnvironment::Test),
             _ => Err(ExecutionEnvironmentError::UnsupportedExecutionEnvironment(
                 cnb_exec_env.to_string(),
             )),
@@ -125,9 +127,18 @@ mod tests {
     }
 
     #[test]
+    fn test_buildpack_configuration_test_execution_environment() {
+        let env = create_env(&[("CNB_EXEC_ENV", "test")]);
+        let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
+
+        assert_eq!(result.execution_environment, ExecutionEnvironment::Test);
+    }
+
+    #[test]
     fn test_parse_execution_environment() {
         let cases = [
             ("production", Ok(ExecutionEnvironment::Production)),
+            ("test", Ok(ExecutionEnvironment::Test)),
             (
                 "foo",
                 Err(ExecutionEnvironmentError::UnsupportedExecutionEnvironment(
