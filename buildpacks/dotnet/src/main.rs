@@ -26,7 +26,8 @@ use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
 use inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
-use libcnb::data::launch::LaunchBuilder;
+use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
+use libcnb::data::process_type;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::{LayerEnv, Scope};
@@ -232,7 +233,20 @@ impl Buildpack for DotnetBuildpack {
                     }
                 };
             }
-            ExecutionEnvironment::Test => todo!(),
+            ExecutionEnvironment::Test => {
+                let mut args = vec![format!("dotnet test {}", solution.path.to_string_lossy())];
+                if let Some(configuration) = buildpack_configuration.build_configuration {
+                    args.push(format!("--configuration {configuration}"));
+                }
+                if let Some(verbosity_level) = buildpack_configuration.msbuild_verbosity_level {
+                    args.push(format!("--verbosity {verbosity_level}"));
+                }
+                let test_process =
+                    ProcessBuilder::new(process_type!("test"), ["bash", "-c", &args.join(" ")])
+                        .build();
+
+                launch_builder.process(test_process);
+            }
         }
 
         print::all_done(&Some(started));
