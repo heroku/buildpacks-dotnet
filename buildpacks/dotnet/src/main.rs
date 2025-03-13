@@ -14,7 +14,7 @@ use crate::dotnet::runtime_identifier;
 use crate::dotnet::solution::Solution;
 use crate::dotnet::target_framework_moniker::{ParseTargetFrameworkError, TargetFrameworkMoniker};
 use crate::dotnet_buildpack_configuration::{
-    DotnetBuildpackConfiguration, DotnetBuildpackConfigurationError,
+    DotnetBuildpackConfiguration, DotnetBuildpackConfigurationError, ExecutionEnvironment,
 };
 use crate::dotnet_publish_command::DotnetPublishCommand;
 use crate::launch_process::LaunchProcessDetectionError;
@@ -26,7 +26,8 @@ use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
 use inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
-use libcnb::data::launch::LaunchBuilder;
+use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
+use libcnb::data::process_type;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::{LayerEnv, Scope};
@@ -117,7 +118,10 @@ impl Buildpack for DotnetBuildpack {
             style::details(format!("{}-{}", sdk_artifact.os, sdk_artifact.arch))
         ));
 
-        let sdk_scope = Scope::Build;
+        let sdk_scope = match buildpack_configuration.execution_environment {
+            ExecutionEnvironment::Production => Scope::Build,
+            ExecutionEnvironment::Test => Scope::All,
+        };
         let sdk_available_at_launch = sdk_scope == Scope::Launch || sdk_scope == Scope::All;
 
         let sdk_layer = layers::sdk::handle(&context, sdk_available_at_launch, sdk_artifact)?;
@@ -143,84 +147,108 @@ impl Buildpack for DotnetBuildpack {
                 ),
         )?;
 
-        let command_env = nuget_cache_layer.read_env()?.apply(
-            Scope::Build,
-            &sdk_layer
-                .read_env()?
-                .apply(Scope::Build, &Env::from_current()),
-        );
-
-        if let Some(manifest_path) = detect::dotnet_tools_manifest_file(&context.app_dir) {
-            let mut restore_tools_command = Command::new("dotnet");
-            restore_tools_command
-                .args([
-                    "tool",
-                    "restore",
-                    "--tool-manifest",
-                    &manifest_path.to_string_lossy(),
-                ])
-                .current_dir(&context.app_dir)
-                .envs(&command_env);
-
-            print::bullet("Restore .NET tools");
-            print::sub_bullet("Tool manifest file detected");
-            print::sub_stream_with(
-                format!("Running {}", style::command(restore_tools_command.name())),
-                |stdout, stderr| restore_tools_command.stream_output(stdout, stderr),
-            )
-            .map_err(DotnetBuildpackError::RestoreDotnetToolsCommand)?;
-        }
-
-        print::bullet("Publish solution");
-
-        let mut publish_command = Command::from(DotnetPublishCommand {
-            path: solution.path.clone(),
-            configuration: buildpack_configuration.build_configuration,
-            runtime_identifier: runtime_identifier::get_runtime_identifier(target_os, target_arch),
-            verbosity_level: buildpack_configuration.msbuild_verbosity_level,
-        });
-        publish_command
-            .current_dir(&context.app_dir)
-            .envs(&command_env);
-
-        print::sub_stream_with(
-            format!("Running {}", style::command(publish_command.name())),
-            |stdout, stderr| publish_command.stream_output(stdout, stderr),
-        )
-        .map_err(DotnetBuildpackError::PublishCommand)?;
-        if !sdk_available_at_launch {
-            layers::runtime::handle(&context, &sdk_layer.path())?;
-        }
-
-        print::bullet("Process types");
-        print::sub_bullet("Detecting process types from published artifacts");
         let mut launch_builder = LaunchBuilder::new();
-        match launch_process::detect_solution_processes(&solution) {
-            Ok(processes) => {
-                if processes.is_empty() {
-                    print::sub_bullet("No processes were detected");
-                } else {
-                    for process in &processes {
-                        print::sub_bullet(format!(
-                            "Found {}: {}",
-                            style::value(process.r#type.to_string()),
-                            process.command.join(" ")
-                        ));
-                    }
-                    if Path::exists(&context.app_dir.join("Procfile")) {
-                        print::sub_bullet("Procfile detected");
-                        print::sub_bullet("Skipping process type registration (add process types to your Procfile as needed)");
-                    } else {
-                        launch_builder.processes(processes);
-                        print::sub_bullet("No Procfile detected");
-                        print::sub_bullet("Registering detected process types as launch processes");
-                    };
+        match buildpack_configuration.execution_environment {
+            ExecutionEnvironment::Production => {
+                let command_env = nuget_cache_layer.read_env()?.apply(
+                    Scope::Build,
+                    &sdk_layer
+                        .read_env()?
+                        .apply(Scope::Build, &Env::from_current()),
+                );
+
+                if let Some(manifest_path) = detect::dotnet_tools_manifest_file(&context.app_dir) {
+                    let mut restore_tools_command = Command::new("dotnet");
+                    restore_tools_command
+                        .args([
+                            "tool",
+                            "restore",
+                            "--tool-manifest",
+                            &manifest_path.to_string_lossy(),
+                        ])
+                        .current_dir(&context.app_dir)
+                        .envs(&command_env);
+
+                    print::bullet("Restore .NET tools");
+                    print::sub_bullet("Tool manifest file detected");
+                    print::sub_stream_with(
+                        format!("Running {}", style::command(restore_tools_command.name())),
+                        |stdout, stderr| restore_tools_command.stream_output(stdout, stderr),
+                    )
+                    .map_err(DotnetBuildpackError::RestoreDotnetToolsCommand)?;
                 }
+
+                print::bullet("Publish solution");
+
+                let mut publish_command = Command::from(DotnetPublishCommand {
+                    path: solution.path.clone(),
+                    configuration: buildpack_configuration.build_configuration,
+                    runtime_identifier: runtime_identifier::get_runtime_identifier(
+                        target_os,
+                        target_arch,
+                    ),
+                    verbosity_level: buildpack_configuration.msbuild_verbosity_level,
+                });
+                publish_command
+                    .current_dir(&context.app_dir)
+                    .envs(&command_env);
+
+                print::sub_stream_with(
+                    format!("Running {}", style::command(publish_command.name())),
+                    |stdout, stderr| publish_command.stream_output(stdout, stderr),
+                )
+                .map_err(DotnetBuildpackError::PublishCommand)?;
+                if !sdk_available_at_launch {
+                    layers::runtime::handle(&context, &sdk_layer.path())?;
+                }
+
+                print::bullet("Process types");
+                print::sub_bullet("Detecting process types from published artifacts");
+                match launch_process::detect_solution_processes(&solution) {
+                    Ok(processes) => {
+                        if processes.is_empty() {
+                            print::sub_bullet("No processes were detected");
+                        } else {
+                            for process in &processes {
+                                print::sub_bullet(format!(
+                                    "Found {}: {}",
+                                    style::value(process.r#type.to_string()),
+                                    process.command.join(" ")
+                                ));
+                            }
+                            if Path::exists(&context.app_dir.join("Procfile")) {
+                                print::sub_bullet("Procfile detected");
+                                print::sub_bullet("Skipping process type registration (add process types to your Procfile as needed)");
+                            } else {
+                                launch_builder.processes(processes);
+                                print::sub_bullet("No Procfile detected");
+                                print::sub_bullet(
+                                    "Registering detected process types as launch processes",
+                                );
+                            };
+                        }
+                    }
+                    Err(error) => {
+                        log_launch_process_detection_warning(error);
+                    }
+                };
             }
-            Err(error) => {
-                log_launch_process_detection_warning(error);
+            ExecutionEnvironment::Test => {
+                let mut args = vec![format!("dotnet test {}", solution.path.to_string_lossy())];
+                if let Some(configuration) = buildpack_configuration.build_configuration {
+                    args.push(format!("--configuration {configuration}"));
+                }
+                if let Some(verbosity_level) = buildpack_configuration.msbuild_verbosity_level {
+                    args.push(format!("--verbosity {verbosity_level}"));
+                }
+                let test_process =
+                    ProcessBuilder::new(process_type!("test"), ["bash", "-c", &args.join(" ")])
+                        .build();
+
+                launch_builder.process(test_process);
             }
-        };
+        }
+
         print::all_done(&Some(started));
 
         BuildResultBuilder::new()

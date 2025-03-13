@@ -1,13 +1,16 @@
 use std::fmt;
+use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
 pub(crate) struct DotnetBuildpackConfiguration {
     pub(crate) build_configuration: Option<String>,
+    pub(crate) execution_environment: ExecutionEnvironment,
     pub(crate) msbuild_verbosity_level: Option<VerbosityLevel>,
 }
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum DotnetBuildpackConfigurationError {
+    ExecutionEnvironmentError(ExecutionEnvironmentError),
     InvalidMsbuildVerbosityLevel(String),
 }
 
@@ -19,6 +22,14 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
             build_configuration: env
                 .get("BUILD_CONFIGURATION")
                 .map(|value| value.to_string_lossy().to_string()),
+            execution_environment: env
+                .get_string_lossy("CNB_EXEC_ENV")
+                .as_deref()
+                .map_or_else(
+                    || Ok(ExecutionEnvironment::Production),
+                    ExecutionEnvironment::from_str,
+                )
+                .map_err(DotnetBuildpackConfigurationError::ExecutionEnvironmentError)?,
             msbuild_verbosity_level: detect_msbuild_verbosity_level(env).transpose()?,
         })
     }
@@ -39,6 +50,31 @@ fn detect_msbuild_verbosity_level(
                 DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(value.to_string()),
             ),
         })
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum ExecutionEnvironment {
+    Production,
+    Test,
+}
+
+impl FromStr for ExecutionEnvironment {
+    type Err = ExecutionEnvironmentError;
+
+    fn from_str(cnb_exec_env: &str) -> Result<Self, Self::Err> {
+        match cnb_exec_env {
+            "production" => Ok(ExecutionEnvironment::Production),
+            "test" => Ok(ExecutionEnvironment::Test),
+            _ => Err(ExecutionEnvironmentError::UnsupportedExecutionEnvironment(
+                cnb_exec_env.to_string(),
+            )),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub(crate) enum ExecutionEnvironmentError {
+    UnsupportedExecutionEnvironment(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -84,9 +120,35 @@ mod tests {
             result,
             DotnetBuildpackConfiguration {
                 build_configuration: None,
+                execution_environment: ExecutionEnvironment::Production,
                 msbuild_verbosity_level: None
             }
         );
+    }
+
+    #[test]
+    fn test_buildpack_configuration_test_execution_environment() {
+        let env = create_env(&[("CNB_EXEC_ENV", "test")]);
+        let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
+
+        assert_eq!(result.execution_environment, ExecutionEnvironment::Test);
+    }
+
+    #[test]
+    fn test_parse_execution_environment() {
+        let cases = [
+            ("production", Ok(ExecutionEnvironment::Production)),
+            ("test", Ok(ExecutionEnvironment::Test)),
+            (
+                "foo",
+                Err(ExecutionEnvironmentError::UnsupportedExecutionEnvironment(
+                    "foo".to_string(),
+                )),
+            ),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(ExecutionEnvironment::from_str(input), expected);
+        }
     }
 
     #[test]
