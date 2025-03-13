@@ -1,4 +1,4 @@
-use crate::tests::default_build_config;
+use crate::tests::{default_build_config, get_dotnet_arch};
 use indoc::{formatdoc, indoc};
 use libcnb_test::{assert_contains, assert_empty, PackResult, TestRunner};
 use regex::Regex;
@@ -183,15 +183,6 @@ fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
 
 fn get_rid() -> String {
     format!("linux-{}", get_dotnet_arch())
-}
-
-fn get_dotnet_arch() -> String {
-    #[cfg(target_arch = "x86_64")]
-    let arch = "x64";
-    #[cfg(target_arch = "aarch64")]
-    let arch = "arm64";
-
-    arch.to_string()
 }
 
 fn replace_msbuild_log_patterns_with_placeholder(input: &str, placeholder: &str) -> String {
