@@ -240,8 +240,8 @@ fn on_buildpack_error(error: &DotnetBuildpackError) {
                         "Unsupported execution environment'",
                         formatdoc! {"
                             The `CNB_EXEC_ENV` environment variable value (`{execution_environment}`)
-                            is not supported. This buildpack currently supports only `production`
-                            execution environments.
+                            is not supported. This buildpack currently supports `production` and
+                            `test` execution environments.
                         "},
                         None,
                     );
