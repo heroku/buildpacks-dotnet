@@ -75,11 +75,6 @@ impl Buildpack for DotnetBuildpack {
 
         let solution = get_solution_to_publish(&context.app_dir)?;
 
-        print::sub_bullet(format!(
-            "Detected .NET file to publish: {}",
-            style::value(solution.path.to_string_lossy())
-        ));
-
         let sdk_version_requirement = detect_sdk_version_requirement(&context, &solution)?;
 
         let sdk_artifact = resolve_sdk_artifact(&context.target, sdk_version_requirement)?;
@@ -304,6 +299,10 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
     // TODO: Handle situation where multiple solution files are found (e.g. by logging a
     // warning, or by building all solutions).
     if let Some(solution_file) = solution_file_paths.first() {
+        print::sub_bullet(format!(
+            "Detected .NET file to publish: {}",
+            style::value(solution_file.to_string_lossy())
+        ));
         Solution::load_from_path(solution_file).map_err(DotnetBuildpackError::LoadSolutionFile)
     } else {
         let project_file_paths =
@@ -312,7 +311,13 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
         match project_file_paths.as_slice() {
             [single_project] => Ok(Solution::ephemeral(
                 Project::load_from_path(single_project)
-                    .map_err(DotnetBuildpackError::LoadProjectFile)?,
+                    .map_err(DotnetBuildpackError::LoadProjectFile)
+                    .inspect(|project| {
+                        print::sub_bullet(format!(
+                            "Detected .NET file to publish: {}",
+                            style::value(project.path.to_string_lossy())
+                        ));
+                    })?,
             )),
             _ => Err(DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
                 project_file_paths,
