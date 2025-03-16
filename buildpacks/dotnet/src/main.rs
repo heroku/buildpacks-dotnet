@@ -83,12 +83,6 @@ impl Buildpack for DotnetBuildpack {
 
         let sdk_artifact = resolve_sdk_artifact(&context.target, sdk_version_requirement)?;
 
-        print::sub_bullet(format!(
-            "Resolved .NET SDK version {} {}",
-            style::value(sdk_artifact.version.to_string()),
-            style::details(format!("{}-{}", sdk_artifact.os, sdk_artifact.arch))
-        ));
-
         let sdk_scope = match buildpack_configuration.execution_environment {
             ExecutionEnvironment::Production => Scope::Build,
             ExecutionEnvironment::Test => Scope::All,
@@ -250,6 +244,12 @@ fn resolve_sdk_artifact(
                     sdk_version_requirement,
                 ))
                 .cloned()
+                .inspect(|artifact|
+                    print::sub_bullet(format!(
+                        "Resolved .NET SDK version {} {}",
+                        style::value(artifact.version.to_string()),
+                        style::details(format!("{}-{}", artifact.os, artifact.arch))
+                    )))
         })?
 }
 
