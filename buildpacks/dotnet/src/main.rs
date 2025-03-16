@@ -31,7 +31,7 @@ use libcnb::data::process_type;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::{LayerEnv, Scope};
-use libcnb::{buildpack_main, Buildpack, Env};
+use libcnb::{buildpack_main, Buildpack, Env, Target};
 use libherokubuildpack::inventory;
 use libherokubuildpack::inventory::artifact::Artifact;
 use semver::{Version, VersionReq};
@@ -81,13 +81,7 @@ impl Buildpack for DotnetBuildpack {
 
         let sdk_version_requirement = detect_version_requirement(&context, &solution)?;
 
-        let target_os = context.target.os.parse::<Os>()
-            .expect("OS should always be parseable, buildpack will not run on unsupported operating systems.");
-        let target_arch = context.target.arch.parse::<Arch>().expect(
-            "Arch should always be parseable, buildpack will not run on unsupported architectures.",
-        );
-
-        let sdk_artifact = resolve_sdk_artifact(sdk_version_requirement, target_os, target_arch)?;
+        let sdk_artifact = resolve_sdk_artifact(&context.target, sdk_version_requirement)?;
 
         print::sub_bullet(format!(
             "Resolved .NET SDK version {} {}",
@@ -239,10 +233,15 @@ impl Buildpack for DotnetBuildpack {
 }
 
 fn resolve_sdk_artifact(
+    target: &Target,
     sdk_version_requirement: VersionReq,
-    target_os: Os,
-    target_arch: Arch,
 ) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
+    let target_os = target.os.parse::<Os>().expect(
+        "OS should always be parseable, buildpack will not run on unsupported operating systems.",
+    );
+    let target_arch = target.arch.parse::<Arch>().expect(
+        "Arch should always be parseable, buildpack will not run on unsupported architectures.",
+    );
     include_str!("../inventory.toml")
         .parse::<Inventory<_, _, _>>()
         .map_err(DotnetBuildpackError::ParseInventory)
