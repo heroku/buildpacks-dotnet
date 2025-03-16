@@ -33,6 +33,7 @@ use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::inventory;
+use libherokubuildpack::inventory::artifact::Artifact;
 use semver::{Version, VersionReq};
 use sha2::Sha512;
 use std::io::Write;
@@ -86,14 +87,7 @@ impl Buildpack for DotnetBuildpack {
             "Arch should always be parseable, buildpack will not run on unsupported architectures.",
         );
 
-        let sdk_inventory = include_str!("../inventory.toml")
-            .parse::<Inventory<Version, Sha512, Option<()>>>()
-            .map_err(DotnetBuildpackError::ParseInventory)?;
-        let sdk_artifact = sdk_inventory
-            .resolve(target_os, target_arch, &sdk_version_requirement)
-            .ok_or(DotnetBuildpackError::ResolveSdkVersion(
-                sdk_version_requirement,
-            ))?;
+        let sdk_artifact = resolve_sdk_artifact(sdk_version_requirement, target_os, target_arch)?;
 
         print::sub_bullet(format!(
             "Resolved .NET SDK version {} {}",
@@ -107,7 +101,7 @@ impl Buildpack for DotnetBuildpack {
         };
         let sdk_available_at_launch = sdk_scope == Scope::Launch || sdk_scope == Scope::All;
 
-        let sdk_layer = layers::sdk::handle(&context, sdk_available_at_launch, sdk_artifact)?;
+        let sdk_layer = layers::sdk::handle(&context, sdk_available_at_launch, &sdk_artifact)?;
         sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
             sdk_layer.path().as_path(),
             &sdk_scope,
@@ -242,6 +236,24 @@ impl Buildpack for DotnetBuildpack {
     fn on_error(&self, error: libcnb::Error<Self::Error>) {
         errors::on_error(error);
     }
+}
+
+fn resolve_sdk_artifact(
+    sdk_version_requirement: VersionReq,
+    target_os: Os,
+    target_arch: Arch,
+) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
+    include_str!("../inventory.toml")
+        .parse::<Inventory<_, _, _>>()
+        .map_err(DotnetBuildpackError::ParseInventory)
+        .map(|inventory| {
+            inventory
+                .resolve(target_os, target_arch, &sdk_version_requirement)
+                .ok_or(DotnetBuildpackError::ResolveSdkVersion(
+                    sdk_version_requirement,
+                ))
+                .cloned()
+        })?
 }
 
 fn detect_version_requirement(
