@@ -300,7 +300,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
     // warning, or by building all solutions).
     if let Some(solution_file) = solution_file_paths.first() {
         print::sub_bullet(format!(
-            "Detected .NET solution to publish: {}",
+            "Detected .NET solution: {}",
             style::value(solution_file.to_string_lossy())
         ));
         Solution::load_from_path(solution_file).map_err(DotnetBuildpackError::LoadSolutionFile)
@@ -314,7 +314,7 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
                     .map_err(DotnetBuildpackError::LoadProjectFile)
                     .inspect(|project| {
                         print::sub_bullet(format!(
-                            "Detected .NET project to publish: {}",
+                            "Detected .NET project: {}",
                             style::value(project.path.to_string_lossy())
                         ));
                     })?,

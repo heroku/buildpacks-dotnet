@@ -13,7 +13,7 @@ fn test_sdk_resolution_with_target_framework_8_0() {
                 context.pack_stdout,
                 &indoc! {r"
                     - SDK version detection
-                      - Detected .NET project to publish: `/workspace/foo.csproj`
+                      - Detected .NET project: `/workspace/foo.csproj`
                       - Inferring version requirement from `/workspace/foo.csproj`
                       - Detected version requirement: `^8.0`
                       - Resolved .NET SDK version `8.0"}
@@ -33,7 +33,7 @@ fn test_sdk_resolution_with_target_framework_9_0() {
                 context.pack_stdout,
                 &indoc! {r"
                     - SDK version detection
-                      - Detected .NET project to publish: `/workspace/foo.csproj`
+                      - Detected .NET project: `/workspace/foo.csproj`
                       - Inferring version requirement from `/workspace/foo.csproj`
                       - Detected version requirement: `^9.0`
                       - Resolved .NET SDK version `9.0"}
@@ -53,7 +53,7 @@ fn test_sdk_resolution_with_solution_file() {
                 context.pack_stdout,
                 &indoc! {r"
                     - SDK version detection
-                      - Detected .NET solution to publish: `/workspace/foo.sln`
+                      - Detected .NET solution: `/workspace/foo.sln`
                       - Inferring version requirement from `/workspace/foo.sln`
                       - Detected version requirement: `^8.0"}
             );
@@ -132,7 +132,7 @@ fn test_sdk_installation_with_global_json() {
                 context.pack_stdout,
                 &indoc! {r"
                     - SDK version detection
-                      - Detected .NET project to publish: `/workspace/foo.csproj`
+                      - Detected .NET project: `/workspace/foo.csproj`
                       - Detecting version requirement from root global.json file
                       - Detected version requirement: `=8.0.101`
                       - Resolved .NET SDK version `8.0.101` (linux-amd64)
@@ -167,7 +167,7 @@ fn test_sdk_installation_with_global_json() {
                 context.pack_stdout,
                 &indoc! {r"
                     - SDK version detection
-                      - Detected .NET project to publish: `/workspace/foo.csproj`
+                      - Detected .NET project: `/workspace/foo.csproj`
                       - Detecting version requirement from root global.json file
                       - Detected version requirement: `=8.0.101`
                       - Resolved .NET SDK version `8.0.101` (linux-arm64)
@@ -201,7 +201,7 @@ fn test_sdk_installation_with_global_json_prerelease_sdk() {
                 context.pack_stdout,
                 &indoc! {r"
                     - SDK version detection
-                      - Detected .NET project to publish: `/workspace/foo.csproj`
+                      - Detected .NET project: `/workspace/foo.csproj`
                       - Detecting version requirement from root global.json file
                       - Detected version requirement: `=9.0.100-rc.1.24452.12`
                       - Resolved .NET SDK version `9.0.100-rc.1.24452.12`"
