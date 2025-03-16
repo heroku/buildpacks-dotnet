@@ -156,7 +156,7 @@ impl Buildpack for DotnetBuildpack {
         let mut launch_builder = LaunchBuilder::new();
         match buildpack_configuration.execution_environment {
             ExecutionEnvironment::Production => {
-                print::bullet("Publish solution");
+                print::bullet("Publish app");
 
                 let mut publish_command = Command::from(DotnetPublishCommand {
                     path: solution.path.clone(),
