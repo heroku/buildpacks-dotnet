@@ -2,10 +2,10 @@
   "version": 1,
   "isRoot": true,
   "tools": {
-    "dotnetsay": {
-      "version": "2.1.7",
+    "dotnet-ef": {
+      "version": "8.0.14",
       "commands": [
-        "dotnetsay"
+        "dotnet-ef"
       ],
       "rollForward": false
     }

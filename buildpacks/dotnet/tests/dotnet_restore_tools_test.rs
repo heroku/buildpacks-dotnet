@@ -16,12 +16,12 @@ fn test_dotnet_restore_and_run_dotnet_tool() {
                       - Tool manifest file detected
                       - Running `dotnet tool restore --tool-manifest /workspace/.config/dotnet-tools.json`
 
-                          Tool 'dotnetsay' (version '2.1.7') was restored. Available commands: dotnetsay
+                          Tool 'dotnet-ef' (version '8.0.14') was restored. Available commands: dotnet-ef
 
                           Restore was successful."}
             );
-            assert_contains!(&context.pack_stdout, "Running dotnetsay post-publish");
-            assert_contains!(&context.pack_stdout, "__________________");
+            assert_contains!(&context.pack_stdout, "Running dotnet-ef tool post-publish");
+            assert_contains!(&context.pack_stdout, "Entity Framework Core .NET Command-line Tools 8.0.14");
         },
     );
 }
