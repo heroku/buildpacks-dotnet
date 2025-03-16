@@ -236,18 +236,16 @@ fn resolve_sdk_artifact(
     target: &Target,
     sdk_version_requirement: VersionReq,
 ) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
-    let target_os = target.os.parse::<Os>().expect(
-        "OS should always be parseable, buildpack will not run on unsupported operating systems.",
-    );
-    let target_arch = target.arch.parse::<Arch>().expect(
-        "Arch should always be parseable, buildpack will not run on unsupported architectures.",
-    );
     include_str!("../inventory.toml")
         .parse::<Inventory<_, _, _>>()
         .map_err(DotnetBuildpackError::ParseInventory)
         .map(|inventory| {
             inventory
-                .resolve(target_os, target_arch, &sdk_version_requirement)
+                .resolve(
+                    target.os.parse::<Os>().expect("OS should always be parseable, buildpack will not run on unsupported operating systems."),
+                    target.arch.parse::<Arch>().expect("Arch should always be parseable, buildpack will not run on unsupported architectures."),
+                    &sdk_version_requirement
+                )
                 .ok_or(DotnetBuildpackError::ResolveSdkVersion(
                     sdk_version_requirement,
                 ))
