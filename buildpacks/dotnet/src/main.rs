@@ -79,7 +79,7 @@ impl Buildpack for DotnetBuildpack {
             style::value(solution.path.to_string_lossy())
         ));
 
-        let sdk_version_requirement = detect_version_requirement(&context, &solution)?;
+        let sdk_version_requirement = detect_sdk_version_requirement(&context, &solution)?;
 
         let sdk_artifact = resolve_sdk_artifact(&context.target, sdk_version_requirement)?;
 
@@ -253,7 +253,7 @@ fn resolve_sdk_artifact(
         })
 }
 
-fn detect_version_requirement(
+fn detect_sdk_version_requirement(
     context: &BuildContext<DotnetBuildpack>,
     solution: &Solution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
