@@ -161,8 +161,8 @@ impl Buildpack for DotnetBuildpack {
                     path: solution.path.clone(),
                     configuration: buildpack_configuration.build_configuration,
                     runtime_identifier: runtime_identifier::get_runtime_identifier(
-                        target_os,
-                        target_arch,
+                        sdk_artifact.os,
+                        sdk_artifact.arch,
                     ),
                     verbosity_level: buildpack_configuration.msbuild_verbosity_level,
                 });
