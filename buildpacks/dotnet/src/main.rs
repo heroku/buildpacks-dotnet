@@ -233,7 +233,7 @@ fn resolve_sdk_artifact(
     include_str!("../inventory.toml")
         .parse::<Inventory<_, _, _>>()
         .map_err(DotnetBuildpackError::ParseInventory)
-        .map(|inventory| {
+        .and_then(|inventory| {
             inventory
                 .resolve(
                     target.os.parse::<Os>().expect("OS should always be parseable, buildpack will not run on unsupported operating systems."),
@@ -250,7 +250,7 @@ fn resolve_sdk_artifact(
                         style::value(artifact.version.to_string()),
                         style::details(format!("{}-{}", artifact.os, artifact.arch))
                     )))
-        })?
+        })
 }
 
 fn detect_version_requirement(
