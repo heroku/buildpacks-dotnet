@@ -19,9 +19,7 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
 
     fn try_from(env: &libcnb::Env) -> Result<Self, Self::Error> {
         Ok(Self {
-            build_configuration: env
-                .get("BUILD_CONFIGURATION")
-                .map(|value| value.to_string_lossy().to_string()),
+            build_configuration: env.get_string_lossy("BUILD_CONFIGURATION"),
             execution_environment: env
                 .get_string_lossy("CNB_EXEC_ENV")
                 .as_deref()
