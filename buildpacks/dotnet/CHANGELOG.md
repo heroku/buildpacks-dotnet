@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The buildpack will now restore .NET tools for any execution environment. ([#226](https://github.com/heroku/buildpacks-dotnet/pull/226))
+- Restored .NET tools are now available for later buildpacks. ([#226](https://github.com/heroku/buildpacks-dotnet/pull/226))
+
 ## [0.3.3] - 2025-03-13
 
 ### Added
