@@ -31,8 +31,9 @@ use libcnb::data::process_type;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer_env::{LayerEnv, Scope};
-use libcnb::{buildpack_main, Buildpack, Env};
+use libcnb::{buildpack_main, Buildpack, Env, Target};
 use libherokubuildpack::inventory;
+use libherokubuildpack::inventory::artifact::Artifact;
 use semver::{Version, VersionReq};
 use sha2::Sha512;
 use std::io::Write;
@@ -78,45 +79,9 @@ impl Buildpack for DotnetBuildpack {
             style::value(solution.path.to_string_lossy())
         ));
 
-        let sdk_version_requirement = if let Some(sdk_configuration) =
-            detect_global_json_sdk_configuration(&context.app_dir)?
-        {
-            print::sub_bullet("Detecting version requirement from root global.json file");
-            VersionReq::try_from(sdk_configuration)
-                .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)?
-        } else {
-            print::sub_bullet(format!(
-                "Inferring version requirement from {}",
-                style::value(solution.path.to_string_lossy())
-            ));
-            get_solution_sdk_version_requirement(&solution)?
-        };
+        let sdk_version_requirement = detect_sdk_version_requirement(&context, &solution)?;
 
-        print::sub_bullet(format!(
-            "Detected version requirement: {}",
-            style::value(sdk_version_requirement.to_string())
-        ));
-
-        let target_os = context.target.os.parse::<Os>()
-            .expect("OS should always be parseable, buildpack will not run on unsupported operating systems.");
-        let target_arch = context.target.arch.parse::<Arch>().expect(
-            "Arch should always be parseable, buildpack will not run on unsupported architectures.",
-        );
-
-        let sdk_inventory = include_str!("../inventory.toml")
-            .parse::<Inventory<Version, Sha512, Option<()>>>()
-            .map_err(DotnetBuildpackError::ParseInventory)?;
-        let sdk_artifact = sdk_inventory
-            .resolve(target_os, target_arch, &sdk_version_requirement)
-            .ok_or(DotnetBuildpackError::ResolveSdkVersion(
-                sdk_version_requirement,
-            ))?;
-
-        print::sub_bullet(format!(
-            "Resolved .NET SDK version {} {}",
-            style::value(sdk_artifact.version.to_string()),
-            style::details(format!("{}-{}", sdk_artifact.os, sdk_artifact.arch))
-        ));
+        let sdk_artifact = resolve_sdk_artifact(&context.target, sdk_version_requirement)?;
 
         let sdk_scope = match buildpack_configuration.execution_environment {
             ExecutionEnvironment::Production => Scope::Build,
@@ -124,7 +89,7 @@ impl Buildpack for DotnetBuildpack {
         };
         let sdk_available_at_launch = sdk_scope == Scope::Launch || sdk_scope == Scope::All;
 
-        let sdk_layer = layers::sdk::handle(&context, sdk_available_at_launch, sdk_artifact)?;
+        let sdk_layer = layers::sdk::handle(&context, sdk_available_at_launch, &sdk_artifact)?;
         sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
             sdk_layer.path().as_path(),
             &sdk_scope,
@@ -184,8 +149,8 @@ impl Buildpack for DotnetBuildpack {
                     path: solution.path.clone(),
                     configuration: buildpack_configuration.build_configuration,
                     runtime_identifier: runtime_identifier::get_runtime_identifier(
-                        target_os,
-                        target_arch,
+                        sdk_artifact.os,
+                        sdk_artifact.arch,
                     ),
                     verbosity_level: buildpack_configuration.msbuild_verbosity_level,
                 });
@@ -259,6 +224,60 @@ impl Buildpack for DotnetBuildpack {
     fn on_error(&self, error: libcnb::Error<Self::Error>) {
         errors::on_error(error);
     }
+}
+
+fn resolve_sdk_artifact(
+    target: &Target,
+    sdk_version_requirement: VersionReq,
+) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
+    include_str!("../inventory.toml")
+        .parse::<Inventory<_, _, _>>()
+        .map_err(DotnetBuildpackError::ParseInventory)
+        .and_then(|inventory| {
+            inventory
+                .resolve(
+                    target.os.parse::<Os>().expect("OS should always be parseable, buildpack will not run on unsupported operating systems."),
+                    target.arch.parse::<Arch>().expect("Arch should always be parseable, buildpack will not run on unsupported architectures."),
+                    &sdk_version_requirement
+                )
+                .ok_or(DotnetBuildpackError::ResolveSdkVersion(
+                    sdk_version_requirement,
+                ))
+                .cloned()
+                .inspect(|artifact|
+                    print::sub_bullet(format!(
+                        "Resolved .NET SDK version {} {}",
+                        style::value(artifact.version.to_string()),
+                        style::details(format!("{}-{}", artifact.os, artifact.arch))
+                    )))
+        })
+}
+
+fn detect_sdk_version_requirement(
+    context: &BuildContext<DotnetBuildpack>,
+    solution: &Solution,
+) -> Result<VersionReq, DotnetBuildpackError> {
+    detect_global_json_sdk_configuration(&context.app_dir)?
+        .map_or_else(
+            || {
+                print::sub_bullet(format!(
+                    "Inferring version requirement from {}",
+                    style::value(solution.path.to_string_lossy())
+                ));
+                get_solution_sdk_version_requirement(solution)
+            },
+            |sdk_config| {
+                print::sub_bullet("Detecting version requirement from root global.json file");
+                VersionReq::try_from(sdk_config)
+                    .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)
+            },
+        )
+        .inspect(|version_req| {
+            print::sub_bullet(format!(
+                "Detected version requirement: {}",
+                style::value(version_req.to_string())
+            ));
+        })
 }
 
 fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackError> {
