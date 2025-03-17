@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <Target Name="PostPublishStep" AfterTargets="Publish">
-    <Message Text="Running dotnetsay post-publish" Importance="High" />
-    <Exec Command="dotnet tool run dotnetsay" />
+    <Message Text="Running dotnet-ef tool post-publish" Importance="High" />
+    <Exec Command="dotnet tool run dotnet-ef" />
   </Target>
 
 </Project>

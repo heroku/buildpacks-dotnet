@@ -76,6 +76,7 @@ fn test_sdk_basic_install_build_environment() {
             context.pack_stdout,
             &indoc! {"
                 ## Testing buildpack ##
+                DOTNET_CLI_HOME=/layers/heroku_dotnet/dotnet-cli
                 DOTNET_CLI_TELEMETRY_OPTOUT=true
                 DOTNET_EnableWriteXorExecute=0
                 DOTNET_NOLOGO=true
