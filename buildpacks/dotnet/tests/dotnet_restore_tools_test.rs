@@ -28,6 +28,23 @@ fn test_dotnet_restore_and_run_dotnet_tool() {
 
 #[test]
 #[ignore = "integration test"]
+fn test_dotnet_restore_dotnet_tool_test_execution_environment() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/console_with_dotnet_tool")
+            .env("CNB_EXEC_ENV", "test"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            assert_contains!(&context.pack_stdout, "Running `dotnet tool restore --tool-manifest /workspace/.config/dotnet-tools.json`");
+
+            let command_output = context.run_shell_command("dotnet tool run dotnet-ef");
+            assert_empty!(&command_output.stderr);
+            assert_contains!(&command_output.stdout, "Entity Framework Core .NET Command-line Tools 8.0.14");
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
 fn test_dotnet_restore_dotnet_tool_with_configuration_error() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/console_with_dotnet_tool_configuration_error")

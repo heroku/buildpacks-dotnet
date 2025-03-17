@@ -148,54 +148,54 @@ impl Buildpack for DotnetBuildpack {
                 ),
         )?;
 
+        let dotnet_cli_layer = context.uncached_layer(
+            layer_name!("dotnet-cli"),
+            UncachedLayerDefinition {
+                build: true,
+                launch: sdk_available_at_launch,
+            },
+        )?;
+        dotnet_cli_layer.write_env(LayerEnv::new().chainable_insert(
+            sdk_scope.clone(),
+            libcnb::layer_env::ModificationBehavior::Override,
+            "DOTNET_CLI_HOME",
+            dotnet_cli_layer.path(),
+        ))?;
+
+        let command_env = dotnet_cli_layer.read_env()?.apply(
+            Scope::Build,
+            &nuget_cache_layer.read_env()?.apply(
+                Scope::Build,
+                &sdk_layer
+                    .read_env()?
+                    .apply(Scope::Build, &Env::from_current()),
+            ),
+        );
+
+        if let Some(manifest_path) = detect::dotnet_tools_manifest_file(&context.app_dir) {
+            let mut restore_tools_command = Command::new("dotnet");
+            restore_tools_command
+                .args([
+                    "tool",
+                    "restore",
+                    "--tool-manifest",
+                    &manifest_path.to_string_lossy(),
+                ])
+                .current_dir(&context.app_dir)
+                .envs(&command_env);
+
+            print::bullet("Restore .NET tools");
+            print::sub_bullet("Tool manifest file detected");
+            print::sub_stream_with(
+                format!("Running {}", style::command(restore_tools_command.name())),
+                |stdout, stderr| restore_tools_command.stream_output(stdout, stderr),
+            )
+            .map_err(DotnetBuildpackError::RestoreDotnetToolsCommand)?;
+        }
+
         let mut launch_builder = LaunchBuilder::new();
         match buildpack_configuration.execution_environment {
             ExecutionEnvironment::Production => {
-                let dotnet_cli_layer = context.uncached_layer(
-                    layer_name!("dotnet-cli"),
-                    UncachedLayerDefinition {
-                        build: true,
-                        launch: sdk_available_at_launch,
-                    },
-                )?;
-                dotnet_cli_layer.write_env(LayerEnv::new().chainable_insert(
-                    sdk_scope.clone(),
-                    libcnb::layer_env::ModificationBehavior::Override,
-                    "DOTNET_CLI_HOME",
-                    dotnet_cli_layer.path(),
-                ))?;
-
-                let command_env = dotnet_cli_layer.read_env()?.apply(
-                    Scope::Build,
-                    &nuget_cache_layer.read_env()?.apply(
-                        Scope::Build,
-                        &sdk_layer
-                            .read_env()?
-                            .apply(Scope::Build, &Env::from_current()),
-                    ),
-                );
-
-                if let Some(manifest_path) = detect::dotnet_tools_manifest_file(&context.app_dir) {
-                    let mut restore_tools_command = Command::new("dotnet");
-                    restore_tools_command
-                        .args([
-                            "tool",
-                            "restore",
-                            "--tool-manifest",
-                            &manifest_path.to_string_lossy(),
-                        ])
-                        .current_dir(&context.app_dir)
-                        .envs(&command_env);
-
-                    print::bullet("Restore .NET tools");
-                    print::sub_bullet("Tool manifest file detected");
-                    print::sub_stream_with(
-                        format!("Running {}", style::command(restore_tools_command.name())),
-                        |stdout, stderr| restore_tools_command.stream_output(stdout, stderr),
-                    )
-                    .map_err(DotnetBuildpackError::RestoreDotnetToolsCommand)?;
-                }
-
                 print::bullet("Publish solution");
 
                 let mut publish_command = Command::from(DotnetPublishCommand {
