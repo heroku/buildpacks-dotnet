@@ -159,7 +159,7 @@ fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
             assert_contains!(
               replace_msbuild_log_patterns_with_placeholder(&context.pack_stdout, "<PLACEHOLDER>"), 
               &formatdoc! {r#"
-                - Publish solution
+                - Publish app
                   - Running `dotnet publish /workspace/foo.csproj --runtime {rid} "-p:PublishDir=bin/publish" --artifacts-path /tmp/build_artifacts --verbosity normal`
                 
                       MSBuild version 17.8.3+195e7f5a3 for .NET
