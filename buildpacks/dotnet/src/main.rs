@@ -27,9 +27,10 @@ use inventory::artifact::{Arch, Os};
 use inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
-use libcnb::data::process_type;
+use libcnb::data::{layer_name, process_type};
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
+use libcnb::layer::UncachedLayerDefinition;
 use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{buildpack_main, Buildpack, Env};
 use libherokubuildpack::inventory;
@@ -150,11 +151,28 @@ impl Buildpack for DotnetBuildpack {
         let mut launch_builder = LaunchBuilder::new();
         match buildpack_configuration.execution_environment {
             ExecutionEnvironment::Production => {
-                let command_env = nuget_cache_layer.read_env()?.apply(
+                let dotnet_cli_layer = context.uncached_layer(
+                    layer_name!("dotnet-cli"),
+                    UncachedLayerDefinition {
+                        build: true,
+                        launch: sdk_available_at_launch,
+                    },
+                )?;
+                dotnet_cli_layer.write_env(LayerEnv::new().chainable_insert(
+                    sdk_scope.clone(),
+                    libcnb::layer_env::ModificationBehavior::Override,
+                    "DOTNET_CLI_HOME",
+                    dotnet_cli_layer.path(),
+                ))?;
+
+                let command_env = dotnet_cli_layer.read_env()?.apply(
                     Scope::Build,
-                    &sdk_layer
-                        .read_env()?
-                        .apply(Scope::Build, &Env::from_current()),
+                    &nuget_cache_layer.read_env()?.apply(
+                        Scope::Build,
+                        &sdk_layer
+                            .read_env()?
+                            .apply(Scope::Build, &Env::from_current()),
+                    ),
                 );
 
                 if let Some(manifest_path) = detect::dotnet_tools_manifest_file(&context.app_dir) {
