@@ -214,11 +214,13 @@ impl Buildpack for DotnetBuildpack {
             ExecutionEnvironment::Test => {
                 let mut args = vec![format!(
                     "dotnet test {}",
-                    solution
-                        .path
-                        .file_name()
-                        .expect("Solution to have a file name")
-                        .to_string_lossy()
+                    shell_words::quote(
+                        &solution
+                            .path
+                            .file_name()
+                            .expect("Solution to have a file name")
+                            .to_string_lossy()
+                    )
                 )];
                 if let Some(configuration) = buildpack_configuration.build_configuration {
                     args.push(format!("--configuration {configuration}"));
