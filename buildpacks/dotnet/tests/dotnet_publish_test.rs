@@ -36,7 +36,10 @@ fn test_dotnet_publish_with_space_in_project_filename() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/solution_with_spaces"),
         |context| {
-            assert_contains!(&context.pack_stdout, r"Found `consoleapp`: bash -c cd");
+            assert_contains!(
+                &context.pack_stdout,
+                r"Found `consoleapp`: bash -c cd 'console app/bin/publish'; ./'console app'"
+            );
             assert_contains!(
                 &context.pack_stdout,
                 r#"Running `dotnet publish "/workspace/solution with spaces.sln""#
