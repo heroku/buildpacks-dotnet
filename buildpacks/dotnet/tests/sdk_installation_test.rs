@@ -120,6 +120,26 @@ fn test_sdk_basic_install_test_execution_environment() {
     });
 }
 
+#[test]
+#[ignore = "integration test"]
+fn test_solution_with_spaces_test_execution_environment() {
+    let mut config = default_build_config("tests/fixtures/solution_with_spaces");
+    config.env("CNB_EXEC_ENV", "test");
+
+    TestRunner::default().build(&config, |context| {
+        assert_empty!(context.pack_stderr);
+        context.start_container(ContainerConfig::new().entrypoint("test"), |container| {
+            let log_output = container.logs_wait();
+
+            assert_empty!(log_output.stderr);
+            assert_contains!(
+                log_output.stdout,
+                &"Restored /workspace/console app/console app.csproj".to_string()
+            );
+        });
+    });
+}
+
 #[cfg(target_arch = "x86_64")]
 #[test]
 #[ignore = "integration test"]
