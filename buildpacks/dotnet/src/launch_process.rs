@@ -55,8 +55,7 @@ pub(crate) fn detect_solution_processes(
                 command.push_str(" --urls http://*:$PORT");
             }
 
-            project
-                .assembly_name
+            sanitize_process_type_name(&project.assembly_name)
                 .parse::<ProcessType>()
                 .map_err(LaunchProcessDetectionError::ProcessType)
                 .map(|process_type| {
@@ -64,4 +63,40 @@ pub(crate) fn detect_solution_processes(
                 })
         })
         .collect::<Result<_, _>>()
+}
+
+fn sanitize_process_type_name(input: &str) -> String {
+    input
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sanitize_process_type_name() {
+        assert_eq!(
+            sanitize_process_type_name("Hello, world! 123"),
+            "Helloworld123"
+        );
+        assert_eq!(
+            sanitize_process_type_name("This_is-a.test.123.abc"),
+            "This_is-a.test.123.abc"
+        );
+        assert_eq!(
+            sanitize_process_type_name("Special chars: !@#$%^&*()"),
+            "Specialchars"
+        );
+        assert_eq!(
+            sanitize_process_type_name("Mixed: aBc123.xyz_-.!@#"),
+            "MixedaBc123.xyz_-."
+        );
+        assert_eq!(
+            sanitize_process_type_name("Unicode: 日本語123"),
+            "Unicode123"
+        );
+    }
 }
