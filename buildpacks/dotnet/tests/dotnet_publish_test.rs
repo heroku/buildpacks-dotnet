@@ -32,6 +32,17 @@ fn test_dotnet_publish_multi_tfm_solution() {
 
 #[test]
 #[ignore = "integration test"]
+fn test_dotnet_publish_with_space_in_project_filename() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/solution_with_spaces"),
+        |context| {
+            assert_contains!(&context.pack_stdout, r"Found `consoleapp`: bash -c cd");
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
 fn test_dotnet_publish_with_compilation_error() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/console_with_compilation_error")
