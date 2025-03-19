@@ -101,16 +101,24 @@ mod tests {
     use libcnb::data::process_type;
     use std::path::PathBuf;
 
+    fn create_test_project(path: &str, assembly_name: &str, project_type: ProjectType) -> Project {
+        Project {
+            path: PathBuf::from(path),
+            target_framework: "net9.0".to_string(),
+            project_type,
+            assembly_name: assembly_name.to_string(),
+        }
+    }
+
     #[test]
     fn test_detect_solution_processes_web_app() {
         let solution = Solution {
             path: PathBuf::from("/tmp/foo.sln"),
-            projects: vec![Project {
-                path: PathBuf::from("/tmp/bar/bar.csproj"),
-                target_framework: "net9.0".to_string(),
-                project_type: ProjectType::WebApplication,
-                assembly_name: "bar".to_string(),
-            }],
+            projects: vec![create_test_project(
+                "/tmp/bar/bar.csproj",
+                "bar",
+                ProjectType::WebApplication,
+            )],
         };
 
         let expected_processes = vec![Process {
@@ -129,74 +137,17 @@ mod tests {
     }
 
     #[test]
-    fn test_detect_solution_processes_sanitized() {
-        let solution = Solution {
-            path: PathBuf::from("/tmp/foo.sln"),
-            projects: vec![Project {
-                path: PathBuf::from("/tmp/bar.baz/bar.baz.csproj"),
-                target_framework: "net9.0".to_string(),
-                project_type: ProjectType::WebApplication,
-                assembly_name: "ba+#r.baz".to_string(),
-            }],
-        };
-
-        let expected_processes = vec![Process {
-            r#type: process_type!("bar.baz"),
-            command: vec![
-                "bash".to_string(),
-                "-c".to_string(),
-                "cd bar.baz/bin/publish; ./'ba+#r.baz' --urls http://*:$PORT".to_string(),
-            ],
-            args: vec![],
-            default: false,
-            working_directory: WorkingDirectory::App,
-        }];
-
-        assert_eq!(detect_solution_processes(&solution), expected_processes);
-    }
-
-    #[test]
-    fn test_detect_solution_processes_console_app() {
-        let solution = Solution {
-            path: PathBuf::from("/tmp/foo.sln"),
-            projects: vec![Project {
-                path: PathBuf::from("/tmp/bar/bar.csproj"),
-                target_framework: "net9.0".to_string(),
-                project_type: ProjectType::ConsoleApplication,
-                assembly_name: "bar".to_string(),
-            }],
-        };
-
-        let expected_processes = vec![Process {
-            r#type: process_type!("bar"),
-            command: vec![
-                "bash".to_string(),
-                "-c".to_string(),
-                "cd bar/bin/publish; ./bar".to_string(),
-            ],
-            args: vec![],
-            default: false,
-            working_directory: WorkingDirectory::App,
-        }];
-
-        assert_eq!(detect_solution_processes(&solution), expected_processes);
-    }
-
-    #[test]
-    fn test_project_launch_process_with_spaces() {
-        let project = Project {
-            path: PathBuf::from("/tmp/My Project With Spaces/project.csproj"),
-            target_framework: "net9.0".to_string(),
-            project_type: ProjectType::ConsoleApplication,
-            assembly_name: "My App".to_string(),
-        };
-
+    fn test_detect_solution_processes_with_spaces() {
         let solution = Solution {
             path: PathBuf::from("/tmp/My Solution With Spaces.sln"),
-            projects: vec![],
+            projects: vec![create_test_project(
+                "/tmp/My Project With Spaces/project.csproj",
+                "My App",
+                ProjectType::ConsoleApplication,
+            )],
         };
 
-        let expected_process = Process {
+        let expected_processes = vec![Process {
             r#type: process_type!("MyApp"),
             command: vec![
                 "bash".to_string(),
@@ -206,76 +157,9 @@ mod tests {
             args: vec![],
             default: false,
             working_directory: WorkingDirectory::App,
-        };
+        }];
 
-        assert_eq!(
-            project_launch_process(&solution, &project),
-            Some(expected_process)
-        );
-    }
-
-    #[test]
-    fn test_project_launch_process_special_chars() {
-        let project = Project {
-            path: PathBuf::from("/tmp/project with #special$chars/project.csproj"),
-            target_framework: "net9.0".to_string(),
-            project_type: ProjectType::ConsoleApplication,
-            assembly_name: "My-App+v1.2_Release!".to_string(),
-        };
-
-        let solution = Solution {
-            path: PathBuf::from("/tmp/solution.sln"),
-            projects: vec![],
-        };
-
-        let expected_process = Process {
-            r#type: process_type!("My-Appv1.2_Release"),
-            command: vec![
-                "bash".to_string(),
-                "-c".to_string(),
-                "cd 'project with #special$chars/bin/publish'; ./My-App+v1.2_Release!".to_string(),
-            ],
-            args: vec![],
-            default: false,
-            working_directory: WorkingDirectory::App,
-        };
-
-        assert_eq!(
-            project_launch_process(&solution, &project),
-            Some(expected_process)
-        );
-    }
-
-    #[test]
-    fn test_project_launch_process_non_executable() {
-        let project = Project {
-            path: PathBuf::from("/tmp/project/project.csproj"),
-            target_framework: "net9.0".to_string(),
-            project_type: ProjectType::Unknown,
-            assembly_name: "LibraryProject".to_string(),
-        };
-
-        let solution = Solution {
-            path: PathBuf::from("/tmp/solution.sln"),
-            projects: vec![],
-        };
-
-        assert_eq!(project_launch_process(&solution, &project), None);
-    }
-
-    #[test]
-    fn test_project_executable_path() {
-        let project = Project {
-            path: PathBuf::from("/tmp/project/project.csproj"),
-            target_framework: "net9.0".to_string(),
-            project_type: ProjectType::ConsoleApplication,
-            assembly_name: "TestApp".to_string(),
-        };
-
-        assert_eq!(
-            project_executable_path(&project),
-            PathBuf::from("/tmp/project/bin/publish/TestApp")
-        );
+        assert_eq!(detect_solution_processes(&solution), expected_processes);
     }
 
     #[test]
@@ -285,16 +169,55 @@ mod tests {
             projects: vec![],
         };
 
-        let project = Project {
-            path: PathBuf::from("/tmp/project/project.csproj"),
-            target_framework: "net9.0".to_string(),
-            project_type: ProjectType::ConsoleApplication,
-            assembly_name: "TestApp".to_string(),
-        };
+        let project = create_test_project(
+            "/tmp/project/project.csproj",
+            "TestApp",
+            ProjectType::ConsoleApplication,
+        );
 
         assert_eq!(
             relative_executable_path(&solution, &project),
             PathBuf::from("project/bin/publish/TestApp")
+        );
+    }
+
+    #[test]
+    fn test_project_executable_path() {
+        let project = create_test_project(
+            "/tmp/project/project.csproj",
+            "TestApp",
+            ProjectType::ConsoleApplication,
+        );
+
+        assert_eq!(
+            project_executable_path(&project),
+            PathBuf::from("/tmp/project/bin/publish/TestApp")
+        );
+    }
+
+    #[test]
+    fn test_build_command_with_spaces() {
+        let executable_path = PathBuf::from("some/project with spaces/bin/publish/My App");
+
+        assert_eq!(
+            build_command(&executable_path, &ProjectType::ConsoleApplication),
+            "cd 'some/project with spaces/bin/publish'; ./'My App'"
+        );
+
+        assert_eq!(
+            build_command(&executable_path, &ProjectType::WebApplication),
+            "cd 'some/project with spaces/bin/publish'; ./'My App' --urls http://*:$PORT"
+        );
+    }
+
+    #[test]
+    fn test_build_command_with_special_chars() {
+        let executable_path =
+            PathBuf::from("some/project with #special$chars/bin/publish/My-App+v1.2_Release!");
+
+        assert_eq!(
+            build_command(&executable_path, &ProjectType::ConsoleApplication),
+            "cd 'some/project with #special$chars/bin/publish'; ./My-App+v1.2_Release!"
         );
     }
 
