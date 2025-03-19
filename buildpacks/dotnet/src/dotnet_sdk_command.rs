@@ -57,10 +57,12 @@ impl From<DotnetTestCommand> for Process {
             .to_string(),
         ];
         if let Some(configuration) = value.configuration {
-            command.push(format!("--configuration {configuration}"));
+            command.push("--configuration".to_string());
+            command.push(configuration);
         }
         if let Some(verbosity_level) = value.verbosity_level {
-            command.push(format!("--verbosity {verbosity_level}"));
+            command.push("--verbosity".to_string());
+            command.push(verbosity_level.to_string());
         }
         ProcessBuilder::new(process_type!("test"), command).build()
     }
@@ -130,8 +132,10 @@ mod tests {
                 "dotnet".to_string(),
                 "test".to_string(),
                 "bar.sln".to_string(),
-                "--configuration Release".to_string(),
-                "--verbosity normal".to_string(),
+                "--configuration".to_string(),
+                "Release".to_string(),
+                "--verbosity".to_string(),
+                "normal".to_string(),
             ],
             args: vec![],
             default: false,
