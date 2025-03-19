@@ -33,17 +33,19 @@ fn build_command(relative_executable_path: &Path, project_type: &ProjectType) ->
     let parent_dir = relative_executable_path
         .parent()
         .expect("Executable path should always have a parent directory")
-        .to_string_lossy();
+        .to_str()
+        .expect("Path should be valid UTF-8");
 
     let file_name = relative_executable_path
         .file_name()
         .expect("Executable path should always have a file name")
-        .to_string_lossy();
+        .to_str()
+        .expect("Path should be valid UTF-8");
 
     let mut command = format!(
         "cd {}; ./{}",
-        shell_words::quote(&parent_dir),
-        shell_words::quote(&file_name)
+        shell_words::quote(parent_dir),
+        shell_words::quote(file_name)
     );
 
     if project_type == &ProjectType::WebApplication {
