@@ -1,30 +1,20 @@
 use crate::dotnet::project::ProjectType;
 use crate::dotnet::solution::Solution;
 use crate::Project;
-use libcnb::data::launch::{Process, ProcessBuilder, ProcessType, ProcessTypeError};
+use libcnb::data::launch::{Process, ProcessBuilder, ProcessType};
 use std::path::PathBuf;
 
-#[derive(Debug)]
-pub(crate) enum LaunchProcessDetectionError {
-    ProcessType(ProcessTypeError),
-}
-
 /// Detects processes in a solution's projects
-pub(crate) fn detect_solution_processes(
-    solution: &Solution,
-) -> Result<Vec<Process>, LaunchProcessDetectionError> {
+pub(crate) fn detect_solution_processes(solution: &Solution) -> Vec<Process> {
     solution
         .projects
         .iter()
         .filter_map(|project| project_launch_process(solution, project))
-        .collect::<Result<_, _>>()
+        .collect()
 }
 
 /// Determines if a project should have a launchable process and constructs it
-fn project_launch_process(
-    solution: &Solution,
-    project: &Project,
-) -> Option<Result<Process, LaunchProcessDetectionError>> {
+fn project_launch_process(solution: &Solution, project: &Project) -> Option<Process> {
     if !matches!(
         project.project_type,
         ProjectType::ConsoleApplication | ProjectType::WebApplication | ProjectType::WorkerService
@@ -49,18 +39,14 @@ fn project_launch_process(
         command.push_str(" --urls http://*:$PORT");
     }
 
-    Some(
-        project_process_type(project).map(|process_type| {
-            ProcessBuilder::new(process_type, ["bash", "-c", &command]).build()
-        }),
-    )
+    Some(ProcessBuilder::new(project_process_type(project), ["bash", "-c", &command]).build())
 }
 
-fn project_process_type(project: &Project) -> Result<ProcessType, LaunchProcessDetectionError> {
-    project
-        .assembly_name
+/// Returns a sanitized process type name, ensuring it is always valid
+fn project_process_type(project: &Project) -> ProcessType {
+    sanitize_process_type_name(&project.assembly_name)
         .parse::<ProcessType>()
-        .map_err(LaunchProcessDetectionError::ProcessType)
+        .expect("Sanitized process type name should always be valid")
 }
 
 /// Returns the (expected) relative executable path from the solution's parent directory
@@ -85,6 +71,14 @@ fn project_executable_path(project: &Project) -> PathBuf {
         .join("bin")
         .join("publish")
         .join(&project.assembly_name)
+}
+
+/// Sanitizes a process type name to only contain allowed characters
+fn sanitize_process_type_name(input: &str) -> String {
+    input
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
+        .collect()
 }
 
 #[cfg(test)]
@@ -118,10 +112,7 @@ mod tests {
             working_directory: WorkingDirectory::App,
         }];
 
-        assert_eq!(
-            detect_solution_processes(&solution).unwrap(),
-            expected_processes
-        );
+        assert_eq!(detect_solution_processes(&solution), expected_processes);
     }
 
     #[test]
@@ -148,10 +139,7 @@ mod tests {
             working_directory: WorkingDirectory::App,
         }];
 
-        assert_eq!(
-            detect_solution_processes(&solution).unwrap(),
-            expected_processes
-        );
+        assert_eq!(detect_solution_processes(&solution), expected_processes);
     }
 
     #[test]
@@ -166,7 +154,7 @@ mod tests {
             }],
         };
 
-        assert!(detect_solution_processes(&solution).unwrap().is_empty());
+        assert!(detect_solution_processes(&solution).is_empty());
     }
 
     #[test]
@@ -201,6 +189,30 @@ mod tests {
         assert_eq!(
             relative_executable_path(&solution, &project),
             PathBuf::from("project/bin/publish/TestApp")
+        );
+    }
+
+    #[test]
+    fn test_sanitize_process_type_name() {
+        assert_eq!(
+            sanitize_process_type_name("Hello, world! 123"),
+            "Helloworld123"
+        );
+        assert_eq!(
+            sanitize_process_type_name("This_is-a.test.123.abc"),
+            "This_is-a.test.123.abc"
+        );
+        assert_eq!(
+            sanitize_process_type_name("Special chars: !@#$%+^&*()"),
+            "Specialchars"
+        );
+        assert_eq!(
+            sanitize_process_type_name("Mixed: aBc123.xyz_-!@#"),
+            "MixedaBc123.xyz_-"
+        );
+        assert_eq!(
+            sanitize_process_type_name("Unicode: 日本語123"),
+            "Unicode123"
         );
     }
 }
