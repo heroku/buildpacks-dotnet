@@ -33,3 +33,9 @@ impl From<DotnetPublishCommand> for Command {
         command
     }
 }
+
+pub(crate) struct DotnetTestCommand {
+    pub(crate) path: PathBuf,
+    pub(crate) configuration: Option<String>,
+    pub(crate) verbosity_level: Option<VerbosityLevel>,
+}

@@ -16,7 +16,7 @@ use crate::dotnet::target_framework_moniker::{ParseTargetFrameworkError, TargetF
 use crate::dotnet_buildpack_configuration::{
     DotnetBuildpackConfiguration, DotnetBuildpackConfigurationError, ExecutionEnvironment,
 };
-use crate::dotnet_sdk_command::DotnetPublishCommand;
+use crate::dotnet_sdk_command::{DotnetPublishCommand, DotnetTestCommand};
 use crate::layers::sdk::SdkLayerError;
 use bullet_stream::global::print;
 use bullet_stream::style;
@@ -202,18 +202,23 @@ impl Buildpack for DotnetBuildpack {
                 }
             }
             ExecutionEnvironment::Test => {
+                let test_command = DotnetTestCommand {
+                    path: solution.path,
+                    configuration: buildpack_configuration.build_configuration,
+                    verbosity_level: buildpack_configuration.msbuild_verbosity_level,
+                };
                 let mut args = vec![format!(
                     "dotnet test {}",
-                    solution
+                    test_command
                         .path
                         .file_name()
                         .expect("Solution to have a file name")
                         .to_string_lossy()
                 )];
-                if let Some(configuration) = buildpack_configuration.build_configuration {
+                if let Some(configuration) = test_command.configuration {
                     args.push(format!("--configuration {configuration}"));
                 }
-                if let Some(verbosity_level) = buildpack_configuration.msbuild_verbosity_level {
+                if let Some(verbosity_level) = test_command.verbosity_level {
                     args.push(format!("--verbosity {verbosity_level}"));
                 }
                 let test_process =
