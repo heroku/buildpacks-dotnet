@@ -1,6 +1,8 @@
 use crate::dotnet::project::ProjectType;
 use crate::dotnet::solution::Solution;
+use crate::Project;
 use libcnb::data::launch::{Process, ProcessBuilder, ProcessType, ProcessTypeError};
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub(crate) enum LaunchProcessDetectionError {
@@ -22,13 +24,7 @@ pub(crate) fn detect_solution_processes(
             )
         })
         .map(|project| {
-            let executable_path = project
-                .path
-                .parent()
-                .expect("Project file should always have a parent directory")
-                .join("bin")
-                .join("publish")
-                .join(&project.assembly_name);
+            let executable_path = project_executable_path(project);
 
             let relative_executable_path = executable_path
                 .strip_prefix(
@@ -64,4 +60,14 @@ pub(crate) fn detect_solution_processes(
                 })
         })
         .collect::<Result<_, _>>()
+}
+
+fn project_executable_path(project: &Project) -> PathBuf {
+    project
+        .path
+        .parent()
+        .expect("Project file should always have a parent directory")
+        .join("bin")
+        .join("publish")
+        .join(&project.assembly_name)
 }
