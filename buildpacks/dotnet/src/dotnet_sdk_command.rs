@@ -44,23 +44,21 @@ pub(crate) struct DotnetTestCommand {
 
 impl From<DotnetTestCommand> for Process {
     fn from(value: DotnetTestCommand) -> Self {
-        let mut args = vec![format!(
-            "dotnet test {}",
-            shell_words::quote(
-                &value
-                    .path
-                    .file_name()
-                    .expect("Solution to have a file name")
-                    .to_string_lossy()
-            )
-        )];
+        let mut args = vec![shell_words::quote(
+            &value
+                .path
+                .file_name()
+                .expect("Solution to have a file name")
+                .to_string_lossy(),
+        )
+        .to_string()];
         if let Some(configuration) = value.configuration {
             args.push(format!("--configuration {configuration}"));
         }
         if let Some(verbosity_level) = value.verbosity_level {
             args.push(format!("--verbosity {verbosity_level}"));
         }
-        ProcessBuilder::new(process_type!("test"), ["bash", "-c", &args.join(" ")]).build()
+        ProcessBuilder::new(process_type!("test"), ["dotnet", "test", &args.join(" ")]).build()
     }
 }
 
