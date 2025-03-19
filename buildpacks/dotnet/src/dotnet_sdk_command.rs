@@ -47,11 +47,13 @@ impl From<DotnetTestCommand> for Process {
     fn from(value: DotnetTestCommand) -> Self {
         let mut args = vec![format!(
             "dotnet test {}",
-            value
-                .path
-                .file_name()
-                .expect("Solution to have a file name")
-                .to_string_lossy()
+            shell_words::quote(
+                &value
+                    .path
+                    .file_name()
+                    .expect("Solution to have a file name")
+                    .to_string_lossy()
+            )
         )];
         if let Some(configuration) = value.configuration {
             args.push(format!("--configuration {configuration}"));
@@ -83,6 +85,28 @@ mod tests {
                 "bash".to_string(),
                 "-c".to_string(),
                 "dotnet test bar.sln".to_string(),
+            ],
+            args: vec![],
+            default: false,
+            working_directory: WorkingDirectory::App,
+        };
+
+        assert_eq!(Process::from(test_command), expected_process);
+    }
+
+    #[test]
+    fn test_process_from_dotnet_test_command_with_spaces_in_path() {
+        let test_command = DotnetTestCommand {
+            path: PathBuf::from("/foo/bar baz.sln"),
+            configuration: None,
+            verbosity_level: None,
+        };
+        let expected_process = Process {
+            r#type: process_type!("test"),
+            command: vec![
+                "bash".to_string(),
+                "-c".to_string(),
+                "dotnet test 'bar baz.sln'".to_string(),
             ],
             args: vec![],
             default: false,
