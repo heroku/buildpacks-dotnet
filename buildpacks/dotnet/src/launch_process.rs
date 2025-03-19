@@ -48,14 +48,17 @@ fn project_launch_process(
     }
 
     Some(
-        project
-            .assembly_name
-            .parse::<ProcessType>()
-            .map_err(LaunchProcessDetectionError::ProcessType)
-            .map(|process_type| {
-                ProcessBuilder::new(process_type, ["bash", "-c", &command]).build()
-            }),
+        project_process_type(project).map(|process_type| {
+            ProcessBuilder::new(process_type, ["bash", "-c", &command]).build()
+        }),
     )
+}
+
+fn project_process_type(project: &Project) -> Result<ProcessType, LaunchProcessDetectionError> {
+    project
+        .assembly_name
+        .parse::<ProcessType>()
+        .map_err(LaunchProcessDetectionError::ProcessType)
 }
 
 fn relative_executable_path(solution: &Solution, project: &Project) -> PathBuf {
