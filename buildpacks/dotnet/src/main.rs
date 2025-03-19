@@ -202,12 +202,11 @@ impl Buildpack for DotnetBuildpack {
                 }
             }
             ExecutionEnvironment::Test => {
-                let test_command = DotnetTestCommand {
+                launch_builder.process(Process::from(DotnetTestCommand {
                     path: solution.path,
                     configuration: buildpack_configuration.build_configuration,
                     verbosity_level: buildpack_configuration.msbuild_verbosity_level,
-                };
-                launch_builder.process(Process::from(test_command));
+                }));
             }
         }
 
