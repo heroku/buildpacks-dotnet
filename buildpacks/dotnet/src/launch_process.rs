@@ -120,6 +120,33 @@ mod tests {
     }
 
     #[test]
+    fn test_detect_solution_processes_sanitized() {
+        let solution = Solution {
+            path: PathBuf::from("/tmp/foo.sln"),
+            projects: vec![Project {
+                path: PathBuf::from("/tmp/bar.baz/bar.baz.csproj"),
+                target_framework: "net9.0".to_string(),
+                project_type: ProjectType::WebApplication,
+                assembly_name: "ba+#r.baz".to_string(),
+            }],
+        };
+
+        let expected_processes = vec![Process {
+            r#type: process_type!("bar.baz"),
+            command: vec![
+                "bash".to_string(),
+                "-c".to_string(),
+                "cd bar.baz/bin/publish; ./'ba+#r.baz' --urls http://*:$PORT".to_string(),
+            ],
+            args: vec![],
+            default: false,
+            working_directory: WorkingDirectory::App,
+        }];
+
+        assert_eq!(detect_solution_processes(&solution), expected_processes);
+    }
+
+    #[test]
     fn test_detect_solution_processes_console_app() {
         let solution = Solution {
             path: PathBuf::from("/tmp/foo.sln"),
@@ -147,18 +174,84 @@ mod tests {
     }
 
     #[test]
-    fn test_project_launch_process_non_executable() {
-        let solution = Solution {
-            path: PathBuf::from("/tmp/foo.sln"),
-            projects: vec![Project {
-                path: PathBuf::from("/tmp/bar/bar.csproj"),
-                target_framework: "net9.0".to_string(),
-                project_type: ProjectType::Unknown,
-                assembly_name: "bar".to_string(),
-            }],
+    fn test_project_launch_process_with_spaces() {
+        let project = Project {
+            path: PathBuf::from("/tmp/My Project With Spaces/project.csproj"),
+            target_framework: "net9.0".to_string(),
+            project_type: ProjectType::ConsoleApplication,
+            assembly_name: "My App".to_string(),
         };
 
-        assert!(detect_solution_processes(&solution).is_empty());
+        let solution = Solution {
+            path: PathBuf::from("/tmp/My Solution With Spaces.sln"),
+            projects: vec![],
+        };
+
+        let expected_process = Process {
+            r#type: process_type!("MyApp"),
+            command: vec![
+                "bash".to_string(),
+                "-c".to_string(),
+                "cd 'My Project With Spaces/bin/publish'; ./'My App'".to_string(),
+            ],
+            args: vec![],
+            default: false,
+            working_directory: WorkingDirectory::App,
+        };
+
+        assert_eq!(
+            project_launch_process(&solution, &project),
+            Some(expected_process)
+        );
+    }
+
+    #[test]
+    fn test_project_launch_process_special_chars() {
+        let project = Project {
+            path: PathBuf::from("/tmp/project with #special$chars/project.csproj"),
+            target_framework: "net9.0".to_string(),
+            project_type: ProjectType::ConsoleApplication,
+            assembly_name: "My-App+v1.2_Release!".to_string(),
+        };
+
+        let solution = Solution {
+            path: PathBuf::from("/tmp/solution.sln"),
+            projects: vec![],
+        };
+
+        let expected_process = Process {
+            r#type: process_type!("My-Appv1.2_Release"),
+            command: vec![
+                "bash".to_string(),
+                "-c".to_string(),
+                "cd 'project with #special$chars/bin/publish'; ./My-App+v1.2_Release!".to_string(),
+            ],
+            args: vec![],
+            default: false,
+            working_directory: WorkingDirectory::App,
+        };
+
+        assert_eq!(
+            project_launch_process(&solution, &project),
+            Some(expected_process)
+        );
+    }
+
+    #[test]
+    fn test_project_launch_process_non_executable() {
+        let project = Project {
+            path: PathBuf::from("/tmp/project/project.csproj"),
+            target_framework: "net9.0".to_string(),
+            project_type: ProjectType::Unknown,
+            assembly_name: "LibraryProject".to_string(),
+        };
+
+        let solution = Solution {
+            path: PathBuf::from("/tmp/solution.sln"),
+            projects: vec![],
+        };
+
+        assert_eq!(project_launch_process(&solution, &project), None);
     }
 
     #[test]
