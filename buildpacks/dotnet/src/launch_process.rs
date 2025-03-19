@@ -86,3 +86,121 @@ fn project_executable_path(project: &Project) -> PathBuf {
         .join("publish")
         .join(&project.assembly_name)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use libcnb::data::launch::{Process, WorkingDirectory};
+    use libcnb::data::process_type;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_detect_solution_processes_web_app() {
+        let solution = Solution {
+            path: PathBuf::from("/tmp/foo.sln"),
+            projects: vec![Project {
+                path: PathBuf::from("/tmp/bar/bar.csproj"),
+                target_framework: "net9.0".to_string(),
+                project_type: ProjectType::WebApplication,
+                assembly_name: "bar".to_string(),
+            }],
+        };
+
+        let expected_processes = vec![Process {
+            r#type: process_type!("bar"),
+            command: vec![
+                "bash".to_string(),
+                "-c".to_string(),
+                "cd bar/bin/publish; ./bar --urls http://*:$PORT".to_string(),
+            ],
+            args: vec![],
+            default: false,
+            working_directory: WorkingDirectory::App,
+        }];
+
+        assert_eq!(
+            detect_solution_processes(&solution).unwrap(),
+            expected_processes
+        );
+    }
+
+    #[test]
+    fn test_detect_solution_processes_console_app() {
+        let solution = Solution {
+            path: PathBuf::from("/tmp/foo.sln"),
+            projects: vec![Project {
+                path: PathBuf::from("/tmp/bar/bar.csproj"),
+                target_framework: "net9.0".to_string(),
+                project_type: ProjectType::ConsoleApplication,
+                assembly_name: "bar".to_string(),
+            }],
+        };
+
+        let expected_processes = vec![Process {
+            r#type: process_type!("bar"),
+            command: vec![
+                "bash".to_string(),
+                "-c".to_string(),
+                "cd bar/bin/publish; ./bar".to_string(),
+            ],
+            args: vec![],
+            default: false,
+            working_directory: WorkingDirectory::App,
+        }];
+
+        assert_eq!(
+            detect_solution_processes(&solution).unwrap(),
+            expected_processes
+        );
+    }
+
+    #[test]
+    fn test_project_launch_process_non_executable() {
+        let solution = Solution {
+            path: PathBuf::from("/tmp/foo.sln"),
+            projects: vec![Project {
+                path: PathBuf::from("/tmp/bar/bar.csproj"),
+                target_framework: "net9.0".to_string(),
+                project_type: ProjectType::Unknown,
+                assembly_name: "bar".to_string(),
+            }],
+        };
+
+        assert!(detect_solution_processes(&solution).unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_project_executable_path() {
+        let project = Project {
+            path: PathBuf::from("/tmp/project/project.csproj"),
+            target_framework: "net9.0".to_string(),
+            project_type: ProjectType::ConsoleApplication,
+            assembly_name: "TestApp".to_string(),
+        };
+
+        assert_eq!(
+            project_executable_path(&project),
+            PathBuf::from("/tmp/project/bin/publish/TestApp")
+        );
+    }
+
+    #[test]
+    fn test_relative_executable_path() {
+        let solution = Solution {
+            path: PathBuf::from("/tmp/solution.sln"),
+            projects: vec![],
+        };
+
+        let project = Project {
+            path: PathBuf::from("/tmp/project/project.csproj"),
+            target_framework: "net9.0".to_string(),
+            project_type: ProjectType::ConsoleApplication,
+            assembly_name: "TestApp".to_string(),
+        };
+
+        assert_eq!(
+            relative_executable_path(&solution, &project),
+            PathBuf::from("project/bin/publish/TestApp")
+        );
+    }
+}
