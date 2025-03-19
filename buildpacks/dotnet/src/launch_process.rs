@@ -15,22 +15,20 @@ pub(crate) fn detect_solution_processes(
     solution
         .projects
         .iter()
-        .filter(|project| {
-            matches!(
-                project.project_type,
-                ProjectType::ConsoleApplication
-                    | ProjectType::WebApplication
-                    | ProjectType::WorkerService
-            )
-        })
-        .map(|project| project_launch_process(solution, project))
+        .filter_map(|project| project_launch_process(solution, project))
         .collect::<Result<_, _>>()
 }
 
 fn project_launch_process(
     solution: &Solution,
     project: &Project,
-) -> Result<Process, LaunchProcessDetectionError> {
+) -> Option<Result<Process, LaunchProcessDetectionError>> {
+    if !matches!(
+        project.project_type,
+        ProjectType::ConsoleApplication | ProjectType::WebApplication | ProjectType::WorkerService
+    ) {
+        return None;
+    }
     let relative_executable_path = relative_executable_path(solution, project);
 
     let mut command = format!(
@@ -49,11 +47,15 @@ fn project_launch_process(
         command.push_str(" --urls http://*:$PORT");
     }
 
-    project
-        .assembly_name
-        .parse::<ProcessType>()
-        .map_err(LaunchProcessDetectionError::ProcessType)
-        .map(|process_type| ProcessBuilder::new(process_type, ["bash", "-c", &command]).build())
+    Some(
+        project
+            .assembly_name
+            .parse::<ProcessType>()
+            .map_err(LaunchProcessDetectionError::ProcessType)
+            .map(|process_type| {
+                ProcessBuilder::new(process_type, ["bash", "-c", &command]).build()
+            }),
+    )
 }
 
 fn relative_executable_path(solution: &Solution, project: &Project) -> PathBuf {
