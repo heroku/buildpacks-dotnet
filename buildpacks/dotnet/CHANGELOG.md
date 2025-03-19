@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The buildpack now sanitizes launch process type names, based on project assembly names, by filtering out invalid characters. ([#237](https://github.com/heroku/buildpacks-dotnet/pull/237))
+
 ## [0.3.5] - 2025-03-19
 
 ### Added
