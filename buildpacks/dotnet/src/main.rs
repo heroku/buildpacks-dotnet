@@ -24,8 +24,8 @@ use fun_run::CommandWithName;
 use inventory::artifact::{Arch, Os};
 use inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
-use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
-use libcnb::data::{layer_name, process_type};
+use libcnb::data::launch::{LaunchBuilder, Process};
+use libcnb::data::layer_name;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer::UncachedLayerDefinition;
@@ -207,25 +207,7 @@ impl Buildpack for DotnetBuildpack {
                     configuration: buildpack_configuration.build_configuration,
                     verbosity_level: buildpack_configuration.msbuild_verbosity_level,
                 };
-                let mut args = vec![format!(
-                    "dotnet test {}",
-                    test_command
-                        .path
-                        .file_name()
-                        .expect("Solution to have a file name")
-                        .to_string_lossy()
-                )];
-                if let Some(configuration) = test_command.configuration {
-                    args.push(format!("--configuration {configuration}"));
-                }
-                if let Some(verbosity_level) = test_command.verbosity_level {
-                    args.push(format!("--verbosity {verbosity_level}"));
-                }
-                let test_process =
-                    ProcessBuilder::new(process_type!("test"), ["bash", "-c", &args.join(" ")])
-                        .build();
-
-                launch_builder.process(test_process);
+                launch_builder.process(Process::from(test_command));
             }
         }
 
