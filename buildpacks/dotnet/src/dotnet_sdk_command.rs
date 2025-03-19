@@ -57,12 +57,10 @@ impl From<DotnetTestCommand> for Process {
             .to_string(),
         ];
         if let Some(configuration) = value.configuration {
-            command.push("--configuration".to_string());
-            command.push(configuration);
+            command.extend(["--configuration".to_string(), configuration]);
         }
         if let Some(verbosity_level) = value.verbosity_level {
-            command.push("--verbosity".to_string());
-            command.push(verbosity_level.to_string());
+            command.extend(["--verbosity".to_string(), verbosity_level.to_string()]);
         }
         ProcessBuilder::new(process_type!("test"), command).build()
     }
