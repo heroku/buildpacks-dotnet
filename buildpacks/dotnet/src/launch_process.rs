@@ -23,13 +23,13 @@ fn project_launch_process(solution: &Solution, project: &Project) -> Option<Proc
     }
     let relative_executable_path = relative_executable_path(solution, project);
 
-    let command = build_command(&relative_executable_path, &project.project_type);
+    let command = build_command(&relative_executable_path, project.project_type);
 
     Some(ProcessBuilder::new(project_process_type(project), ["bash", "-c", &command]).build())
 }
 
 /// Constructs the shell command for launching the process
-fn build_command(relative_executable_path: &Path, project_type: &ProjectType) -> String {
+fn build_command(relative_executable_path: &Path, project_type: ProjectType) -> String {
     let parent_dir = relative_executable_path
         .parent()
         .expect("Executable path should always have a parent directory")
@@ -48,7 +48,7 @@ fn build_command(relative_executable_path: &Path, project_type: &ProjectType) ->
         shell_words::quote(file_name)
     );
 
-    if project_type == &ProjectType::WebApplication {
+    if project_type == ProjectType::WebApplication {
         command.push_str(" --urls http://*:$PORT");
     }
 
@@ -200,12 +200,12 @@ mod tests {
         let executable_path = PathBuf::from("some/project with spaces/bin/publish/My App");
 
         assert_eq!(
-            build_command(&executable_path, &ProjectType::ConsoleApplication),
+            build_command(&executable_path, ProjectType::ConsoleApplication),
             "cd 'some/project with spaces/bin/publish'; ./'My App'"
         );
 
         assert_eq!(
-            build_command(&executable_path, &ProjectType::WebApplication),
+            build_command(&executable_path, ProjectType::WebApplication),
             "cd 'some/project with spaces/bin/publish'; ./'My App' --urls http://*:$PORT"
         );
     }
@@ -216,7 +216,7 @@ mod tests {
             PathBuf::from("some/project with #special$chars/bin/publish/My-App+v1.2_Release!");
 
         assert_eq!(
-            build_command(&executable_path, &ProjectType::ConsoleApplication),
+            build_command(&executable_path, ProjectType::ConsoleApplication),
             "cd 'some/project with #special$chars/bin/publish'; ./My-App+v1.2_Release!"
         );
     }
