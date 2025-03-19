@@ -25,14 +25,18 @@ fn project_launch_process(solution: &Solution, project: &Project) -> Option<Proc
 
     let mut command = format!(
         "cd {}; ./{}",
-        relative_executable_path
-            .parent()
-            .expect("Path to always have a parent directory")
-            .display(),
-        relative_executable_path
-            .file_name()
-            .expect("Path to never terminate in `..`")
-            .to_string_lossy()
+        shell_words::quote(
+            &relative_executable_path
+                .parent()
+                .expect("Path to always have a parent directory")
+                .to_string_lossy()
+        ),
+        shell_words::quote(
+            &relative_executable_path
+                .file_name()
+                .expect("Path to never terminate in `..`")
+                .to_string_lossy()
+        )
     );
 
     if project.project_type == ProjectType::WebApplication {
