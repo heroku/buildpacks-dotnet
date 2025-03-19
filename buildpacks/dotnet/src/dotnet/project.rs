@@ -48,7 +48,7 @@ struct Metadata {
     assembly_name: Option<String>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub(crate) enum ProjectType {
     ConsoleApplication,
     WebApplication,

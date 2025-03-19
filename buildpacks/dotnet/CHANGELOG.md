@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The buildpack now sanitizes launch process type names, based on project assembly names, by filtering out invalid characters. ([#237](https://github.com/heroku/buildpacks-dotnet/pull/237))
+- Launch process commands with paths containing special characters (including spaces) are now properly quoted. ([#239](https://github.com/heroku/buildpacks-dotnet/pull/239))
 
 ## [0.3.5] - 2025-03-19
 
