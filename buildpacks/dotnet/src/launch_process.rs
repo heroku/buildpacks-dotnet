@@ -2,7 +2,7 @@ use crate::dotnet::project::ProjectType;
 use crate::dotnet::solution::Solution;
 use crate::Project;
 use libcnb::data::launch::{Process, ProcessBuilder, ProcessType};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Detects processes in a solution's projects
 pub(crate) fn detect_solution_processes(solution: &Solution) -> Vec<Process> {
@@ -23,27 +23,34 @@ fn project_launch_process(solution: &Solution, project: &Project) -> Option<Proc
     }
     let relative_executable_path = relative_executable_path(solution, project);
 
+    let command = build_command(&relative_executable_path, &project.project_type);
+
+    Some(ProcessBuilder::new(project_process_type(project), ["bash", "-c", &command]).build())
+}
+
+/// Constructs the shell command for launching the process
+fn build_command(relative_executable_path: &Path, project_type: &ProjectType) -> String {
+    let parent_dir = relative_executable_path
+        .parent()
+        .expect("Executable path should always have a parent directory")
+        .to_string_lossy();
+
+    let file_name = relative_executable_path
+        .file_name()
+        .expect("Executable path should always have a file name")
+        .to_string_lossy();
+
     let mut command = format!(
         "cd {}; ./{}",
-        shell_words::quote(
-            &relative_executable_path
-                .parent()
-                .expect("Path to always have a parent directory")
-                .to_string_lossy()
-        ),
-        shell_words::quote(
-            &relative_executable_path
-                .file_name()
-                .expect("Path to never terminate in `..`")
-                .to_string_lossy()
-        )
+        shell_words::quote(&parent_dir),
+        shell_words::quote(&file_name)
     );
 
-    if project.project_type == ProjectType::WebApplication {
+    if project_type == &ProjectType::WebApplication {
         command.push_str(" --urls http://*:$PORT");
     }
 
-    Some(ProcessBuilder::new(project_process_type(project), ["bash", "-c", &command]).build())
+    command
 }
 
 /// Returns a sanitized process type name, ensuring it is always valid
