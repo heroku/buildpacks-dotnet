@@ -23,34 +23,37 @@ pub(crate) fn detect_solution_processes(
                     | ProjectType::WorkerService
             )
         })
-        .map(|project| {
-            let relative_executable_path = relative_executable_path(solution, project);
-
-            let mut command = format!(
-                "cd {}; ./{}",
-                relative_executable_path
-                    .parent()
-                    .expect("Path to always have a parent directory")
-                    .display(),
-                relative_executable_path
-                    .file_name()
-                    .expect("Path to never terminate in `..`")
-                    .to_string_lossy()
-            );
-
-            if project.project_type == ProjectType::WebApplication {
-                command.push_str(" --urls http://*:$PORT");
-            }
-
-            project
-                .assembly_name
-                .parse::<ProcessType>()
-                .map_err(LaunchProcessDetectionError::ProcessType)
-                .map(|process_type| {
-                    ProcessBuilder::new(process_type, ["bash", "-c", &command]).build()
-                })
-        })
+        .map(|project| project_launch_process(solution, project))
         .collect::<Result<_, _>>()
+}
+
+fn project_launch_process(
+    solution: &Solution,
+    project: &Project,
+) -> Result<Process, LaunchProcessDetectionError> {
+    let relative_executable_path = relative_executable_path(solution, project);
+
+    let mut command = format!(
+        "cd {}; ./{}",
+        relative_executable_path
+            .parent()
+            .expect("Path to always have a parent directory")
+            .display(),
+        relative_executable_path
+            .file_name()
+            .expect("Path to never terminate in `..`")
+            .to_string_lossy()
+    );
+
+    if project.project_type == ProjectType::WebApplication {
+        command.push_str(" --urls http://*:$PORT");
+    }
+
+    project
+        .assembly_name
+        .parse::<ProcessType>()
+        .map_err(LaunchProcessDetectionError::ProcessType)
+        .map(|process_type| ProcessBuilder::new(process_type, ["bash", "-c", &command]).build())
 }
 
 fn relative_executable_path(solution: &Solution, project: &Project) -> PathBuf {
