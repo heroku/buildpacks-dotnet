@@ -2,7 +2,7 @@ mod detect;
 mod dotnet;
 mod dotnet_buildpack_configuration;
 mod dotnet_layer_env;
-mod dotnet_publish_command;
+mod dotnet_sdk_command;
 mod errors;
 mod launch_process;
 mod layers;
@@ -16,7 +16,7 @@ use crate::dotnet::target_framework_moniker::{ParseTargetFrameworkError, TargetF
 use crate::dotnet_buildpack_configuration::{
     DotnetBuildpackConfiguration, DotnetBuildpackConfigurationError, ExecutionEnvironment,
 };
-use crate::dotnet_publish_command::DotnetPublishCommand;
+use crate::dotnet_sdk_command::DotnetPublishCommand;
 use crate::layers::sdk::SdkLayerError;
 use bullet_stream::global::print;
 use bullet_stream::style;
