@@ -69,9 +69,9 @@ fn relative_executable_path(solution: &Solution, project: &Project) -> PathBuf {
             solution
                 .path
                 .parent()
-                .expect("Solution path to have a parent"),
+                .expect("Solution file should be in a directory"),
         )
-        .expect("Project to be nested in solution parent directory")
+        .expect("Executable path should inside the solution's directory")
         .to_path_buf()
 }
 
