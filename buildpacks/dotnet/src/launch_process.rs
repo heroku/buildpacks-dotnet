@@ -2,7 +2,7 @@ use crate::dotnet::project::ProjectType;
 use crate::dotnet::solution::Solution;
 use crate::Project;
 use libcnb::data::launch::{Process, ProcessBuilder, ProcessType, ProcessTypeError};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub(crate) enum LaunchProcessDetectionError {
@@ -24,9 +24,7 @@ pub(crate) fn detect_solution_processes(
             )
         })
         .map(|project| {
-            let executable_path = project_executable_path(project);
-
-            let relative_executable_path = relative_executable_path(solution, executable_path);
+            let relative_executable_path = relative_executable_path(solution, project);
 
             let mut command = format!(
                 "cd {}; ./{}",
@@ -55,8 +53,8 @@ pub(crate) fn detect_solution_processes(
         .collect::<Result<_, _>>()
 }
 
-fn relative_executable_path(solution: &Solution, executable_path: &PathBuf) -> PathBuf {
-    executable_path
+fn relative_executable_path(solution: &Solution, project: &Project) -> PathBuf {
+    project_executable_path(project)
         .strip_prefix(
             solution
                 .path
