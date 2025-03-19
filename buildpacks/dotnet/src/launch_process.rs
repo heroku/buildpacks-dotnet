@@ -2,7 +2,7 @@ use crate::dotnet::project::ProjectType;
 use crate::dotnet::solution::Solution;
 use crate::Project;
 use libcnb::data::launch::{Process, ProcessBuilder, ProcessType, ProcessTypeError};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub(crate) enum LaunchProcessDetectionError {
@@ -26,14 +26,7 @@ pub(crate) fn detect_solution_processes(
         .map(|project| {
             let executable_path = project_executable_path(project);
 
-            let relative_executable_path = executable_path
-                .strip_prefix(
-                    solution
-                        .path
-                        .parent()
-                        .expect("Solution path to have a parent"),
-                )
-                .expect("Project to be nested in solution parent directory");
+            let relative_executable_path = relative_executable_path(solution, executable_path);
 
             let mut command = format!(
                 "cd {}; ./{}",
@@ -60,6 +53,18 @@ pub(crate) fn detect_solution_processes(
                 })
         })
         .collect::<Result<_, _>>()
+}
+
+fn relative_executable_path(solution: &Solution, executable_path: &PathBuf) -> PathBuf {
+    executable_path
+        .strip_prefix(
+            solution
+                .path
+                .parent()
+                .expect("Solution path to have a parent"),
+        )
+        .expect("Project to be nested in solution parent directory")
+        .to_path_buf()
 }
 
 fn project_executable_path(project: &Project) -> PathBuf {
