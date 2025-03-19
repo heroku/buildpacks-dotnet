@@ -9,6 +9,7 @@ pub(crate) enum LaunchProcessDetectionError {
     ProcessType(ProcessTypeError),
 }
 
+/// Detects processes in a solution's projects
 pub(crate) fn detect_solution_processes(
     solution: &Solution,
 ) -> Result<Vec<Process>, LaunchProcessDetectionError> {
@@ -19,6 +20,7 @@ pub(crate) fn detect_solution_processes(
         .collect::<Result<_, _>>()
 }
 
+/// Determines if a project should have a launchable process and constructs it
 fn project_launch_process(
     solution: &Solution,
     project: &Project,
@@ -61,6 +63,7 @@ fn project_process_type(project: &Project) -> Result<ProcessType, LaunchProcessD
         .map_err(LaunchProcessDetectionError::ProcessType)
 }
 
+/// Returns the (expected) relative executable path from the solution's parent directory
 fn relative_executable_path(solution: &Solution, project: &Project) -> PathBuf {
     project_executable_path(project)
         .strip_prefix(
@@ -73,6 +76,7 @@ fn relative_executable_path(solution: &Solution, project: &Project) -> PathBuf {
         .to_path_buf()
 }
 
+/// Returns the (expected) absolute path to the project's compiled executable
 fn project_executable_path(project: &Project) -> PathBuf {
     project
         .path
