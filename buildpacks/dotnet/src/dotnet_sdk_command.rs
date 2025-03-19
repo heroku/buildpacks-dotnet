@@ -44,21 +44,25 @@ pub(crate) struct DotnetTestCommand {
 
 impl From<DotnetTestCommand> for Process {
     fn from(value: DotnetTestCommand) -> Self {
-        let mut args = vec![shell_words::quote(
-            &value
-                .path
-                .file_name()
-                .expect("Solution to have a file name")
-                .to_string_lossy(),
-        )
-        .to_string()];
+        let mut command = vec![
+            "dotnet".to_string(),
+            "test".to_string(),
+            shell_words::quote(
+                &value
+                    .path
+                    .file_name()
+                    .expect("Solution to have a file name")
+                    .to_string_lossy(),
+            )
+            .to_string(),
+        ];
         if let Some(configuration) = value.configuration {
-            args.push(format!("--configuration {configuration}"));
+            command.push(format!("--configuration {configuration}"));
         }
         if let Some(verbosity_level) = value.verbosity_level {
-            args.push(format!("--verbosity {verbosity_level}"));
+            command.push(format!("--verbosity {verbosity_level}"));
         }
-        ProcessBuilder::new(process_type!("test"), ["dotnet", "test", &args.join(" ")]).build()
+        ProcessBuilder::new(process_type!("test"), command).build()
     }
 }
 
@@ -79,9 +83,9 @@ mod tests {
         let expected_process = Process {
             r#type: process_type!("test"),
             command: vec![
-                "bash".to_string(),
-                "-c".to_string(),
-                "dotnet test bar.sln".to_string(),
+                "dotnet".to_string(),
+                "test".to_string(),
+                "bar.sln".to_string(),
             ],
             args: vec![],
             default: false,
@@ -101,9 +105,9 @@ mod tests {
         let expected_process = Process {
             r#type: process_type!("test"),
             command: vec![
-                "bash".to_string(),
-                "-c".to_string(),
-                "dotnet test 'bar baz.sln'".to_string(),
+                "dotnet".to_string(),
+                "test".to_string(),
+                "'bar baz.sln'".to_string(),
             ],
             args: vec![],
             default: false,
@@ -123,9 +127,11 @@ mod tests {
         let expected_process = Process {
             r#type: process_type!("test"),
             command: vec![
-                "bash".to_string(),
-                "-c".to_string(),
-                "dotnet test bar.sln --configuration Release --verbosity normal".to_string(),
+                "dotnet".to_string(),
+                "test".to_string(),
+                "bar.sln".to_string(),
+                "--configuration Release".to_string(),
+                "--verbosity normal".to_string(),
             ],
             args: vec![],
             default: false,
