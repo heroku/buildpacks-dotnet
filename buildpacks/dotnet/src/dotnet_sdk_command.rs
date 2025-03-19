@@ -62,3 +62,33 @@ impl From<DotnetTestCommand> for Process {
         ProcessBuilder::new(process_type!("test"), ["bash", "-c", &args.join(" ")]).build()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use libcnb::data::launch::{Process, WorkingDirectory};
+    use libcnb::data::process_type;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_process_from_dotnet_test_command() {
+        let test_command = DotnetTestCommand {
+            path: PathBuf::from("/foo/bar.sln"),
+            configuration: None,
+            verbosity_level: None,
+        };
+        let expected_process = Process {
+            r#type: process_type!("test"),
+            command: vec![
+                "bash".to_string(),
+                "-c".to_string(),
+                "dotnet test bar.sln".to_string(),
+            ],
+            args: vec![],
+            default: false,
+            working_directory: WorkingDirectory::App,
+        };
+
+        assert_eq!(Process::from(test_command), expected_process);
+    }
+}
