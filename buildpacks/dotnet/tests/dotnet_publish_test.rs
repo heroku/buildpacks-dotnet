@@ -204,7 +204,7 @@ fn test_dotnet_publish_with_space_in_project_filename() {
                     let log_output = container.logs_wait();
 
                     assert_empty!(log_output.stderr);
-                    assert_contains!(log_output.stdout, &"Hello, World!".to_string());
+                    assert_contains!(log_output.stdout, "Hello, World!");
                 },
             );
         },
