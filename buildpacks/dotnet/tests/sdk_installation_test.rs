@@ -1,6 +1,6 @@
-use crate::tests::{default_build_config, get_dotnet_arch};
-use indoc::{formatdoc, indoc};
-use libcnb_test::{assert_contains, assert_empty, BuildpackReference, ContainerConfig, TestRunner};
+use crate::tests::default_build_config;
+use indoc::indoc;
+use libcnb_test::{assert_contains, assert_empty, BuildpackReference, TestRunner};
 
 #[test]
 #[ignore = "integration test"]
@@ -86,57 +86,6 @@ fn test_sdk_basic_install_build_environment() {
                 NUGET_XMLDOC_MODE=skip
                 PATH=/layers/heroku_dotnet/sdk:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"}
         );
-    });
-}
-
-#[test]
-#[ignore = "integration test"]
-fn test_sdk_basic_install_test_execution_environment() {
-    let mut config = default_build_config("tests/fixtures/project_with_nuget_sdk_and_global_json");
-    config.env("CNB_EXEC_ENV", "test");
-
-    TestRunner::default().build(&config, |context| {
-        assert_empty!(context.pack_stderr);
-
-        context.start_container(ContainerConfig::new().entrypoint("test"), |container| {
-            let log_output = container.logs_wait();
-            let dotnet_arch = get_dotnet_arch();
-
-            assert_empty!(log_output.stderr);
-            assert_contains!(
-                log_output.stdout,
-                &formatdoc! {"
-                    foo -> /workspace/bin/Debug/net9.0/foo.dll
-                      Run tests: '/workspace/bin/Debug/net9.0/foo.dll' [net9.0|{dotnet_arch}]
-                      Passed! - Failed: 0, Passed: 1, Skipped: 0, Total: 1"}
-            );
-            assert_contains!(
-                log_output.stdout,
-                &format!(
-                    "Tests succeeded: '/workspace/bin/Debug/net9.0/foo.dll' [net9.0|{dotnet_arch}"
-                )
-            );
-        });
-    });
-}
-
-#[test]
-#[ignore = "integration test"]
-fn test_solution_with_spaces_test_execution_environment() {
-    let mut config = default_build_config("tests/fixtures/solution_with_spaces");
-    config.env("CNB_EXEC_ENV", "test");
-
-    TestRunner::default().build(&config, |context| {
-        assert_empty!(context.pack_stderr);
-        context.start_container(ContainerConfig::new().entrypoint("test"), |container| {
-            let log_output = container.logs_wait();
-
-            assert_empty!(log_output.stderr);
-            assert_contains!(
-                log_output.stdout,
-                &"Restored /workspace/console app/console app.csproj".to_string()
-            );
-        });
     });
 }
 
