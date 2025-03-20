@@ -47,14 +47,12 @@ impl From<DotnetTestCommand> for Process {
         let mut command = vec![
             "dotnet".to_string(),
             "test".to_string(),
-            shell_words::quote(
-                &value
-                    .path
-                    .file_name()
-                    .expect("Solution to have a file name")
-                    .to_string_lossy(),
-            )
-            .to_string(),
+            value
+                .path
+                .file_name()
+                .expect("Solution to have a file name")
+                .to_string_lossy()
+                .to_string(),
         ];
         if let Some(configuration) = value.configuration {
             command.extend(["--configuration".to_string(), configuration]);
@@ -107,7 +105,7 @@ mod tests {
             command: vec![
                 "dotnet".to_string(),
                 "test".to_string(),
-                "'bar baz.sln'".to_string(),
+                "bar baz.sln".to_string(),
             ],
             args: vec![],
             default: false,
