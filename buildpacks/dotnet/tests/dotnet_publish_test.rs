@@ -1,6 +1,6 @@
 use crate::tests::{default_build_config, get_dotnet_arch};
 use indoc::{formatdoc, indoc};
-use libcnb_test::{assert_contains, assert_empty, PackResult, TestRunner};
+use libcnb_test::{assert_contains, assert_empty, ContainerConfig, PackResult, TestRunner};
 use regex::Regex;
 
 #[test]
@@ -176,6 +176,36 @@ fn test_dotnet_publish_with_global_json_and_custom_verbosity_level() {
             assert_contains!(
               replace_msbuild_log_patterns_with_placeholder(&context.pack_stdout, "<PLACEHOLDER>"), 
               "Time Elapsed <PLACEHOLDER>"
+            );
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
+fn test_dotnet_publish_with_space_in_project_filename() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/solution_with_spaces"),
+        |context| {
+            assert_empty!(&context.pack_stderr);
+            assert_contains!(
+                &context.pack_stdout,
+                r#"Running `dotnet publish "/workspace/solution with spaces.sln""#
+            );
+
+            assert_contains!(
+                &context.pack_stdout,
+                r"Found `consoleapp`: bash -c cd 'console app/bin/publish'; ./'console app'"
+            );
+
+            context.start_container(
+                ContainerConfig::new().entrypoint("consoleapp"),
+                |container| {
+                    let log_output = container.logs_wait();
+
+                    assert_empty!(log_output.stderr);
+                    assert_contains!(log_output.stdout, &"Hello, World!".to_string());
+                },
             );
         },
     );
