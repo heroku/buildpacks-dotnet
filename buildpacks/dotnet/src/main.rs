@@ -2,7 +2,7 @@ mod detect;
 mod dotnet;
 mod dotnet_buildpack_configuration;
 mod dotnet_layer_env;
-mod dotnet_publish_command;
+mod dotnet_sdk_command;
 mod errors;
 mod launch_process;
 mod layers;
@@ -16,7 +16,7 @@ use crate::dotnet::target_framework_moniker::{ParseTargetFrameworkError, TargetF
 use crate::dotnet_buildpack_configuration::{
     DotnetBuildpackConfiguration, DotnetBuildpackConfigurationError, ExecutionEnvironment,
 };
-use crate::dotnet_publish_command::DotnetPublishCommand;
+use crate::dotnet_sdk_command::{DotnetPublishCommand, DotnetTestCommand};
 use crate::layers::sdk::SdkLayerError;
 use bullet_stream::global::print;
 use bullet_stream::style;
@@ -24,8 +24,8 @@ use fun_run::CommandWithName;
 use inventory::artifact::{Arch, Os};
 use inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
-use libcnb::data::launch::{LaunchBuilder, ProcessBuilder};
-use libcnb::data::{layer_name, process_type};
+use libcnb::data::launch::{LaunchBuilder, Process};
+use libcnb::data::layer_name;
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer::UncachedLayerDefinition;
@@ -202,25 +202,11 @@ impl Buildpack for DotnetBuildpack {
                 }
             }
             ExecutionEnvironment::Test => {
-                let mut args = vec![format!(
-                    "dotnet test {}",
-                    solution
-                        .path
-                        .file_name()
-                        .expect("Solution to have a file name")
-                        .to_string_lossy()
-                )];
-                if let Some(configuration) = buildpack_configuration.build_configuration {
-                    args.push(format!("--configuration {configuration}"));
-                }
-                if let Some(verbosity_level) = buildpack_configuration.msbuild_verbosity_level {
-                    args.push(format!("--verbosity {verbosity_level}"));
-                }
-                let test_process =
-                    ProcessBuilder::new(process_type!("test"), ["bash", "-c", &args.join(" ")])
-                        .build();
-
-                launch_builder.process(test_process);
+                launch_builder.process(Process::from(DotnetTestCommand {
+                    path: solution.path,
+                    configuration: buildpack_configuration.build_configuration,
+                    verbosity_level: buildpack_configuration.msbuild_verbosity_level,
+                }));
             }
         }
 
