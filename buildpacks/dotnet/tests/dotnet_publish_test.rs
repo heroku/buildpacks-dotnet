@@ -100,7 +100,7 @@ fn test_dotnet_publish_process_registration_with_procfile() {
                 indoc! { r"
                     - Process types
                       - Detecting process types from published artifacts
-                      - Found `foo`: bash -c cd bin/publish; ./foo --urls http://*:$PORT
+                      - Found `web`: bash -c cd bin/publish; ./foo --urls http://*:$PORT
                       - Procfile detected
                       - Skipping process type registration (add process types to your Procfile as needed)"}
             );
@@ -120,7 +120,7 @@ fn test_dotnet_publish_process_registration_without_procfile() {
                 indoc! { r"
                 - Process types
                   - Detecting process types from published artifacts
-                  - Found `foo`: bash -c cd bin/publish; ./foo --urls http://*:$PORT
+                  - Found `web`: bash -c cd bin/publish; ./foo --urls http://*:$PORT
                   - No Procfile detected
                   - Registering detected process types as launch processes"}
             );
