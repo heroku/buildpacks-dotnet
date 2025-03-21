@@ -27,6 +27,8 @@ fn project_launch_process(solution: &Solution, project: &Project) -> Option<Proc
     let command = build_command(&relative_executable_path, project.project_type);
 
     let process_type = match project.project_type {
+        // If project is a web application, and there's only one web application in the solution,
+        // set the process type to `web`.
         ProjectType::WebApplication
             if solution
                 .projects
