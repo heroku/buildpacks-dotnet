@@ -152,6 +152,24 @@ mod tests {
     }
 
     #[test]
+    fn test_detect_solution_processes_multiple_web_apps() {
+        let solution = Solution {
+            path: PathBuf::from("/tmp/foo.sln"),
+            projects: vec![
+                create_test_project("/tmp/bar/bar.csproj", "bar", ProjectType::WebApplication),
+                create_test_project("/tmp/baz/baz.csproj", "baz", ProjectType::WebApplication),
+            ],
+        };
+        assert_eq!(
+            detect_solution_processes(&solution)
+                .iter()
+                .map(|process| process.r#type.clone())
+                .collect::<Vec<ProcessType>>(),
+            vec![process_type!("bar"), process_type!("baz")]
+        );
+    }
+
+    #[test]
     fn test_detect_solution_processes_with_spaces() {
         let solution = Solution {
             path: PathBuf::from("/tmp/My Solution With Spaces.sln"),
