@@ -2,6 +2,7 @@ use crate::dotnet::project::ProjectType;
 use crate::dotnet::solution::Solution;
 use crate::Project;
 use libcnb::data::launch::{Process, ProcessBuilder, ProcessType};
+use libcnb::data::process_type;
 use std::path::{Path, PathBuf};
 
 /// Detects processes in a solution's projects
@@ -25,7 +26,23 @@ fn project_launch_process(solution: &Solution, project: &Project) -> Option<Proc
 
     let command = build_command(&relative_executable_path, project.project_type);
 
-    Some(ProcessBuilder::new(project_process_type(project), ["bash", "-c", &command]).build())
+    let process_type = match project.project_type {
+        // If project is a web application, and there's only one web application in the solution,
+        // set the process type to `web`.
+        ProjectType::WebApplication
+            if solution
+                .projects
+                .iter()
+                .filter(|p| p.project_type == ProjectType::WebApplication)
+                .count()
+                == 1 =>
+        {
+            process_type!("web")
+        }
+        _ => project_process_type(project),
+    };
+
+    Some(ProcessBuilder::new(process_type, ["bash", "-c", &command]).build())
 }
 
 /// Constructs the shell command for launching the process
@@ -111,7 +128,7 @@ mod tests {
     }
 
     #[test]
-    fn test_detect_solution_processes_web_app() {
+    fn test_detect_solution_processes_single_web_app() {
         let solution = Solution {
             path: PathBuf::from("/tmp/foo.sln"),
             projects: vec![create_test_project(
@@ -122,7 +139,7 @@ mod tests {
         };
 
         let expected_processes = vec![Process {
-            r#type: process_type!("bar"),
+            r#type: process_type!("web"),
             command: vec![
                 "bash".to_string(),
                 "-c".to_string(),
@@ -134,6 +151,47 @@ mod tests {
         }];
 
         assert_eq!(detect_solution_processes(&solution), expected_processes);
+    }
+
+    #[test]
+    fn test_detect_solution_processes_multiple_web_apps() {
+        let solution = Solution {
+            path: PathBuf::from("/tmp/foo.sln"),
+            projects: vec![
+                create_test_project("/tmp/bar/bar.csproj", "bar", ProjectType::WebApplication),
+                create_test_project("/tmp/baz/baz.csproj", "baz", ProjectType::WebApplication),
+            ],
+        };
+        assert_eq!(
+            detect_solution_processes(&solution)
+                .iter()
+                .map(|process| process.r#type.clone())
+                .collect::<Vec<ProcessType>>(),
+            vec![process_type!("bar"), process_type!("baz")]
+        );
+    }
+
+    #[test]
+    fn test_detect_solution_processes_single_web_app_and_console_app() {
+        let solution = Solution {
+            path: PathBuf::from("/tmp/foo.sln"),
+            projects: vec![
+                create_test_project("/tmp/qux/qux.csproj", "qux", ProjectType::Unknown),
+                create_test_project("/tmp/bar/bar.csproj", "bar", ProjectType::WebApplication),
+                create_test_project(
+                    "/tmp/baz/baz.csproj",
+                    "baz",
+                    ProjectType::ConsoleApplication,
+                ),
+            ],
+        };
+        assert_eq!(
+            detect_solution_processes(&solution)
+                .iter()
+                .map(|process| process.r#type.clone())
+                .collect::<Vec<ProcessType>>(),
+            vec![process_type!("web"), process_type!("baz")]
+        );
     }
 
     #[test]
