@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-03-25
+
 ### Changed
 
 - The buildpack will now set the process type `web` for a single web application within a solution. When a solution contains multiple web applications, the process type is derived from the project assembly name. ([#242](https://github.com/heroku/buildpacks-dotnet/pull/242))
@@ -166,7 +168,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.3.6...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.3.6...v0.4.0
 [0.3.6]: https://github.com/heroku/buildpacks-dotnet/compare/v0.3.5...v0.3.6
 [0.3.5]: https://github.com/heroku/buildpacks-dotnet/compare/v0.3.4...v0.3.5
 [0.3.4]: https://github.com/heroku/buildpacks-dotnet/compare/v0.3.3...v0.3.4
