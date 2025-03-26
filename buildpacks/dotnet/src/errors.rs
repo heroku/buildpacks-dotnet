@@ -1,11 +1,11 @@
+use crate::DotnetBuildpackError;
 use crate::dotnet::target_framework_moniker::ParseTargetFrameworkError;
 use crate::dotnet::{project, solution};
 use crate::dotnet_buildpack_configuration::{
     DotnetBuildpackConfigurationError, ExecutionEnvironmentError,
 };
 use crate::layers::sdk::SdkLayerError;
-use crate::DotnetBuildpackError;
-use bullet_stream::{style, Print};
+use bullet_stream::{Print, style};
 use indoc::formatdoc;
 use std::io::{self, stderr};
 

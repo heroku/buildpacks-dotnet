@@ -1,5 +1,5 @@
 use crate::tests::default_build_config;
-use libcnb_test::{assert_contains, assert_empty, assert_not_contains, TestRunner};
+use libcnb_test::{TestRunner, assert_contains, assert_empty, assert_not_contains};
 
 #[test]
 #[ignore = "integration test"]

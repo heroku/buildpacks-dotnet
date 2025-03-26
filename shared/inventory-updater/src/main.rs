@@ -1,6 +1,6 @@
+use inventory::Inventory;
 use inventory::artifact::{Arch, Artifact, Os};
 use inventory::checksum::Checksum;
-use inventory::Inventory;
 use keep_a_changelog_file::{ChangeGroup, Changelog};
 use libherokubuildpack::inventory;
 use semver::Version;
