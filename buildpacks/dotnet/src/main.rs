@@ -30,7 +30,7 @@ use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer::UncachedLayerDefinition;
 use libcnb::layer_env::{LayerEnv, Scope};
-use libcnb::{buildpack_main, Buildpack, Env, Target};
+use libcnb::{Buildpack, Env, Target, buildpack_main};
 use libherokubuildpack::inventory;
 use libherokubuildpack::inventory::artifact::Artifact;
 use semver::{Version, VersionReq};
@@ -193,7 +193,9 @@ impl Buildpack for DotnetBuildpack {
                     }
                     if Path::exists(&context.app_dir.join("Procfile")) {
                         print::sub_bullet("Procfile detected");
-                        print::sub_bullet("Skipping process type registration (add process types to your Procfile as needed)");
+                        print::sub_bullet(
+                            "Skipping process type registration (add process types to your Procfile as needed)",
+                        );
                     } else {
                         launch_builder.processes(processes);
                         print::sub_bullet("No Procfile detected");

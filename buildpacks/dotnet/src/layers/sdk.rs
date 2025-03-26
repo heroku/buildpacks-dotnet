@@ -8,7 +8,7 @@ use libcnb::layer::{
     CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerRef, LayerState,
     RestoredLayerAction,
 };
-use libherokubuildpack::download::{download_file, DownloadError};
+use libherokubuildpack::download::{DownloadError, download_file};
 use libherokubuildpack::inventory;
 use libherokubuildpack::tar::decompress_tarball;
 use semver::Version;

@@ -1,4 +1,4 @@
-use crate::{dotnet_layer_env, utils, DotnetBuildpack, DotnetBuildpackError};
+use crate::{DotnetBuildpack, DotnetBuildpackError, dotnet_layer_env, utils};
 use libcnb::data::layer_name;
 use libcnb::layer::UncachedLayerDefinition;
 use libcnb::layer_env::Scope;

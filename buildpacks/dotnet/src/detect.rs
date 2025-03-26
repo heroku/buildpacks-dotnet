@@ -42,7 +42,7 @@ pub(crate) fn dotnet_tools_manifest_file<P: AsRef<Path>>(dir: P) -> Option<PathB
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::{create_dir, File};
+    use std::fs::{File, create_dir};
     use tempfile::TempDir;
 
     #[test]

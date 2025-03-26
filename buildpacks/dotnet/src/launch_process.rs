@@ -1,6 +1,6 @@
+use crate::Project;
 use crate::dotnet::project::ProjectType;
 use crate::dotnet::solution::Solution;
-use crate::Project;
 use libcnb::data::launch::{Process, ProcessBuilder, ProcessType};
 use libcnb::data::process_type;
 use std::path::{Path, PathBuf};

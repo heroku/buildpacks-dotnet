@@ -1,6 +1,6 @@
 use crate::tests::{default_build_config, get_dotnet_arch};
 use indoc::{formatdoc, indoc};
-use libcnb_test::{assert_contains, assert_empty, ContainerConfig, PackResult, TestRunner};
+use libcnb_test::{ContainerConfig, PackResult, TestRunner, assert_contains, assert_empty};
 use regex::Regex;
 
 #[test]
