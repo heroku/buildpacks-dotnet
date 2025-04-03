@@ -31,7 +31,7 @@ impl From<DotnetPublishCommand> for Command {
         }
         if let Some(verbosity_level) = value.verbosity_level {
             command.args(["--verbosity", &verbosity_level.to_string()]);
-        };
+        }
         command
     }
 }

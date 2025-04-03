@@ -205,7 +205,7 @@ impl Buildpack for DotnetBuildpack {
                         launch_builder.processes(processes);
                         print::sub_bullet("No Procfile detected");
                         print::sub_bullet("Registering detected process types as launch processes");
-                    };
+                    }
                 }
             }
             ExecutionEnvironment::Test => {
