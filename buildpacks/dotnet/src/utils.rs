@@ -51,10 +51,10 @@ pub(crate) fn to_rfc1123_label(input: &str) -> Result<String, &'static str> {
     let mut label = String::new();
     let mut prev_was_hyphen = false;
 
-    for ch in input.chars().map(|c| c.to_ascii_lowercase()) {
-        match ch {
+    for char in input.chars().map(|c| c.to_ascii_lowercase()) {
+        match char {
             'a'..='z' | '0'..='9' => {
-                label.push(ch);
+                label.push(char);
                 prev_was_hyphen = false;
             }
             '-' | '.' | '_' | ' ' => {
