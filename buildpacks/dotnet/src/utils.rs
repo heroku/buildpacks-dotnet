@@ -98,16 +98,32 @@ mod tests {
     #[test]
     fn test_lowercases_input() {
         assert_eq!(to_rfc1123_label("MiXeDCase").unwrap(), "mixedcase");
+        assert_eq!(
+            to_rfc1123_label("Mixed: aBc123.xyz_-!@#").unwrap(),
+            "mixed-abc123-xyz"
+        );
     }
 
     #[test]
     fn test_replaces_separators_with_hyphen() {
         assert_eq!(to_rfc1123_label("a.b_c d").unwrap(), "a-b-c-d");
+        assert_eq!(
+            to_rfc1123_label("This_is-a.test.123.abc").unwrap(),
+            "this-is-a-test-123-abc"
+        );
     }
 
     #[test]
     fn test_removes_symbol_characters() {
         assert_eq!(to_rfc1123_label("foo!@#bar&*()baz").unwrap(), "foobarbaz");
+        assert_eq!(
+            to_rfc1123_label("Unicode: 日本語123").unwrap(),
+            "unicode-123"
+        );
+        assert_eq!(
+            to_rfc1123_label("Special chars: !@#$%+^&*()").unwrap(),
+            "special-chars"
+        );
     }
 
     #[test]

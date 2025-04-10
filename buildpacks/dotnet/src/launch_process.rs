@@ -277,28 +277,4 @@ mod tests {
             "cd 'some/project with #special$chars/bin/publish'; ./My-App+v1.2_Release!"
         );
     }
-
-    #[test]
-    fn test_sanitize_process_type_name() {
-        assert_eq!(
-            sanitize_process_type_name("Hello, world! 123"),
-            "hello-world-123"
-        );
-        assert_eq!(
-            sanitize_process_type_name("This_is-a.test.123.abc"),
-            "this-is-a-test-123-abc"
-        );
-        assert_eq!(
-            sanitize_process_type_name("Special chars: !@#$%+^&*()"),
-            "special-chars"
-        );
-        assert_eq!(
-            sanitize_process_type_name("Mixed: aBc123.xyz_-!@#"),
-            "mixed-abc123-xyz"
-        );
-        assert_eq!(
-            sanitize_process_type_name("Unicode: 日本語123"),
-            "unicode-123"
-        );
-    }
 }
