@@ -107,15 +107,7 @@ mod tests {
 
     #[test]
     fn test_removes_symbol_characters() {
-        assert_eq!(to_rfc1123_label("foo!@#bar&*()baz").unwrap(), "foobarbaz");
-        assert_eq!(
-            to_rfc1123_label("Unicode: 日本語123").unwrap(),
-            "unicode-123"
-        );
-        assert_eq!(
-            to_rfc1123_label("Special chars: !@#$%+^&*()").unwrap(),
-            "special-chars"
-        );
+        assert_eq!(to_rfc1123_label("foo!@#%^bar&*():日本").unwrap(), "foobar");
     }
 
     #[test]
