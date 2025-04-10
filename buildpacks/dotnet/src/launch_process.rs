@@ -74,7 +74,8 @@ fn build_command(relative_executable_path: &Path, project_type: ProjectType) -> 
 
 /// Returns a sanitized process type name, ensuring it is always valid
 fn project_process_type(project: &Project) -> ProcessType {
-    sanitize_process_type_name(&project.assembly_name)
+    utils::to_rfc1123_label(&project.assembly_name)
+        .expect("Input to contain RFC 1123 characters")
         .parse::<ProcessType>()
         .expect("Sanitized process type name should always be valid")
 }
@@ -101,13 +102,6 @@ fn project_executable_path(project: &Project) -> PathBuf {
         .join("bin")
         .join("publish")
         .join(&project.assembly_name)
-}
-
-/// Sanitizes a process type name to only contain allowed characters
-fn sanitize_process_type_name(input: &str) -> String {
-    utils::to_rfc1123_label(input)
-        .expect("Input to contain RFC 1123 characters")
-        .to_string()
 }
 
 #[cfg(test)]
