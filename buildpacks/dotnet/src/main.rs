@@ -212,7 +212,9 @@ impl Buildpack for DotnetBuildpack {
                         //
                         // To guide users through the migration we'll write a notice when it may be
                         // relevant, e.g. when:
-                        // * We know the app is being built on Heroku (based on the `STACK` environment variable).
+                        // * We know the app is being built on Heroku based on the `STACK` environment
+                        //   variable, which is set when executing a classic/Cedar buildpack's `bin/compile`
+                        //   script (https://devcenter.heroku.com/articles/buildpack-api#stacks).
                         // * No Procfile is detected (so the user may have scaled dynos based on the old name).
                         // * Any launch processes, besides from `web`, were detected.
                         //
