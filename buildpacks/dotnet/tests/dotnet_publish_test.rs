@@ -1,6 +1,8 @@
 use crate::tests::{default_build_config, get_dotnet_arch};
 use indoc::{formatdoc, indoc};
-use libcnb_test::{ContainerConfig, PackResult, TestRunner, assert_contains, assert_empty};
+use libcnb_test::{
+    ContainerConfig, PackResult, TestRunner, assert_contains, assert_empty, assert_not_contains,
+};
 use regex::Regex;
 
 #[test]
@@ -122,7 +124,8 @@ fn test_dotnet_publish_process_registration_without_procfile() {
                   - Detecting process types from published artifacts
                   - Found `web`: bash -c cd bin/publish; ./foo --urls http://*:$PORT
                   - No Procfile detected
-                  - Registering detected process types as launch processes"}
+                  - Registering detected process types as launch processes
+                - Done"}
             );
         },
     );
@@ -196,6 +199,11 @@ fn test_dotnet_publish_with_space_in_project_filename() {
             assert_contains!(
                 &context.pack_stdout,
                 r"Found `console-app`: bash -c cd 'console app/bin/publish'; ./'console app'"
+            );
+
+            assert_not_contains!(
+                &context.pack_stdout,
+                r"Auto-detected process type names were recently changed"
             );
 
             context.start_container(
