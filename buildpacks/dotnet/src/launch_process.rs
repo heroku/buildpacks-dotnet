@@ -75,7 +75,7 @@ fn build_command(relative_executable_path: &Path, project_type: ProjectType) -> 
 /// Returns a sanitized process type name, ensuring it is always valid
 fn project_process_type(project: &Project) -> ProcessType {
     utils::to_rfc1123_label(&project.assembly_name)
-        .expect("Input to contain RFC 1123 characters")
+        .expect("Assembly name to include at least one character compatible with the RFC 1123 DNS label spec")
         .parse::<ProcessType>()
         .expect("Sanitized process type name should always be valid")
 }
