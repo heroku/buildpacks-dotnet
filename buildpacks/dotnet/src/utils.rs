@@ -47,7 +47,7 @@ pub(crate) fn environment_as_sorted_vector(environment: &libcnb::Env) -> Vec<(&s
 ///
 /// Errors:
 /// Returns an error if sanitization results in an empty label.
-pub(crate) fn to_rfc1123_label(input: &str) -> Result<String, &'static str> {
+pub(crate) fn to_rfc1123_label(input: &str) -> Result<String, ()> {
     let mut label = String::new();
 
     let mut previous_char_was_hyphen = false;
@@ -68,11 +68,7 @@ pub(crate) fn to_rfc1123_label(input: &str) -> Result<String, &'static str> {
     }
 
     label = label.trim_matches('-').chars().take(63).collect();
-    if label.is_empty() {
-        Err("label empty after sanitization")
-    } else {
-        Ok(label)
-    }
+    if label.is_empty() { Err(()) } else { Ok(label) }
 }
 
 #[cfg(test)]
