@@ -195,11 +195,11 @@ fn test_dotnet_publish_with_space_in_project_filename() {
 
             assert_contains!(
                 &context.pack_stdout,
-                r"Found `consoleapp`: bash -c cd 'console app/bin/publish'; ./'console app'"
+                r"Found `console-app`: bash -c cd 'console app/bin/publish'; ./'console app'"
             );
 
             context.start_container(
-                ContainerConfig::new().entrypoint("consoleapp"),
+                ContainerConfig::new().entrypoint("console-app"),
                 |container| {
                     let log_output = container.logs_wait();
 

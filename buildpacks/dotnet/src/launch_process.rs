@@ -105,14 +105,9 @@ fn project_executable_path(project: &Project) -> PathBuf {
 
 /// Sanitizes a process type name to only contain allowed characters
 fn sanitize_process_type_name(input: &str) -> String {
-    utils::to_rfc1123_label(
-        &input
-            .chars()
-            .filter(|c| !c.is_whitespace())
-            .collect::<String>(),
-    )
-    .expect("Input to contain RFC 1123 characters")
-    .to_string()
+    utils::to_rfc1123_label(input)
+        .expect("Input to contain RFC 1123 characters")
+        .to_string()
 }
 
 #[cfg(test)]
@@ -210,7 +205,7 @@ mod tests {
         };
 
         let expected_processes = vec![Process {
-            r#type: process_type!("myapp"),
+            r#type: process_type!("my-app"),
             command: vec![
                 "bash".to_string(),
                 "-c".to_string(),
@@ -287,7 +282,7 @@ mod tests {
     fn test_sanitize_process_type_name() {
         assert_eq!(
             sanitize_process_type_name("Hello, world! 123"),
-            "helloworld123"
+            "hello-world-123"
         );
         assert_eq!(
             sanitize_process_type_name("This_is-a.test.123.abc"),
@@ -295,15 +290,15 @@ mod tests {
         );
         assert_eq!(
             sanitize_process_type_name("Special chars: !@#$%+^&*()"),
-            "specialchars"
+            "special-chars"
         );
         assert_eq!(
             sanitize_process_type_name("Mixed: aBc123.xyz_-!@#"),
-            "mixedabc123-xyz"
+            "mixed-abc123-xyz"
         );
         assert_eq!(
             sanitize_process_type_name("Unicode: 日本語123"),
-            "unicode123"
+            "unicode-123"
         );
     }
 }
