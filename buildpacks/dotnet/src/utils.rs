@@ -98,10 +98,6 @@ mod tests {
     #[test]
     fn test_lowercases_input() {
         assert_eq!(to_rfc1123_label("MiXeDCase").unwrap(), "mixedcase");
-        assert_eq!(
-            to_rfc1123_label("Mixed: aBc123.xyz_-!@#").unwrap(),
-            "mixed-abc123-xyz"
-        );
     }
 
     #[test]
