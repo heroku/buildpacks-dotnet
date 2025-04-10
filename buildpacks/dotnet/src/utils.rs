@@ -125,7 +125,7 @@ mod tests {
     fn test_truncates_to_63_characters() {
         let input = format!("a_b.c-d{}", "x".repeat(100));
         let result = to_rfc1123_label(&input).unwrap();
-        assert!(result.len() <= 63);
+        assert!(result.len() == 63);
     }
 
     #[test]
