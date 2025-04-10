@@ -223,7 +223,7 @@ impl Buildpack for DotnetBuildpack {
                         //
                         // For more info, see: https://github.com/heroku/buildpacks-dotnet/pull/252
                         //
-                        // TODO: Remove this notice in a few months when users have had a chance to see it,
+                        // TODO: Remove this warning in a few months when users have had a chance to see it,
                         // and make adjustments if/as needed.
                         if env::var("STACK").is_ok_and(|stack| stack.starts_with("heroku"))
                             && processes
