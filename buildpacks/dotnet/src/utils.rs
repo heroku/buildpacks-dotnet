@@ -67,18 +67,13 @@ pub(crate) fn to_rfc1123_label(input: &str) -> Result<String, &'static str> {
         }
     }
 
-    let label = label.trim_matches('-');
+    label = label.trim_matches('-').chars().take(63).collect();
 
     if label.is_empty() {
         return Err("label empty after sanitization");
     }
 
-    Ok(label
-        .chars()
-        .take(63)
-        .collect::<String>()
-        .trim_end_matches('-')
-        .to_string())
+    Ok(label)
 }
 
 #[cfg(test)]
