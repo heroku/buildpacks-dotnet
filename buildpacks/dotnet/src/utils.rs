@@ -68,12 +68,11 @@ pub(crate) fn to_rfc1123_label(input: &str) -> Result<String, &'static str> {
     }
 
     label = label.trim_matches('-').chars().take(63).collect();
-
     if label.is_empty() {
-        return Err("label empty after sanitization");
+        Err("label empty after sanitization")
+    } else {
+        Ok(label)
     }
-
-    Ok(label)
 }
 
 #[cfg(test)]
