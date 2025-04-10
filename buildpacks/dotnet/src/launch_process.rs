@@ -108,7 +108,7 @@ fn sanitize_process_type_name(input: &str) -> String {
     utils::to_rfc1123_label(
         &input
             .chars()
-            .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
+            .filter(|c| !c.is_whitespace())
             .collect::<String>(),
     )
     .expect("Input to contain RFC 1123 characters")
