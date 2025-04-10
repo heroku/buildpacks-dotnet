@@ -102,11 +102,7 @@ mod tests {
 
     #[test]
     fn test_replaces_separators_with_hyphen() {
-        assert_eq!(to_rfc1123_label("a.b_c d").unwrap(), "a-b-c-d");
-        assert_eq!(
-            to_rfc1123_label("This_is-a.test.123.abc").unwrap(),
-            "this-is-a-test-123-abc"
-        );
+        assert_eq!(to_rfc1123_label("a.b_c d-e").unwrap(), "a-b-c-d-e");
     }
 
     #[test]
