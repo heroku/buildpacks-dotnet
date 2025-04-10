@@ -244,7 +244,7 @@ impl Buildpack for DotnetBuildpack {
                                 type names listed above.
                                 
                                 For more information on automatic process type detection, see:
-                                https://devcenter.heroku.com/articles/dotnet-behavior-in-heroku#automatic-process-type-detection."});
+                                https://devcenter.heroku.com/articles/dotnet-behavior-in-heroku#automatic-process-type-detection"});
                         }
                     }
                 }

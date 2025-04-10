@@ -246,7 +246,7 @@ fn test_dotnet_publish_with_updated_process_type_name_heroku_warning() {
                       type names listed above.
                       
                       For more information on automatic process type detection, see:
-                      https://devcenter.heroku.com/articles/dotnet-behavior-in-heroku#automatic-process-type-detection.
+                      https://devcenter.heroku.com/articles/dotnet-behavior-in-heroku#automatic-process-type-detection
                   - Done"}
             );
             assert_contains!(context.pack_stdout, "web -> /workspace/web/bin/publish/");
