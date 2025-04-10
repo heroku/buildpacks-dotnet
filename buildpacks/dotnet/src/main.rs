@@ -26,11 +26,12 @@ use crate::layers::sdk::SdkLayerError;
 use bullet_stream::global::print;
 use bullet_stream::style;
 use fun_run::CommandWithName;
+use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
 use inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
 use libcnb::data::launch::{LaunchBuilder, Process};
-use libcnb::data::layer_name;
+use libcnb::data::{layer_name, process_type};
 use libcnb::detect::{DetectContext, DetectResult, DetectResultBuilder};
 use libcnb::generic::{GenericMetadata, GenericPlatform};
 use libcnb::layer::UncachedLayerDefinition;
@@ -43,7 +44,7 @@ use sha2::Sha512;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::{fs, io};
+use std::{env, fs, io};
 
 struct DotnetBuildpack;
 
@@ -202,9 +203,47 @@ impl Buildpack for DotnetBuildpack {
                             "Skipping process type registration (add process types to your Procfile as needed)",
                         );
                     } else {
-                        launch_builder.processes(processes);
+                        launch_builder.processes(processes.clone());
                         print::sub_bullet("No Procfile detected");
                         print::sub_bullet("Registering detected process types as launch processes");
+
+                        // A recent change to the launch process type names registered when no `Procfile`
+                        // is detected may cause worker dynos to be removed from the dyno formation.
+                        //
+                        // To guide users through the migration we'll write a notice when it may be
+                        // relevant, e.g. when:
+                        // * We know the app is being built on Heroku (based on the `STACK` environment variable).
+                        // * No Procfile is detected (so the user may have scaled dynos based on the old name).
+                        // * Any launch processes, besides from `web`, were detected.
+                        //
+                        // By writing the notice only under those conditions we avoid adding noise to
+                        // the build output for users who are unaffected by this change in a way that
+                        // warrants a prominent notice like (e.g. `pack` users may have to change the
+                        // specified entrypoint, but will receive an error when starting the container).
+                        //
+                        // For more info, see: https://github.com/heroku/buildpacks-dotnet/pull/252
+                        //
+                        // TODO: Remove this notice in a few months when users have had a chance to see it,
+                        // and make adjustments if/as needed.
+                        if env::var("STACK").is_ok_and(|stack| stack.starts_with("heroku"))
+                            && processes
+                                .iter()
+                                .any(|process| process.r#type != process_type!("web"))
+                        {
+                            print::sub_bullet(formatdoc! {"
+                                WARNING: Auto-detected process type names were recently changed.
+                                
+                                The buildpack now lowercases the process name and replaces spaces, dots (`.`),
+                                and underscores (`_`) with hyphens (`-`). Currently scaled worker dynos may be
+                                removed following deployment if the process type name was changed as a result.
+                                
+                                Verify that all expected worker dynos are running on your app with `heroku ps`,
+                                and scale up recently renamed processes as needed using the detected process
+                                type names listed above.
+                                
+                                For more information on automatic process type detection, see:
+                                https://devcenter.heroku.com/articles/dotnet-behavior-in-heroku#automatic-process-type-detection."});
+                        }
                     }
                 }
             }
