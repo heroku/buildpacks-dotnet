@@ -429,6 +429,7 @@ fn log_error_to(
 mod tests {
     use super::*;
     use insta::{assert_snapshot, with_settings};
+    use roxmltree::TextPos;
     use std::path::PathBuf;
 
     #[test]
@@ -479,6 +480,15 @@ mod tests {
     }
 
     #[test]
+    fn test_load_solution_file_load_project_xml_parse_error() {
+        assert_error_snapshot(&DotnetBuildpackError::LoadSolutionFile(
+            solution::LoadError::LoadProject(project::LoadError::XmlParseError(
+                create_xml_parse_error(),
+            )),
+        ));
+    }
+
+    #[test]
     fn test_parse_global_json_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
             serde::de::Error::custom("foo"),
@@ -506,6 +516,10 @@ mod tests {
 
     fn create_io_error() -> io::Error {
         std::io::Error::new(io::ErrorKind::Other, "foo bar baz")
+    }
+
+    fn create_xml_parse_error() -> roxmltree::Error {
+        roxmltree::Error::InvalidString("Simulated XML parsing error at line 1", TextPos::new(1, 2))
     }
 
     fn snapshot_name() -> String {
