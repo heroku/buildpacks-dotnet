@@ -45,7 +45,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
         DotnetBuildpackError::BuildpackDetection(io_error) => log_io_error_to(
             writer,
             "Error completing buildpack detection",
-            "determining if we must run the Heroku .NET buildpack for this application.",
+            "determining if we must run the Heroku .NET buildpack for this application",
             io_error,
         ),
         DotnetBuildpackError::NoSolutionProjects(solution_path) => {
