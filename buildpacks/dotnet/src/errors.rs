@@ -569,6 +569,13 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn test_resolve_sdk_version_error() {
+        assert_error_snapshot(&DotnetBuildpackError::ResolveSdkVersion(
+            VersionReq::parse("~4.8").unwrap(),
+        ));
+    }
+
     fn assert_error_snapshot(error: &DotnetBuildpackError) {
         assert_writer_snapshot(|writer| on_buildpack_error_with_writer(error, writer));
     }
