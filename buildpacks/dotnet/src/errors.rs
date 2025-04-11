@@ -428,14 +428,8 @@ fn log_error_to(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fun_run::{CmdError, nonzero_captured};
     use insta::{assert_snapshot, with_settings};
-    use libherokubuildpack::inventory::ParseInventoryError;
-    use roxmltree::TextPos;
-    use semver::VersionReq;
-    use std::os::unix::process::ExitStatusExt;
     use std::path::PathBuf;
-    use std::process::ExitStatus;
 
     #[test]
     fn test_libcnb_internal_buildpack_error() {
@@ -552,14 +546,14 @@ mod tests {
     #[test]
     fn test_parse_global_json_version_requirement_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
-            VersionReq::parse("invalid-version").unwrap_err(),
+            semver::VersionReq::parse("invalid-version").unwrap_err(),
         ));
     }
 
     #[test]
     fn test_parse_inventory_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseInventory(
-            ParseInventoryError::TomlError(
+            libherokubuildpack::inventory::ParseInventoryError::TomlError(
                 toml::from_str::<toml::Value>("invalid toml").unwrap_err(),
             ),
         ));
@@ -568,14 +562,14 @@ mod tests {
     #[test]
     fn test_parse_solution_version_requirement_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseSolutionVersionRequirement(
-            VersionReq::parse("invalid-version").unwrap_err(),
+            semver::VersionReq::parse("invalid-version").unwrap_err(),
         ));
     }
 
     #[test]
     fn test_resolve_sdk_version_error() {
         assert_error_snapshot(&DotnetBuildpackError::ResolveSdkVersion(
-            VersionReq::parse("~4.8").unwrap(),
+            semver::VersionReq::parse("~4.8").unwrap(),
         ));
     }
 
@@ -713,14 +707,17 @@ mod tests {
     }
 
     fn create_xml_parse_error() -> roxmltree::Error {
-        roxmltree::Error::InvalidString("Simulated XML parsing error at line 1", TextPos::new(1, 2))
+        roxmltree::Error::InvalidString(
+            "Simulated XML parsing error at line 1",
+            roxmltree::TextPos::new(1, 2),
+        )
     }
 
-    fn create_cmd_error(exit_code: i32) -> CmdError {
-        nonzero_captured(
+    fn create_cmd_error(exit_code: i32) -> fun_run::CmdError {
+        fun_run::nonzero_captured(
             "foo".to_string(),
             std::process::Output {
-                status: ExitStatus::from_raw(exit_code),
+                status: std::os::unix::process::ExitStatusExt::from_raw(exit_code),
                 stdout: vec![],
                 stderr: vec![],
             },
