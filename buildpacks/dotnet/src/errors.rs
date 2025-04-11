@@ -361,3 +361,40 @@ fn log_error(header: impl AsRef<str>, body: impl AsRef<str>, error: Option<Strin
     ", header = header.as_ref(), body = body.as_ref(),
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use gag::BufferRedirect;
+    use insta::{assert_snapshot, with_settings};
+    use std::io::Read;
+
+    fn assert_error_snapshot(error: &DotnetBuildpackError) {
+        let output = {
+            let mut buffer = BufferRedirect::stderr().unwrap();
+            on_buildpack_error(error);
+
+            let mut out = String::new();
+            buffer.read_to_string(&mut out).unwrap();
+            out
+        };
+
+        with_settings!({
+            prepend_module_to_snapshot => false,
+            omit_expression => true,
+        }, {
+            assert_snapshot!(snapshot_name(), output);
+        });
+    }
+
+    fn snapshot_name() -> String {
+        std::thread::current()
+            .name()
+            .expect("Test name should be available as the current thread name")
+            .rsplit("::")
+            .next()
+            .unwrap()
+            .trim_start_matches("test_")
+            .to_string()
+    }
+}
