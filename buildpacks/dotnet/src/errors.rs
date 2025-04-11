@@ -668,6 +668,11 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn test_publish_command_non_zero_exit_not_streamed_error() {
+        assert_error_snapshot(&DotnetBuildpackError::PublishCommand(create_cmd_error(5)));
+    }
+
     fn create_cmd_error(exit_code: i32) -> CmdError {
         nonzero_captured(
             "foo".to_string(),
