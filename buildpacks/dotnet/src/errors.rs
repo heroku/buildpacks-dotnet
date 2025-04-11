@@ -441,6 +441,7 @@ mod tests {
             );
         });
     }
+
     #[test]
     fn test_parse_global_json_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
