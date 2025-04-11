@@ -526,6 +526,13 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_target_framework_moniker_unsupported_os_tfm_error() {
+        assert_error_snapshot(&DotnetBuildpackError::ParseTargetFrameworkMoniker(
+            ParseTargetFrameworkError::UnsupportedOSTfm("net8.0-windows".to_string()),
+        ));
+    }
+
+    #[test]
     fn test_parse_global_json_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
             serde::de::Error::custom("foo"),
