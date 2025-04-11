@@ -431,6 +431,17 @@ mod tests {
     use insta::{assert_snapshot, with_settings};
 
     #[test]
+    fn test_libcnb_internal_buildpack_error() {
+        assert_writer_snapshot(|writer| {
+            on_error_with_writer(
+                libcnb::Error::<DotnetBuildpackError>::CannotCreatePlatformFromPath(
+                    std::io::Error::new(io::ErrorKind::Unsupported, "foo bar baz"),
+                ),
+                writer,
+            );
+        });
+    }
+    #[test]
     fn test_parse_global_json_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
             serde::de::Error::custom("foo"),
