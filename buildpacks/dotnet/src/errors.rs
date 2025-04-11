@@ -641,6 +641,16 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn test_restore_dotnet_tools_command_system_error() {
+        assert_error_snapshot(&DotnetBuildpackError::RestoreDotnetToolsCommand(
+            fun_run::CmdError::SystemError(
+                "Failed to start process".to_string(),
+                create_io_error(),
+            ),
+        ));
+    }
+
     fn assert_error_snapshot(error: &DotnetBuildpackError) {
         assert_writer_snapshot(|writer| on_buildpack_error_with_writer(error, writer));
     }
