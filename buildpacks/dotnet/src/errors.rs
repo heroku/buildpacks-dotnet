@@ -384,6 +384,9 @@ mod tests {
         let output = {
             // The code in this scope rely on redirecting global stderr to keep things
             // simple, so (for now) make sure only a single thread at a time does this.
+            // TODO: Switch to a less brittle solution (this currently works without forcing
+            // just a single test thread (e.g. with `cargo test -- --test-threads=1`), as
+            // tests in other modules don't write to stderr.
             static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
             let _guard = LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
 
