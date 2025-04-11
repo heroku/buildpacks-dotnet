@@ -7,11 +7,20 @@ use crate::dotnet_buildpack_configuration::{
 use crate::layers::sdk::SdkLayerError;
 use bullet_stream::{Print, style};
 use indoc::formatdoc;
-use std::io::{self, stderr};
+use std::io::{self, Write, stderr};
 
 pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
+    on_error_with_writer(error, &mut stderr());
+}
+
+pub(crate) fn on_error_with_writer(
+    error: libcnb::Error<DotnetBuildpackError>,
+    writer: &mut impl Write,
+) {
     match error {
-        libcnb::Error::BuildpackError(buildpack_error) => on_buildpack_error(&buildpack_error),
+        libcnb::Error::BuildpackError(buildpack_error) => {
+            on_buildpack_error_with_writer(&buildpack_error, writer);
+        }
         libcnb_error => log_error(
             "Heroku .NET Buildpack internal buildpack error",
             formatdoc! {"
@@ -30,7 +39,7 @@ pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
 }
 
 #[allow(clippy::too_many_lines)]
-fn on_buildpack_error(error: &DotnetBuildpackError) {
+fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut impl Write) {
     match error {
         DotnetBuildpackError::BuildpackDetection(io_error) => log_io_error(
             "Error completing buildpack detection",
