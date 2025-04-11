@@ -273,7 +273,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 ) => {
                     log_error_to(
                         &mut writer,
-                        "Unsupported execution environment'",
+                        "Unsupported execution environment",
                         formatdoc! {"
                             The `CNB_EXEC_ENV` environment variable value (`{execution_environment}`)
                             is not supported. This buildpack currently supports `production` and
