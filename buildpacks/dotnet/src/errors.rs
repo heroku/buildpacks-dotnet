@@ -632,6 +632,15 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn test_parse_buildpack_configuration_unsupported_execution_environment_error() {
+        assert_error_snapshot(&DotnetBuildpackError::ParseBuildpackConfiguration(
+            DotnetBuildpackConfigurationError::ExecutionEnvironmentError(
+                ExecutionEnvironmentError::UnsupportedExecutionEnvironment("foo".to_string()),
+            ),
+        ));
+    }
+
     fn assert_error_snapshot(error: &DotnetBuildpackError) {
         assert_writer_snapshot(|writer| on_buildpack_error_with_writer(error, writer));
     }
