@@ -421,9 +421,8 @@ fn log_error_to(
     let _ = writer.write_all(&log.error(formatdoc! {"
         {header}
 
-        {body}",
-        header = header.as_ref(),
-        body = body.as_ref(),
+        {body}
+    ", header = header.as_ref(), body = body.as_ref(),
     }));
 }
 
