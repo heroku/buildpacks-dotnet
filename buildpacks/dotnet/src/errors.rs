@@ -661,6 +661,13 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn test_publish_command_system_error() {
+        assert_error_snapshot(&DotnetBuildpackError::PublishCommand(
+            fun_run::CmdError::SystemError("Cannot find executable".to_string(), create_io_error()),
+        ));
+    }
+
     fn create_cmd_error(exit_code: i32) -> CmdError {
         nonzero_captured(
             "foo".to_string(),
