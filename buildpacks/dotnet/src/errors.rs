@@ -429,6 +429,7 @@ fn log_error_to(
 mod tests {
     use super::*;
     use insta::{assert_snapshot, with_settings};
+    use libherokubuildpack::inventory::ParseInventoryError;
     use roxmltree::TextPos;
     use semver::VersionReq;
     use std::path::PathBuf;
@@ -549,6 +550,15 @@ mod tests {
     fn test_parse_global_json_version_requirement_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
             VersionReq::parse("invalid-version").unwrap_err(),
+        ));
+    }
+
+    #[test]
+    fn test_parse_inventory_error() {
+        assert_error_snapshot(&DotnetBuildpackError::ParseInventory(
+            ParseInventoryError::TomlError(
+                toml::from_str::<toml::Value>("invalid toml").unwrap_err(),
+            ),
         ));
     }
 

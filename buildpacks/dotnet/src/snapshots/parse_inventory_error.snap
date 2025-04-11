@@ -1,0 +1,17 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+- [1;36mDebug info[0m
+  - TOML parsing error: TOML parse error at line 1, column 9
+      |
+    1 | invalid toml
+      |         ^
+    expected `.`, `=`
+
+[0;31m! Invalid `inventory.toml` file[0m
+[0;31m![0m
+[0;31m! We can’t parse the inventory of .NET SDK releases. This error[0m
+[0;31m! is almost always a buildpack bug.[0m
+[0;31m![0m
+[0;31m! If you see this error, please file an issue here:[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet/issues/new[0m
