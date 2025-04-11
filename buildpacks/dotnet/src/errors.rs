@@ -430,6 +430,7 @@ mod tests {
     use super::*;
     use insta::{assert_snapshot, with_settings};
     use roxmltree::TextPos;
+    use semver::VersionReq;
     use std::path::PathBuf;
 
     #[test]
@@ -541,6 +542,13 @@ mod tests {
     fn test_parse_global_json_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
             serde_json::from_str::<serde_json::Value>("invalid json").unwrap_err(),
+        ));
+    }
+
+    #[test]
+    fn test_parse_global_json_version_requirement_error() {
+        assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
+            VersionReq::parse("invalid-version").unwrap_err(),
         ));
     }
 
