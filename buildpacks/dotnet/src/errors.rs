@@ -382,6 +382,11 @@ mod tests {
 
     fn assert_stderr_snapshot<F: FnOnce()>(function: F) {
         let output = {
+            // The code in this scope rely on redirecting global stderr to keep things
+            // simple, so (for now) make sure only a single thread at a time does this.
+            static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+            let _guard = LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
+
             let mut buffer = BufferRedirect::stderr().unwrap();
             function();
 
