@@ -601,6 +601,16 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn test_sdk_layer_verify_archive_checksum_error() {
+        assert_error_snapshot(&DotnetBuildpackError::SdkLayer(
+            SdkLayerError::VerifyArchiveChecksum {
+                expected: vec![0xAA, 0xBB, 0xCC, 0xDD],
+                actual: vec![0x11, 0x22, 0x33, 0x44],
+            },
+        ));
+    }
+
     fn assert_error_snapshot(error: &DotnetBuildpackError) {
         assert_writer_snapshot(|writer| on_buildpack_error_with_writer(error, writer));
     }
