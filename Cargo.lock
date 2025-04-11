@@ -146,6 +146,7 @@ dependencies = [
  "shell-words",
  "tempfile",
  "toml",
+ "ureq",
 ]
 
 [[package]]

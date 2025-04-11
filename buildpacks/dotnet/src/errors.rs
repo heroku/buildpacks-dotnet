@@ -576,6 +576,15 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn test_sdk_layer_download_archive_http_error() {
+        assert_error_snapshot(&DotnetBuildpackError::SdkLayer(
+            SdkLayerError::DownloadArchive(libherokubuildpack::download::DownloadError::HttpError(
+                Box::new(ureq::Error::ConnectionFailed),
+            )),
+        ));
+    }
+
     fn assert_error_snapshot(error: &DotnetBuildpackError) {
         assert_writer_snapshot(|writer| on_buildpack_error_with_writer(error, writer));
     }
