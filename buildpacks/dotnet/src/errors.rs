@@ -412,8 +412,7 @@ fn log_error_to(
     body: impl AsRef<str>,
     error: Option<String>,
 ) {
-    let buffer = Vec::new();
-    let mut log = Print::new(buffer).without_header();
+    let mut log = Print::new(vec![]).without_header();
     if let Some(error) = error {
         let bullet = log.bullet(style::important("Debug info"));
         log = bullet.sub_bullet(error).done();
