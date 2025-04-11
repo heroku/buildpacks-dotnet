@@ -1,0 +1,14 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Corrupted .NET SDK download[0m
+[0;31m![0m
+[0;31m! Validation of the downloaded .NET SDK failed due to a checksum mismatch. This error can[0m
+[0;31m! occur intermittently.[0m
+[0;31m![0m
+[0;31m! Use the debug information above to troubleshoot and retry your build. If the issue persists,[0m
+[0;31m! file an issue here:[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet/issues/new[0m
+[0;31m![0m
+[0;31m! Expected: aabbccdd[0m
+[0;31m! Actual: 11223344[0m

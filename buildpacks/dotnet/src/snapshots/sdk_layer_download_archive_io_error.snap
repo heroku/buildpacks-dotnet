@@ -1,0 +1,12 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+- [1;36mDebug info[0m
+  - I/O error while downloading file: foo bar baz
+
+[0;31m! Failed to download .NET SDK[0m
+[0;31m![0m
+[0;31m! An unexpected error occurred while downloading the .NET SDK. This error can occur[0m
+[0;31m! due to an unstable network connection.[0m
+[0;31m![0m
+[0;31m! Use the debug information above to troubleshoot and retry your build.[0m

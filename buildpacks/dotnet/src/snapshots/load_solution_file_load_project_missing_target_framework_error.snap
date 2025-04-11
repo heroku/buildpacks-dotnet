@@ -1,0 +1,10 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Project file missing TargetFramework property[0m
+[0;31m![0m
+[0;31m! The project file `foo.csproj` is missing the `TargetFramework` property.[0m
+[0;31m! You must set this required property.[0m
+[0;31m![0m
+[0;31m! For more information, see:[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet#net-version[0m

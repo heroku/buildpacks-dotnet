@@ -1,0 +1,10 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Unsupported .NET SDK version[0m
+[0;31m![0m
+[0;31m! We can’t find a compatible .NET SDK release for the detected version[0m
+[0;31m! requirement (~4.8).[0m
+[0;31m![0m
+[0;31m! For a complete inventory of supported .NET SDK versions and platforms, see:[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet/blob/main/buildpacks/dotnet/inventory.toml[0m

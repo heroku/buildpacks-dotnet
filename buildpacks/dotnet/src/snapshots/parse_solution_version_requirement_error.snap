@@ -1,0 +1,14 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+- [1;36mDebug info[0m
+  - unexpected character 'i' while parsing major version number
+
+[0;31m! Invalid .NET SDK version requirement[0m
+[0;31m![0m
+[0;31m! We can’t parse the inferred .NET SDK version requirement.[0m
+[0;31m![0m
+[0;31m! Use the debug information above to troubleshoot and retry your build. If you think[0m
+[0;31m! you found a bug in the buildpack, reproduce the issue locally with a minimal[0m
+[0;31m! example and file an issue here:[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet/issues/new[0m

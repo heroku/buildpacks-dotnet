@@ -1,0 +1,16 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+- [1;36mDebug info[0m
+  - Couldn't create platform from platform path: foo bar baz
+
+[0;31m! Heroku .NET Buildpack internal buildpack error[0m
+[0;31m![0m
+[0;31m! The framework used by this buildpack encountered an unexpected error.[0m
+[0;31m![0m
+[0;31m! If you can’t deploy to Heroku due to this issue, check the official Heroku Status page at[0m
+[0;31m! status.heroku.com for any ongoing incidents. After all incidents resolve, retry your build.[0m
+[0;31m![0m
+[0;31m! Use the debug information above to troubleshoot and retry your build. If you think you found a[0m
+[0;31m! bug in the buildpack, reproduce the issue locally with a minimal example and file an issue here:[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet/issues/new[0m

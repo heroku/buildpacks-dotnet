@@ -1,0 +1,13 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! No project references found in solution[0m
+[0;31m![0m
+[0;31m! The solution file `/foo/bar.sln` has no project references.[0m
+[0;31m![0m
+[0;31m! This buildpack prefers building a solution file over a project file if both[0m
+[0;31m! are present in the root directory.[0m
+[0;31m![0m
+[0;31m! To resolve this issue,[0m
+[0;31m! * Delete the solution file to build a root project file instead.[0m
+[0;31m! * Or reference the projects to build from the solution file.[0m

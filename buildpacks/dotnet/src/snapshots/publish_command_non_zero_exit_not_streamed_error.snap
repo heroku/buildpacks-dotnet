@@ -1,0 +1,15 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Unable to publish[0m
+[0;31m![0m
+[0;31m! The `dotnet publish` command exited unsuccessfully (signal: 5 (SIGTRAP)).[0m
+[0;31m![0m
+[0;31m! This error usually happens due to compilation errors. Use the command output[0m
+[0;31m! above to troubleshoot and retry your build.[0m
+[0;31m![0m
+[0;31m! The publish process can also fail for a number of other reasons, such as[0m
+[0;31m! intermittent network issues, unavailability of the NuGet package feed and/or[0m
+[0;31m! other external dependencies, etc.[0m
+[0;31m![0m
+[0;31m! Try again to see if the error resolves itself.[0m
