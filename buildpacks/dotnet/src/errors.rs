@@ -611,6 +611,13 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn test_sdk_layer_open_archive_error() {
+        assert_error_snapshot(&DotnetBuildpackError::SdkLayer(SdkLayerError::OpenArchive(
+            create_io_error(),
+        )));
+    }
+
     fn assert_error_snapshot(error: &DotnetBuildpackError) {
         assert_writer_snapshot(|writer| on_buildpack_error_with_writer(error, writer));
     }
