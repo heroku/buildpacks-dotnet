@@ -456,6 +456,13 @@ mod tests {
     }
 
     #[test]
+    fn test_multiple_root_directory_project_files_error() {
+        assert_error_snapshot(&DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
+            vec![PathBuf::from("foo.csproj"), PathBuf::from("bar.fsproj")],
+        ));
+    }
+
+    #[test]
     fn test_parse_global_json_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
             serde::de::Error::custom("foo"),
