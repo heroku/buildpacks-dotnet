@@ -519,6 +519,13 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_target_framework_moniker_invalid_format_error() {
+        assert_error_snapshot(&DotnetBuildpackError::ParseTargetFrameworkMoniker(
+            ParseTargetFrameworkError::InvalidFormat("netfoo".to_string()),
+        ));
+    }
+
+    #[test]
     fn test_parse_global_json_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
             serde::de::Error::custom("foo"),
