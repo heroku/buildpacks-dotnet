@@ -438,9 +438,13 @@ mod tests {
     }
 
     fn assert_error_snapshot(error: &DotnetBuildpackError) {
+        assert_writer_snapshot(|writer| on_buildpack_error_with_writer(error, writer));
+    }
+
+    fn assert_writer_snapshot(function: impl FnOnce(&mut dyn Write)) {
         let output = {
             let mut buffer = Vec::new();
-            on_buildpack_error_with_writer(error, &mut buffer);
+            function(&mut buffer);
             String::from_utf8(buffer).unwrap()
         };
 
