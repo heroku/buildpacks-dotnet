@@ -429,6 +429,7 @@ fn log_error_to(
 mod tests {
     use super::*;
     use insta::{assert_snapshot, with_settings};
+    use std::path::PathBuf;
 
     #[test]
     fn test_libcnb_internal_buildpack_error() {
@@ -445,6 +446,13 @@ mod tests {
     #[test]
     fn test_buildpack_detection_error() {
         assert_error_snapshot(&DotnetBuildpackError::BuildpackDetection(create_io_error()));
+    }
+
+    #[test]
+    fn test_no_solution_projects_error() {
+        assert_error_snapshot(&DotnetBuildpackError::NoSolutionProjects(PathBuf::from(
+            "/foo/bar.sln",
+        )));
     }
 
     #[test]
