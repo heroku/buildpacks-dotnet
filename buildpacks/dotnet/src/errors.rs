@@ -512,6 +512,13 @@ mod tests {
     }
 
     #[test]
+    fn test_load_project_file_missing_target_framework_error() {
+        assert_error_snapshot(&DotnetBuildpackError::LoadProjectFile(
+            project::LoadError::MissingTargetFramework(PathBuf::from("fpp.csproj")),
+        ));
+    }
+
+    #[test]
     fn test_parse_global_json_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
             serde::de::Error::custom("foo"),
