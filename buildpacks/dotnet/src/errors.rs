@@ -562,6 +562,13 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn test_parse_solution_version_requirement_error() {
+        assert_error_snapshot(&DotnetBuildpackError::ParseSolutionVersionRequirement(
+            VersionReq::parse("invalid-version").unwrap_err(),
+        ));
+    }
+
     fn assert_error_snapshot(error: &DotnetBuildpackError) {
         assert_writer_snapshot(|writer| on_buildpack_error_with_writer(error, writer));
     }
