@@ -1,0 +1,11 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+- [1;36mDebug info[0m
+  - foo
+
+[0;31m! Invalid `global.json` file[0m
+[0;31m![0m
+[0;31m! We can’t parse the root directory `global.json` file because it contains invalid JSON.[0m
+[0;31m![0m
+[0;31m! Use the debug information above to troubleshoot and retry your build.[0m

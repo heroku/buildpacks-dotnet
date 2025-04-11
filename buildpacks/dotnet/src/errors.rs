@@ -369,6 +369,13 @@ mod tests {
     use insta::{assert_snapshot, with_settings};
     use std::io::Read;
 
+    #[test]
+    fn test_parse_global_json_error() {
+        assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
+            serde::de::Error::custom("foo"),
+        ));
+    }
+
     fn assert_error_snapshot(error: &DotnetBuildpackError) {
         let output = {
             let mut buffer = BufferRedirect::stderr().unwrap();
