@@ -505,6 +505,13 @@ mod tests {
     }
 
     #[test]
+    fn test_load_project_file_xml_parse_error() {
+        assert_error_snapshot(&DotnetBuildpackError::LoadProjectFile(
+            project::LoadError::XmlParseError(create_xml_parse_error()),
+        ));
+    }
+
+    #[test]
     fn test_parse_global_json_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
             serde::de::Error::custom("foo"),
