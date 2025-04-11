@@ -540,7 +540,7 @@ mod tests {
     #[test]
     fn test_parse_global_json_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
-            serde::de::Error::custom("foo"),
+            serde_json::from_str::<serde_json::Value>("invalid json").unwrap_err(),
         ));
     }
 

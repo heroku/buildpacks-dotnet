@@ -2,7 +2,7 @@
 source: buildpacks/dotnet/src/errors.rs
 ---
 - [1;36mDebug info[0m
-  - foo
+  - expected value at line 1 column 1
 
 [0;31m! Invalid `global.json` file[0m
 [0;31m![0m
