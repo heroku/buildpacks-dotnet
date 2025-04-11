@@ -10,18 +10,19 @@ use indoc::formatdoc;
 use std::io::{self, Write, stderr};
 
 pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
-    on_error_with_writer(error, &mut stderr());
+    on_error_with_writer(error, stderr());
 }
 
 pub(crate) fn on_error_with_writer(
     error: libcnb::Error<DotnetBuildpackError>,
-    writer: &mut impl Write,
+    mut writer: impl Write,
 ) {
     match error {
         libcnb::Error::BuildpackError(buildpack_error) => {
             on_buildpack_error_with_writer(&buildpack_error, writer);
         }
-        libcnb_error => log_error(
+        libcnb_error => log_error_to(
+            &mut writer,
             "Heroku .NET Buildpack internal buildpack error",
             formatdoc! {"
                 The framework used by this buildpack encountered an unexpected error.
@@ -39,15 +40,17 @@ pub(crate) fn on_error_with_writer(
 }
 
 #[allow(clippy::too_many_lines)]
-fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut impl Write) {
+fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl Write) {
     match error {
-        DotnetBuildpackError::BuildpackDetection(io_error) => log_io_error(
+        DotnetBuildpackError::BuildpackDetection(io_error) => log_io_error_to(
+            writer,
             "Error completing buildpack detection",
             "determining if we must run the Heroku .NET buildpack for this application.",
             io_error,
         ),
         DotnetBuildpackError::NoSolutionProjects(solution_path) => {
-            log_error(
+            log_error_to(
+                &mut writer,
                 "No project references found in solution",
                 formatdoc! {"
                 The solution file `{}` has no project references.
@@ -63,7 +66,8 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
                 None,
             );
         }
-        DotnetBuildpackError::MultipleRootDirectoryProjectFiles(project_file_paths) => log_error(
+        DotnetBuildpackError::MultipleRootDirectoryProjectFiles(paths) => log_error_to(
+            &mut writer,
             "Multiple .NET project files",
             formatdoc! {"
                 The root directory contains multiple .NET project files: `{}`.
@@ -75,7 +79,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
                 If you’re porting an application from .NET Framework to .NET, or compiling both
                 side-by-side, see Microsoft’s documentation for project organization guidance:
                 https://learn.microsoft.com/en-us/dotnet/core/porting/project-structure
-                ", project_file_paths.iter()
+                ", paths.iter()
                     .map(|f| f.to_string_lossy().to_string())
                     .collect::<Vec<String>>()
                     .join("`, `"),
@@ -83,22 +87,32 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
             None,
         ),
         DotnetBuildpackError::LoadSolutionFile(error) => match error {
-            solution::LoadError::ReadSolutionFile(io_error) => log_io_error(
+            solution::LoadError::ReadSolutionFile(io_error) => log_io_error_to(
+                &mut writer,
                 "Error loading solution file",
                 "reading the solution file",
                 io_error,
             ),
             solution::LoadError::LoadProject(load_project_error) => {
-                on_load_dotnet_project_error(load_project_error, "reading solution project files");
+                on_load_dotnet_project_error_with_writer(
+                    &mut writer,
+                    load_project_error,
+                    "reading solution project files",
+                );
             }
         },
         DotnetBuildpackError::LoadProjectFile(error) => {
-            on_load_dotnet_project_error(error, "reading root project file");
+            on_load_dotnet_project_error_with_writer(
+                &mut writer,
+                error,
+                "reading root project file",
+            );
         }
         DotnetBuildpackError::ParseTargetFrameworkMoniker(error) => match error {
             ParseTargetFrameworkError::InvalidFormat(tfm)
             | ParseTargetFrameworkError::UnsupportedOSTfm(tfm) => {
-                log_error(
+                log_error_to(
+                    &mut writer,
                     "Unsupported target framework",
                     formatdoc! {"
                         The detected target framework moniker `{tfm}` is either invalid or unsupported. This
@@ -111,12 +125,14 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
                 );
             }
         },
-        DotnetBuildpackError::ReadGlobalJsonFile(error) => log_io_error(
+        DotnetBuildpackError::ReadGlobalJsonFile(error) => log_io_error_to(
+            &mut writer,
             "Error reading `global.json` file",
             "detecting SDK version requirement",
             error,
         ),
-        DotnetBuildpackError::ParseGlobalJson(error) => log_error(
+        DotnetBuildpackError::ParseGlobalJson(error) => log_error_to(
+            &mut writer,
             "Invalid `global.json` file",
             formatdoc! {"
                 We can’t parse the root directory `global.json` file because it contains invalid JSON.
@@ -126,7 +142,8 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
             Some(error.to_string()),
         ),
         // TODO: Consider adding more specific errors for the parsed values (e.g. an invalid rollForward value)
-        DotnetBuildpackError::ParseGlobalJsonVersionRequirement(error) => log_error(
+        DotnetBuildpackError::ParseGlobalJsonVersionRequirement(error) => log_error_to(
+            &mut writer,
             "Error parsing `global.json` version requirement",
             formatdoc! {"
                 We can’t parse the .NET SDK version requirement.
@@ -137,7 +154,8 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
             "},
             Some(error.to_string()),
         ),
-        DotnetBuildpackError::ParseInventory(error) => log_error(
+        DotnetBuildpackError::ParseInventory(error) => log_error_to(
+            &mut writer,
             "Invalid `inventory.toml` file",
             formatdoc! {"
                 We can’t parse the inventory of .NET SDK releases. This error
@@ -149,7 +167,8 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
             "},
             Some(error.to_string()),
         ),
-        DotnetBuildpackError::ParseSolutionVersionRequirement(error) => log_error(
+        DotnetBuildpackError::ParseSolutionVersionRequirement(error) => log_error_to(
+            &mut writer,
             "Invalid .NET SDK version requirement",
             formatdoc! {"
                 We can’t parse the inferred .NET SDK version requirement.
@@ -162,7 +181,8 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
             "},
             Some(error.to_string()),
         ),
-        DotnetBuildpackError::ResolveSdkVersion(version_req) => log_error(
+        DotnetBuildpackError::ResolveSdkVersion(version_req) => log_error_to(
+            &mut writer,
             "Unsupported .NET SDK version",
             formatdoc! {"
                 We can’t find a compatible .NET SDK release for the detected version
@@ -174,7 +194,8 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
             None,
         ),
         DotnetBuildpackError::SdkLayer(error) => match error {
-            SdkLayerError::DownloadArchive(error) => log_error(
+            SdkLayerError::DownloadArchive(error) => log_error_to(
+                &mut writer,
                 "Failed to download .NET SDK",
                 formatdoc! {"
                     An unexpected error occurred while downloading the .NET SDK. This error can occur
@@ -185,13 +206,15 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
                 Some(error.to_string()),
             ),
             SdkLayerError::ReadArchive(io_error) => {
-                log_io_error(
+                log_io_error_to(
+                    &mut writer,
                     "Error reading downloaded SDK archive",
                     "calculating checksum for the downloaded .NET SDK archive",
                     io_error,
                 );
             }
-            SdkLayerError::VerifyArchiveChecksum { expected, actual } => log_error(
+            SdkLayerError::VerifyArchiveChecksum { expected, actual } => log_error_to(
+                &mut writer,
                 "Corrupted .NET SDK download",
                 formatdoc! {"
                     Validation of the downloaded .NET SDK failed due to a checksum mismatch. This error can
@@ -207,13 +230,15 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
                 None,
             ),
             SdkLayerError::OpenArchive(io_error) => {
-                log_io_error(
+                log_io_error_to(
+                    &mut writer,
                     "Error reading downloaded SDK archive",
                     "decompressing downloaded .NET SDK archive",
                     io_error,
                 );
             }
-            SdkLayerError::DecompressArchive(io_error) => log_io_error(
+            SdkLayerError::DecompressArchive(io_error) => log_io_error_to(
+                &mut writer,
                 "Failed to decompress .NET SDK",
                 "extracting .NET SDK archive contents",
                 io_error,
@@ -221,7 +246,8 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
         },
         DotnetBuildpackError::ParseBuildpackConfiguration(error) => match error {
             DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(verbosity_level) => {
-                log_error(
+                log_error_to(
+                    &mut writer,
                     "Invalid MSBuild verbosity level",
                     formatdoc! {"
                         The `MSBUILD_VERBOSITY_LEVEL` environment variable value (`{verbosity_level}`)
@@ -245,7 +271,8 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
                 ExecutionEnvironmentError::UnsupportedExecutionEnvironment(
                     execution_environment,
                 ) => {
-                    log_error(
+                    log_error_to(
+                        &mut writer,
                         "Unsupported execution environment'",
                         formatdoc! {"
                             The `CNB_EXEC_ENV` environment variable value (`{execution_environment}`)
@@ -258,13 +285,15 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
             },
         },
         DotnetBuildpackError::RestoreDotnetToolsCommand(error) => match error {
-            fun_run::CmdError::SystemError(_message, io_error) => log_io_error(
+            fun_run::CmdError::SystemError(_message, io_error) => log_io_error_to(
+                &mut writer,
                 "Unable to restore .NET tools",
                 "running the command to restore .NET tools",
                 io_error,
             ),
             fun_run::CmdError::NonZeroExitNotStreamed(output)
-            | fun_run::CmdError::NonZeroExitAlreadyStreamed(output) => log_error(
+            | fun_run::CmdError::NonZeroExitAlreadyStreamed(output) => log_error_to(
+                &mut writer,
                 "Unable to restore .NET tools",
                 formatdoc! {"
                     The `dotnet tool restore` command exited unsuccessfully ({exit_status}).
@@ -282,13 +311,15 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
             ),
         },
         DotnetBuildpackError::PublishCommand(error) => match error {
-            fun_run::CmdError::SystemError(_message, io_error) => log_io_error(
+            fun_run::CmdError::SystemError(_message, io_error) => log_io_error_to(
+                &mut writer,
                 "Unable to publish",
                 "running the command to publish the .NET solution/project",
                 io_error,
             ),
             fun_run::CmdError::NonZeroExitNotStreamed(output)
-            | fun_run::CmdError::NonZeroExitAlreadyStreamed(output) => log_error(
+            | fun_run::CmdError::NonZeroExitAlreadyStreamed(output) => log_error_to(
+                &mut writer,
                 "Unable to publish",
                 formatdoc! {"
                     The `dotnet publish` command exited unsuccessfully ({exit_status}).
@@ -305,7 +336,8 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
                 None,
             ),
         },
-        DotnetBuildpackError::CopyRuntimeFiles(io_error) => log_io_error(
+        DotnetBuildpackError::CopyRuntimeFiles(io_error) => log_io_error_to(
+            &mut writer,
             "Error copying .NET runtime files",
             "copying .NET runtime files from the SDK layer to the runtime layer",
             io_error,
@@ -313,12 +345,22 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, writer: &mut imp
     }
 }
 
-fn on_load_dotnet_project_error(error: &project::LoadError, occurred_while: &str) {
+fn on_load_dotnet_project_error_with_writer(
+    mut writer: impl Write,
+    error: &project::LoadError,
+    occurred_while: &str,
+) {
     match error {
         project::LoadError::ReadProjectFile(io_error) => {
-            log_io_error("Error loading the project file", occurred_while, io_error);
+            log_io_error_to(
+                &mut writer,
+                "Error loading the project file",
+                occurred_while,
+                io_error,
+            );
         }
-        project::LoadError::XmlParseError(xml_parse_error) => log_error(
+        project::LoadError::XmlParseError(xml_parse_error) => log_error_to(
+            &mut writer,
             "Error parsing the project file",
             formatdoc! {"
                 We can’t parse the project file’s XML content. Parsing errors usually
@@ -328,7 +370,8 @@ fn on_load_dotnet_project_error(error: &project::LoadError, occurred_while: &str
             Some(xml_parse_error.to_string()),
         ),
         project::LoadError::MissingTargetFramework(project_path) => {
-            log_error(
+            log_error_to(
+                &mut writer,
                 "Project file missing TargetFramework property",
                 formatdoc! {"
                     The project file `{project_path}` is missing the `TargetFramework` property.
@@ -343,8 +386,14 @@ fn on_load_dotnet_project_error(error: &project::LoadError, occurred_while: &str
     }
 }
 
-fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
-    log_error(
+fn log_io_error_to(
+    mut writer: impl Write,
+    header: &str,
+    occurred_while: &str,
+    io_error: &io::Error,
+) {
+    log_error_to(
+        &mut writer,
         header,
         formatdoc! {"
             An unexpected I/O error occurred while {occurred_while}.
@@ -357,27 +406,31 @@ fn log_io_error(header: &str, occurred_while: &str, io_error: &io::Error) {
     );
 }
 
-fn log_error(header: impl AsRef<str>, body: impl AsRef<str>, error: Option<String>) {
-    let mut log = Print::new(stderr()).without_header();
+fn log_error_to(
+    writer: &mut impl Write,
+    header: impl AsRef<str>,
+    body: impl AsRef<str>,
+    error: Option<String>,
+) {
+    let buffer = Vec::new();
+    let mut log = Print::new(buffer).without_header();
     if let Some(error) = error {
         let bullet = log.bullet(style::important("Debug info"));
         log = bullet.sub_bullet(error).done();
     }
-    log.error(formatdoc! {"
+    let _ = writer.write_all(&log.error(formatdoc! {"
         {header}
 
-        {body}
-    ", header = header.as_ref(), body = body.as_ref(),
-    });
+        {body}",
+        header = header.as_ref(),
+        body = body.as_ref(),
+    }));
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gag::BufferRedirect;
     use insta::{assert_snapshot, with_settings};
-    use std::io::Read;
-    use std::sync::{Mutex, OnceLock};
 
     #[test]
     fn test_parse_global_json_error() {
@@ -387,25 +440,10 @@ mod tests {
     }
 
     fn assert_error_snapshot(error: &DotnetBuildpackError) {
-        assert_stderr_snapshot(|| on_buildpack_error(error));
-    }
-
-    fn assert_stderr_snapshot<F: FnOnce()>(function: F) {
         let output = {
-            // The code in this scope rely on redirecting global stderr to keep things
-            // simple, so (for now) make sure only a single thread at a time does this.
-            // TODO: Switch to a less brittle solution (this currently works without forcing
-            // just a single test thread (e.g. with `cargo test -- --test-threads=1`), as
-            // tests in other modules don't write to stderr.
-            static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-            let _guard = LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
-
-            let mut buffer = BufferRedirect::stderr().unwrap();
-            function();
-
-            let mut out = String::new();
-            buffer.read_to_string(&mut out).unwrap();
-            out
+            let mut buffer = Vec::new();
+            on_buildpack_error_with_writer(error, &mut buffer);
+            String::from_utf8(buffer).unwrap()
         };
 
         with_settings!({

@@ -25,7 +25,6 @@ sha2 = "0.10"
 shell-words = "1.1.0"
 
 [dev-dependencies]
-gag = "1"
 insta = "1"
 libcnb-test = "0.28"
 regex = "1"
