@@ -428,11 +428,14 @@ fn log_error_to(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use fun_run::{CmdError, nonzero_captured};
     use insta::{assert_snapshot, with_settings};
     use libherokubuildpack::inventory::ParseInventoryError;
     use roxmltree::TextPos;
     use semver::VersionReq;
+    use std::os::unix::process::ExitStatusExt;
     use std::path::PathBuf;
+    use std::process::ExitStatus;
 
     #[test]
     fn test_libcnb_internal_buildpack_error() {
@@ -649,6 +652,25 @@ mod tests {
                 create_io_error(),
             ),
         ));
+    }
+
+    #[test]
+    fn test_restore_dotnet_tools_command_non_zero_exit_not_streamed_error() {
+        assert_error_snapshot(&DotnetBuildpackError::RestoreDotnetToolsCommand(
+            create_cmd_error(1),
+        ));
+    }
+
+    fn create_cmd_error(exit_code: i32) -> CmdError {
+        nonzero_captured(
+            "foo".to_string(),
+            std::process::Output {
+                status: ExitStatus::from_raw(exit_code),
+                stdout: vec![],
+                stderr: vec![],
+            },
+        )
+        .unwrap_err()
     }
 
     fn assert_error_snapshot(error: &DotnetBuildpackError) {
