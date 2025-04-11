@@ -368,6 +368,7 @@ mod tests {
     use gag::BufferRedirect;
     use insta::{assert_snapshot, with_settings};
     use std::io::Read;
+    use std::sync::{Mutex, OnceLock};
 
     #[test]
     fn test_parse_global_json_error() {
