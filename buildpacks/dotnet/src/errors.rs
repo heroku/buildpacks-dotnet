@@ -377,9 +377,13 @@ mod tests {
     }
 
     fn assert_error_snapshot(error: &DotnetBuildpackError) {
+        assert_stderr_snapshot(|| on_buildpack_error(error));
+    }
+
+    fn assert_stderr_snapshot<F: FnOnce()>(function: F) {
         let output = {
             let mut buffer = BufferRedirect::stderr().unwrap();
-            on_buildpack_error(error);
+            function();
 
             let mut out = String::new();
             buffer.read_to_string(&mut out).unwrap();
