@@ -533,6 +533,11 @@ mod tests {
     }
 
     #[test]
+    fn test_read_global_json_file_error() {
+        assert_error_snapshot(&DotnetBuildpackError::ReadGlobalJsonFile(create_io_error()));
+    }
+
+    #[test]
     fn test_parse_global_json_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
             serde::de::Error::custom("foo"),
