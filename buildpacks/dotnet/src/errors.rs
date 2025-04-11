@@ -673,6 +673,11 @@ mod tests {
         assert_error_snapshot(&DotnetBuildpackError::PublishCommand(create_cmd_error(5)));
     }
 
+    #[test]
+    fn test_copy_runtime_files_error() {
+        assert_error_snapshot(&DotnetBuildpackError::CopyRuntimeFiles(create_io_error()));
+    }
+
     fn create_cmd_error(exit_code: i32) -> CmdError {
         nonzero_captured(
             "foo".to_string(),
