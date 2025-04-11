@@ -407,7 +407,7 @@ fn log_io_error_to(
 }
 
 fn log_error_to(
-    writer: &mut impl Write,
+    mut writer: impl Write,
     header: impl AsRef<str>,
     body: impl AsRef<str>,
     error: Option<String>,
