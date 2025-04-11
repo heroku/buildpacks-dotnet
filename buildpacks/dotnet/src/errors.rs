@@ -443,6 +443,11 @@ mod tests {
     }
 
     #[test]
+    fn test_buildpack_detection_error() {
+        assert_error_snapshot(&DotnetBuildpackError::BuildpackDetection(create_io_error()));
+    }
+
+    #[test]
     fn test_parse_global_json_error() {
         assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
             serde::de::Error::custom("foo"),
