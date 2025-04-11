@@ -678,18 +678,6 @@ mod tests {
         assert_error_snapshot(&DotnetBuildpackError::CopyRuntimeFiles(create_io_error()));
     }
 
-    fn create_cmd_error(exit_code: i32) -> CmdError {
-        nonzero_captured(
-            "foo".to_string(),
-            std::process::Output {
-                status: ExitStatus::from_raw(exit_code),
-                stdout: vec![],
-                stderr: vec![],
-            },
-        )
-        .unwrap_err()
-    }
-
     fn assert_error_snapshot(error: &DotnetBuildpackError) {
         assert_writer_snapshot(|writer| on_buildpack_error_with_writer(error, writer));
     }
@@ -709,14 +697,6 @@ mod tests {
         });
     }
 
-    fn create_io_error() -> io::Error {
-        std::io::Error::new(io::ErrorKind::Other, "foo bar baz")
-    }
-
-    fn create_xml_parse_error() -> roxmltree::Error {
-        roxmltree::Error::InvalidString("Simulated XML parsing error at line 1", TextPos::new(1, 2))
-    }
-
     fn snapshot_name() -> String {
         std::thread::current()
             .name()
@@ -726,5 +706,25 @@ mod tests {
             .unwrap()
             .trim_start_matches("test_")
             .to_string()
+    }
+
+    fn create_io_error() -> io::Error {
+        std::io::Error::new(io::ErrorKind::Other, "foo bar baz")
+    }
+
+    fn create_xml_parse_error() -> roxmltree::Error {
+        roxmltree::Error::InvalidString("Simulated XML parsing error at line 1", TextPos::new(1, 2))
+    }
+
+    fn create_cmd_error(exit_code: i32) -> CmdError {
+        nonzero_captured(
+            "foo".to_string(),
+            std::process::Output {
+                status: ExitStatus::from_raw(exit_code),
+                stdout: vec![],
+                stderr: vec![],
+            },
+        )
+        .unwrap_err()
     }
 }
