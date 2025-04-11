@@ -435,7 +435,7 @@ mod tests {
         assert_writer_snapshot(|writer| {
             on_error_with_writer(
                 libcnb::Error::<DotnetBuildpackError>::CannotCreatePlatformFromPath(
-                    std::io::Error::new(io::ErrorKind::Unsupported, "foo bar baz"),
+                    create_io_error(),
                 ),
                 writer,
             );
@@ -465,6 +465,10 @@ mod tests {
         }, {
             assert_snapshot!(snapshot_name(), output);
         });
+    }
+
+    fn create_io_error() -> io::Error {
+        std::io::Error::new(io::ErrorKind::Other, "foo bar baz")
     }
 
     fn snapshot_name() -> String {
