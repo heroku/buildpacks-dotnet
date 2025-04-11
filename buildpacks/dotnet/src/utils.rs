@@ -67,7 +67,13 @@ pub(crate) fn to_rfc1123_label(input: &str) -> Result<String, ()> {
         }
     }
 
-    label = label.trim_matches('-').chars().take(63).collect();
+    label = label
+        .trim_matches('-')
+        .chars()
+        .take(63)
+        .collect::<String>()
+        .trim_end_matches('-')
+        .to_string();
     if label.is_empty() { Err(()) } else { Ok(label) }
 }
 
@@ -120,9 +126,9 @@ mod tests {
 
     #[test]
     fn test_removes_trailing_hyphen_after_truncation() {
-        let input = format!("{}_", "a".repeat(70));
+        let input = format!("{}-aaaaaaa", "a".repeat(62));
         let result = to_rfc1123_label(&input).unwrap();
-        assert!(result.len() <= 63);
+        assert_eq!(result.len(), 62);
         assert!(!result.ends_with('-'));
     }
 
