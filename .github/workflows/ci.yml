@@ -128,3 +128,17 @@ jobs:
         run: pack build my-image --force-color --builder heroku/builder:24 --trust-extra-buildpacks --buildpack packaged/aarch64-unknown-linux-musl/debug/heroku_dotnet --path tmp/guide --pull-policy never
       - name: "PRINT: Cached getting started guide output"
         run: pack build my-image --force-color --builder heroku/builder:24 --trust-extra-buildpacks --buildpack packaged/aarch64-unknown-linux-musl/debug/heroku_dotnet --path tmp/guide --pull-policy never
+
+  print-insta-snapshots:
+    runs-on: 'ubuntu-24.04'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: "Print all .snap files in repo"
+        run: |
+          find . -type f -name '*.snap' | while IFS= read -r file; do
+            rel_path="${file#./}"
+            echo "::group::$rel_path"
+            cat "$file"
+            echo "::endgroup::"
+          done
