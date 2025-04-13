@@ -2,7 +2,7 @@
 source: buildpacks/dotnet/src/errors.rs
 ---
 - [1;36mDebug info[0m
-  - foo bar baz
+  - foo2 bar baz
 
 [0;31m! Error completing buildpack detection[0m
 [0;31m![0m
