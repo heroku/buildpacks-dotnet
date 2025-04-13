@@ -131,51 +131,37 @@ jobs:
 
   print-insta-snapshots:
     runs-on: 'ubuntu-24.04'
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: "Print all .snap files in repo"
+      - name: "Print changed .snap files in PR"
         run: |
-          BASE_BRANCH="${GITHUB_BASE_REF:-main}"
-          git fetch origin "${BASE_BRANCH}"
-          # Get all changed .snap files in PR
-          changed_snapshots=$(git diff --name-only origin/"${BASE_BRANCH}"...HEAD -- '*.snap')
+          git fetch origin "${GITHUB_BASE_REF}"
+          changed_snapshots=$(git diff --name-only origin/"$GITHUB_BASE_REF"...HEAD -- '*.snap')
 
-          # Helper to print a file section
           print_snap() {
             rel_path="$1"
-            file="$2"
+            diff_anchor=$(printf '%s' "$rel_path" | sha256sum | cut -d' ' -f1)
+            link="View in PR diff: https://github.com/${GITHUB_REPOSITORY}/pull/${GITHUB_EVENT_NUMBER}/files#diff-$diff_anchor"
 
-            if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-              diff_anchor=$(printf '%s' "$rel_path" | sha256sum | cut -d' ' -f1)
-              link="View in PR diff: https://github.com/${GITHUB_REPOSITORY}/pull/${GITHUB_EVENT_NUMBER}/files#diff-$diff_anchor"
-            else
-              link="View in repo: https://github.com/${GITHUB_REPOSITORY}/blob/$GITHUB_SHA/$rel_path"
-            fi
-
-            echo "::group::$group_label"
+            echo "::group::$rel_path"
             echo "$link"
             echo
-            cat "$file"
+            cat "$rel_path"
             echo "::endgroup::"
           }
 
-          # First print changed .snap files
-          for rel_path in $changed_snapshots; do
-            [ -f "$rel_path" ] || continue
-            group_label="CHANGED: $rel_path"
-            print_snap "$rel_path" "$rel_path"
-          done
-
-          # Then print all others (excluding already printed)
-          find . -type f -name '*.snap' | while IFS= read -r file; do
-            rel_path="${file#./}"
-            echo "$changed_snapshots" | grep -qx "$rel_path" && continue
-            group_label="$rel_path"
-            print_snap "$rel_path" "$file"
-          done
+          if [ -n "$changed_snapshots" ]; then
+            echo "Changed .snap files in PR (compared to ${GITHUB_BASE_REF}):"
+            for rel_path in $changed_snapshots; do
+              [ -f "$rel_path" ] && print_snap "$rel_path"
+            done
+          else
+            echo "No .snap files changed in this PR."
+          fi
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_EVENT_NUMBER: ${{ github.event.number }}
