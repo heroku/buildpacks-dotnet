@@ -134,22 +134,48 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: "Print all .snap files in repo"
         run: |
-          find . -type f -name '*.snap' | while IFS= read -r file; do
-            rel_path="${file#./}"
-            echo "::group::$rel_path"
+          BASE_BRANCH="${GITHUB_BASE_REF:-main}"
+          git fetch origin "${BASE_BRANCH}"
+          # Get all changed .snap files in PR
+          changed_snapshots=$(git diff --name-only origin/"${BASE_BRANCH}"...HEAD -- '*.snap')
+
+          # Helper to print a file section
+          print_snap() {
+            rel_path="$1"
+            file="$2"
 
             if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
               diff_anchor=$(printf '%s' "$rel_path" | sha256sum | cut -d' ' -f1)
-              echo "View in PR diff: https://github.com/${GITHUB_REPOSITORY}/pull/${GITHUB_EVENT_NUMBER}/files#diff-$diff_anchor"
+              link="View in PR diff: https://github.com/${GITHUB_REPOSITORY}/pull/${GITHUB_EVENT_NUMBER}/files#diff-$diff_anchor"
             else
-              echo "View in repo: https://github.com/${GITHUB_REPOSITORY}/blob/$GITHUB_SHA/$rel_path"
+              link="View in repo: https://github.com/${GITHUB_REPOSITORY}/blob/$GITHUB_SHA/$rel_path"
             fi
 
+            echo "::group::$group_label"
+            echo "$link"
             echo
             cat "$file"
             echo "::endgroup::"
+          }
+
+          # First print changed .snap files
+          for rel_path in $changed_snapshots; do
+            [ -f "$rel_path" ] || continue
+            group_label="CHANGED: $rel_path"
+            print_snap "$rel_path" "$rel_path"
+          done
+
+          # Then print all others (excluding already printed)
+          find . -type f -name '*.snap' | while IFS= read -r file; do
+            rel_path="${file#./}"
+            echo "$changed_snapshots" | grep -qx "$rel_path" && continue
+            group_label="$rel_path"
+            print_snap "$rel_path" "$file"
           done
         env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
           GITHUB_EVENT_NUMBER: ${{ github.event.number }}
