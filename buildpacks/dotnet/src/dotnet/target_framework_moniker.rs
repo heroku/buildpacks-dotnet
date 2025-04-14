@@ -92,7 +92,7 @@ mod tests {
         let tfm = "";
         assert!(matches!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::InvalidFormat(_))
+            Err(ParseTargetFrameworkError::InvalidFormat(s)) if s == *tfm
         ));
     }
 
@@ -101,7 +101,7 @@ mod tests {
         let tfm = String::from("netcoreapp");
         assert!(matches!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::InvalidFormat(_))
+            Err(ParseTargetFrameworkError::InvalidFormat(s)) if s == *tfm
         ));
     }
 
@@ -110,14 +110,16 @@ mod tests {
         let tfm = "net6.x";
         assert!(matches!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::InvalidFormat(_))
+            Err(ParseTargetFrameworkError::InvalidFormat(s)) if s == *tfm
+        ));
+    }
 
     #[test]
     fn test_parse_invalid_no_version() {
         let tfm = "net";
         assert!(matches!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::InvalidFormat(s))
+            Err(ParseTargetFrameworkError::InvalidFormat(s)) if s == *tfm
         ));
     }
 
@@ -126,7 +128,7 @@ mod tests {
         let tfm = "net6.0-ios15.0";
         assert!(matches!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::UnsupportedOSTfm(_))
+            Err(ParseTargetFrameworkError::UnsupportedOSTfm(s)) if s == *tfm
         ));
     }
 }
