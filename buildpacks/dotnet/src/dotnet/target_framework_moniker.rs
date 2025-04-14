@@ -111,6 +111,13 @@ mod tests {
         assert!(matches!(
             tfm.parse::<TargetFrameworkMoniker>(),
             Err(ParseTargetFrameworkError::InvalidFormat(_))
+
+    #[test]
+    fn test_parse_invalid_no_version() {
+        let tfm = "net";
+        assert!(matches!(
+            tfm.parse::<TargetFrameworkMoniker>(),
+            Err(ParseTargetFrameworkError::InvalidFormat(s))
         ));
     }
 
