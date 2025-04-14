@@ -1,0 +1,10 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Unsupported target framework[0m
+[0;31m![0m
+[0;31m! The detected target framework moniker `netfoo` is either invalid or unsupported. This[0m
+[0;31m! buildpack currently supports the following TFMs: `net6.0`, `net7.0`, `net8.0`, `net9.0`.[0m
+[0;31m![0m
+[0;31m! For more information, see:[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet#net-version[0m

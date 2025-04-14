@@ -1,0 +1,18 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Invalid MSBuild verbosity level[0m
+[0;31m![0m
+[0;31m! The `MSBUILD_VERBOSITY_LEVEL` environment variable value (`Foo`)[0m
+[0;31m! is invalid. Did you mean one of the following supported values?[0m
+[0;31m![0m
+[0;31m! d[0m
+[0;31m! detailed[0m
+[0;31m! diag[0m
+[0;31m! diagnostic[0m
+[0;31m! m[0m
+[0;31m! minimal[0m
+[0;31m! n[0m
+[0;31m! normal[0m
+[0;31m! q[0m
+[0;31m! quiet[0m

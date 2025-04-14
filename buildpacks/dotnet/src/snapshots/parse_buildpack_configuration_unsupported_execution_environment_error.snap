@@ -1,0 +1,8 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Unsupported execution environment[0m
+[0;31m![0m
+[0;31m! The `CNB_EXEC_ENV` environment variable value (`foo`)[0m
+[0;31m! is not supported. This buildpack currently supports `production` and[0m
+[0;31m! `test` execution environments.[0m

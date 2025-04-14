@@ -1,0 +1,14 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Multiple .NET project files[0m
+[0;31m![0m
+[0;31m! The root directory contains multiple .NET project files: `foo.csproj`, `bar.fsproj`.[0m
+[0;31m![0m
+[0;31m! We don’t support having multiple project files in the root directory to prevent[0m
+[0;31m! unexpected results. We recommend reorganizing the directory and project[0m
+[0;31m! structure to include only one project file per folder.[0m
+[0;31m![0m
+[0;31m! If you’re porting an application from .NET Framework to .NET, or compiling both[0m
+[0;31m! side-by-side, see Microsoft’s documentation for project organization guidance:[0m
+[0;31m! https://learn.microsoft.com/en-us/dotnet/core/porting/project-structure[0m
