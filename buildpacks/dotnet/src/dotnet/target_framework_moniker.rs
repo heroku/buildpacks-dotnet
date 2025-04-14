@@ -2,13 +2,13 @@ use semver::VersionReq;
 use std::convert::TryFrom;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum ParseTargetFrameworkError {
     InvalidFormat(String),
     UnsupportedOSTfm(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) struct TargetFrameworkMoniker {
     pub(crate) version_part: String,
 }
@@ -90,45 +90,45 @@ mod tests {
     #[test]
     fn test_parse_invalid_empty() {
         let tfm = "";
-        assert!(matches!(
+        assert_eq!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::InvalidFormat(s)) if s == *tfm
-        ));
+            Err(ParseTargetFrameworkError::InvalidFormat(tfm.to_string()))
+        );
     }
 
     #[test]
     fn test_parse_invalid_non_numeric() {
         let tfm = String::from("netcoreapp");
-        assert!(matches!(
+        assert_eq!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::InvalidFormat(s)) if s == *tfm
-        ));
+            Err(ParseTargetFrameworkError::InvalidFormat(tfm.to_string()))
+        );
     }
 
     #[test]
     fn test_parse_invalid_malformed_version() {
         let tfm = "net6.x";
-        assert!(matches!(
+        assert_eq!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::InvalidFormat(s)) if s == *tfm
-        ));
+            Err(ParseTargetFrameworkError::InvalidFormat(tfm.to_string()))
+        );
     }
 
     #[test]
     fn test_parse_invalid_no_version() {
         let tfm = "net";
-        assert!(matches!(
+        assert_eq!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::InvalidFormat(s)) if s == *tfm
-        ));
+            Err(ParseTargetFrameworkError::InvalidFormat(tfm.to_string()))
+        );
     }
 
     #[test]
     fn test_parse_unsupported_os() {
         let tfm = "net6.0-ios15.0";
-        assert!(matches!(
+        assert_eq!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::UnsupportedOSTfm(s)) if s == *tfm
-        ));
+            Err(ParseTargetFrameworkError::UnsupportedOSTfm(tfm.to_string()))
+        );
     }
 }
