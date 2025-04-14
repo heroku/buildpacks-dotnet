@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The buildpack now lowercases launch process type names, and replaces spaces, dots (`.`), and underscores (`_`) with hyphens (`-`) for broader compatibility. ([#252](https://github.com/heroku/buildpacks-dotnet/pull/252))
+
 ## [0.4.1] - 2025-04-09
 
 ### Added

@@ -1,6 +1,6 @@
-use crate::Project;
 use crate::dotnet::project::ProjectType;
 use crate::dotnet::solution::Solution;
+use crate::{Project, utils};
 use libcnb::data::launch::{Process, ProcessBuilder, ProcessType};
 use libcnb::data::process_type;
 use std::path::{Path, PathBuf};
@@ -74,7 +74,8 @@ fn build_command(relative_executable_path: &Path, project_type: ProjectType) -> 
 
 /// Returns a sanitized process type name, ensuring it is always valid
 fn project_process_type(project: &Project) -> ProcessType {
-    sanitize_process_type_name(&project.assembly_name)
+    utils::to_rfc1123_label(&project.assembly_name)
+        .expect("Assembly name to include at least one character compatible with the RFC 1123 DNS label spec")
         .parse::<ProcessType>()
         .expect("Sanitized process type name should always be valid")
 }
@@ -101,14 +102,6 @@ fn project_executable_path(project: &Project) -> PathBuf {
         .join("bin")
         .join("publish")
         .join(&project.assembly_name)
-}
-
-/// Sanitizes a process type name to only contain allowed characters
-fn sanitize_process_type_name(input: &str) -> String {
-    input
-        .chars()
-        .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_'))
-        .collect()
 }
 
 #[cfg(test)]
@@ -206,7 +199,7 @@ mod tests {
         };
 
         let expected_processes = vec![Process {
-            r#type: process_type!("MyApp"),
+            r#type: process_type!("my-app"),
             command: vec![
                 "bash".to_string(),
                 "-c".to_string(),
@@ -276,30 +269,6 @@ mod tests {
         assert_eq!(
             build_command(&executable_path, ProjectType::ConsoleApplication),
             "cd 'some/project with #special$chars/bin/publish'; ./My-App+v1.2_Release!"
-        );
-    }
-
-    #[test]
-    fn test_sanitize_process_type_name() {
-        assert_eq!(
-            sanitize_process_type_name("Hello, world! 123"),
-            "Helloworld123"
-        );
-        assert_eq!(
-            sanitize_process_type_name("This_is-a.test.123.abc"),
-            "This_is-a.test.123.abc"
-        );
-        assert_eq!(
-            sanitize_process_type_name("Special chars: !@#$%+^&*()"),
-            "Specialchars"
-        );
-        assert_eq!(
-            sanitize_process_type_name("Mixed: aBc123.xyz_-!@#"),
-            "MixedaBc123.xyz_-"
-        );
-        assert_eq!(
-            sanitize_process_type_name("Unicode: 日本語123"),
-            "Unicode123"
         );
     }
 }

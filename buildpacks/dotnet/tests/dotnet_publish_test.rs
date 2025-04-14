@@ -1,6 +1,8 @@
 use crate::tests::{default_build_config, get_dotnet_arch};
 use indoc::{formatdoc, indoc};
-use libcnb_test::{ContainerConfig, PackResult, TestRunner, assert_contains, assert_empty};
+use libcnb_test::{
+    ContainerConfig, PackResult, TestRunner, assert_contains, assert_empty, assert_not_contains,
+};
 use regex::Regex;
 
 #[test]
@@ -122,7 +124,8 @@ fn test_dotnet_publish_process_registration_without_procfile() {
                   - Detecting process types from published artifacts
                   - Found `web`: bash -c cd bin/publish; ./foo --urls http://*:$PORT
                   - No Procfile detected
-                  - Registering detected process types as launch processes"}
+                  - Registering detected process types as launch processes
+                - Done"}
             );
         },
     );
@@ -195,11 +198,16 @@ fn test_dotnet_publish_with_space_in_project_filename() {
 
             assert_contains!(
                 &context.pack_stdout,
-                r"Found `consoleapp`: bash -c cd 'console app/bin/publish'; ./'console app'"
+                r"Found `console-app`: bash -c cd 'console app/bin/publish'; ./'console app'"
+            );
+
+            assert_not_contains!(
+                &context.pack_stdout,
+                r"Auto-detected process type names were recently changed"
             );
 
             context.start_container(
-                ContainerConfig::new().entrypoint("consoleapp"),
+                ContainerConfig::new().entrypoint("console-app"),
                 |container| {
                     let log_output = container.logs_wait();
 
@@ -207,6 +215,41 @@ fn test_dotnet_publish_with_space_in_project_filename() {
                     assert_contains!(log_output.stdout, "Hello, World!");
                 },
             );
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
+fn test_dotnet_publish_with_updated_process_type_name_heroku_warning() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/solution_with_web_and_console_projects")
+            .env("STACK", "heroku-24"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            assert_contains!(
+                context.pack_stdout, &formatdoc! {r"
+                  - Process types
+                    - Detecting process types from published artifacts
+                    - Found `web`: bash -c cd web/bin/publish; ./web --urls http://*:$PORT
+                    - Found `worker`: bash -c cd worker/bin/publish; ./worker
+                    - No Procfile detected
+                    - Registering detected process types as launch processes
+                    - WARNING: Auto-detected process type names were recently changed.
+                      
+                      The buildpack now lowercases the process name and replaces spaces, dots (`.`),
+                      and underscores (`_`) with hyphens (`-`). Currently scaled worker dynos may be
+                      removed following deployment if the process type name was changed as a result.
+                      
+                      Verify that all expected worker dynos are running on your app with `heroku ps`,
+                      and scale up recently renamed processes as needed using the detected process
+                      type names listed above.
+                      
+                      For more information on automatic process type detection, see:
+                      https://devcenter.heroku.com/articles/dotnet-behavior-in-heroku#automatic-process-type-detection
+                  - Done"}
+            );
+            assert_contains!(context.pack_stdout, "web -> /workspace/web/bin/publish/");
         },
     );
 }
