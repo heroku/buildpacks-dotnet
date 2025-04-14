@@ -26,7 +26,7 @@ impl FromStr for TargetFrameworkMoniker {
         let prefix = &tfm[..3];
         let rest = &tfm[3..];
 
-        if !valid_prefixes.contains(&prefix) || rest.is_empty() {
+        if !valid_prefixes.contains(&prefix) {
             return Err(ParseTargetFrameworkError::InvalidFormat(tfm.to_string()));
         }
 
