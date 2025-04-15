@@ -140,4 +140,74 @@ mod tests {
 
         assert_eq!(Process::from(test_command), expected_process);
     }
+
+    #[test]
+    fn test_command_from_dotnet_publish_command() {
+        let publish_command = DotnetPublishCommand {
+            path: PathBuf::from("/foo/bar.sln"),
+            runtime_identifier: RuntimeIdentifier::LinuxX64,
+            configuration: None,
+            verbosity_level: None,
+        };
+
+        let command = Command::from(publish_command);
+        let args: Vec<String> = command
+            .get_args()
+            .map(|s| s.to_string_lossy().to_string())
+            .collect();
+
+        assert_eq!(command.get_program(), "dotnet");
+        assert_eq!(
+            args,
+            vec![
+                "publish".to_string(),
+                "/foo/bar.sln".to_string(),
+                "--runtime".to_string(),
+                "linux-x64".to_string(),
+                "-p:PublishDir=bin/publish".to_string(),
+                "--artifacts-path".to_string(),
+                temp_dir()
+                    .join("build_artifacts")
+                    .to_string_lossy()
+                    .to_string(),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_command_from_dotnet_publish_command_with_configuration_and_verbosity_level() {
+        let publish_command = DotnetPublishCommand {
+            path: PathBuf::from("/foo/bar.sln"),
+            runtime_identifier: RuntimeIdentifier::LinuxX64,
+            configuration: Some("Release".to_string()),
+            verbosity_level: Some(VerbosityLevel::Normal),
+        };
+
+        let command = Command::from(publish_command);
+        let args: Vec<String> = command
+            .get_args()
+            .map(|s| s.to_string_lossy().to_string())
+            .collect();
+
+        assert_eq!(command.get_program(), "dotnet");
+        assert_eq!(
+            args,
+            vec![
+                "publish".to_string(),
+                "/foo/bar.sln".to_string(),
+                "--runtime".to_string(),
+                "linux-x64".to_string(),
+                "-p:PublishDir=bin/publish".to_string(),
+                "--artifacts-path".to_string(),
+                temp_dir()
+                    .join("build_artifacts")
+                    .to_string_lossy()
+                    .to_string(),
+                "--configuration".to_string(),
+                "Release".to_string(),
+                "--verbosity".to_string(),
+                "normal".to_string(),
+            ]
+        );
+    }
 }
