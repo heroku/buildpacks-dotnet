@@ -237,4 +237,25 @@ mod tests {
         let result = Solution::load_from_path(&solution_path);
         assert!(matches!(result, Err(LoadError::LoadProject(_))));
     }
+
+    #[test]
+    fn test_ephemeral_solution() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let project_path = temp_dir.path().join("test.csproj");
+
+        let project_content = r#"
+        <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+                <TargetFramework>net6.0</TargetFramework>
+            </PropertyGroup>
+        </Project>"#;
+        fs::write(&project_path, project_content).unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        let solution = Solution::ephemeral(project);
+
+        assert_eq!(solution.path, project_path);
+        assert_eq!(solution.projects.len(), 1);
+        assert_eq!(solution.projects[0].path, project_path);
+    }
 }
