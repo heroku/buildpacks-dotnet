@@ -30,3 +30,28 @@ pub(crate) fn get_runtime_identifier(os: Os, arch: Arch) -> RuntimeIdentifier {
         (Os::Darwin, Arch::Arm64) => RuntimeIdentifier::OsxArm64,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_runtime_identifier() {
+        assert_eq!(
+            get_runtime_identifier(Os::Linux, Arch::Amd64),
+            RuntimeIdentifier::LinuxX64
+        );
+        assert_eq!(
+            get_runtime_identifier(Os::Linux, Arch::Arm64),
+            RuntimeIdentifier::LinuxArm64
+        );
+        assert_eq!(
+            get_runtime_identifier(Os::Darwin, Arch::Amd64),
+            RuntimeIdentifier::OsxX64
+        );
+        assert_eq!(
+            get_runtime_identifier(Os::Darwin, Arch::Arm64),
+            RuntimeIdentifier::OsxArm64
+        );
+    }
+}
