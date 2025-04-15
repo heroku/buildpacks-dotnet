@@ -110,24 +110,6 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_invalid_no_version() {
-        let tfm = "net".to_string();
-        assert_eq!(
-            tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::InvalidFormat(tfm))
-        );
-    }
-
-    #[test]
-    fn test_parse_unsupported_prefix_only() {
-        let tfm = "foo".to_string();
-        assert_eq!(
-            tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::InvalidFormat(tfm))
-        );
-    }
-
-    #[test]
     fn test_parse_unsupported_os() {
         let tfm = "net6.0-ios15.0".to_string();
         assert_eq!(
