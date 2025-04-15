@@ -36,6 +36,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_runtime_identifier_display() {
+        assert_eq!(RuntimeIdentifier::LinuxX64.to_string(), "linux-x64");
+        assert_eq!(RuntimeIdentifier::LinuxArm64.to_string(), "linux-arm64");
+        assert_eq!(RuntimeIdentifier::OsxX64.to_string(), "osx-x64");
+        assert_eq!(RuntimeIdentifier::OsxArm64.to_string(), "osx-arm64");
+    }
+
+    #[test]
     fn test_get_runtime_identifier() {
         assert_eq!(
             get_runtime_identifier(Os::Linux, Arch::Amd64),
