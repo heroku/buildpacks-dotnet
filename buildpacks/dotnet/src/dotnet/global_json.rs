@@ -135,11 +135,7 @@ mod tests {
                 roll_forward: case.roll_forward.map(ToString::to_string),
             };
             let result = VersionReq::try_from(sdk_config).unwrap();
-            assert_eq!(
-                result.to_string(),
-                case.expected,
-                "Failed for case: {case:?}"
-            );
+            assert_eq!(result.to_string(), case.expected);
         }
     }
 

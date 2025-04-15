@@ -179,4 +179,19 @@ mod tests {
         }
         assert!(detect_msbuild_verbosity_level(&Env::new()).is_none());
     }
+
+    #[test]
+    fn test_verbosity_level_display() {
+        let cases = [
+            (VerbosityLevel::Quiet, "quiet"),
+            (VerbosityLevel::Minimal, "minimal"),
+            (VerbosityLevel::Normal, "normal"),
+            (VerbosityLevel::Detailed, "detailed"),
+            (VerbosityLevel::Diagnostic, "diagnostic"),
+        ];
+
+        for (level, expected) in cases {
+            assert_eq!(level.to_string(), expected);
+        }
+    }
 }

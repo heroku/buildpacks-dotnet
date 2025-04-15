@@ -2,33 +2,28 @@ use semver::VersionReq;
 use std::convert::TryFrom;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum ParseTargetFrameworkError {
     InvalidFormat(String),
     UnsupportedOSTfm(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) struct TargetFrameworkMoniker {
     pub(crate) version_part: String,
 }
+
+const SUPPORTED_PREFIX: &str = "net";
 
 impl FromStr for TargetFrameworkMoniker {
     type Err = ParseTargetFrameworkError;
 
     fn from_str(tfm: &str) -> Result<Self, Self::Err> {
-        let valid_prefixes = ["net"];
-
-        if tfm.len() < 4 {
+        if !tfm.starts_with(SUPPORTED_PREFIX) {
             return Err(ParseTargetFrameworkError::InvalidFormat(tfm.to_string()));
         }
 
-        let prefix = &tfm[..3];
-        let rest = &tfm[3..];
-
-        if !valid_prefixes.contains(&prefix) || rest.is_empty() {
-            return Err(ParseTargetFrameworkError::InvalidFormat(tfm.to_string()));
-        }
+        let rest = &tfm[SUPPORTED_PREFIX.len()..];
 
         let parts: Vec<&str> = rest.split('-').collect();
         if parts.len() > 1 {
@@ -89,37 +84,37 @@ mod tests {
 
     #[test]
     fn test_parse_invalid_empty() {
-        let tfm = "";
-        assert!(matches!(
+        let tfm = String::new();
+        assert_eq!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::InvalidFormat(_))
-        ));
+            Err(ParseTargetFrameworkError::InvalidFormat(tfm))
+        );
     }
 
     #[test]
     fn test_parse_invalid_non_numeric() {
         let tfm = String::from("netcoreapp");
-        assert!(matches!(
+        assert_eq!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::InvalidFormat(_))
-        ));
+            Err(ParseTargetFrameworkError::InvalidFormat(tfm))
+        );
     }
 
     #[test]
     fn test_parse_invalid_malformed_version() {
-        let tfm = "net6.x";
-        assert!(matches!(
+        let tfm = "net6.x".to_string();
+        assert_eq!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::InvalidFormat(_))
-        ));
+            Err(ParseTargetFrameworkError::InvalidFormat(tfm))
+        );
     }
 
     #[test]
     fn test_parse_unsupported_os() {
-        let tfm = "net6.0-ios15.0";
-        assert!(matches!(
+        let tfm = "net6.0-ios15.0".to_string();
+        assert_eq!(
             tfm.parse::<TargetFrameworkMoniker>(),
-            Err(ParseTargetFrameworkError::UnsupportedOSTfm(_))
-        ));
+            Err(ParseTargetFrameworkError::UnsupportedOSTfm(tfm))
+        );
     }
 }

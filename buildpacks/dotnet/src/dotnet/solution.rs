@@ -58,10 +58,16 @@ fn extract_project_references(contents: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
-    #[test]
-    fn test_extract_project_references() {
-        let solution_content = r#"
+    const SIMPLE_PROJECT_CONTENT: &str = r#"
+        <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+                <TargetFramework>net6.0</TargetFramework>
+            </PropertyGroup>
+        </Project>"#;
+
+    const SOLUTION_WITH_TWO_PROJECTS: &str = r#"
         Microsoft Visual Studio Solution File, Format Version 12.00
         # Visual Studio Version 16
         VisualStudioVersion = 16.0.28729.10
@@ -78,7 +84,17 @@ mod tests {
         EndGlobal
         "#;
 
-        let project_references = extract_project_references(solution_content);
+    fn create_test_project(temp_dir: &tempfile::TempDir, project_name: &str) -> PathBuf {
+        let project_dir = temp_dir.path().join(project_name);
+        fs::create_dir(&project_dir).unwrap();
+        let project_path = project_dir.join(format!("{project_name}.csproj"));
+        fs::write(&project_path, SIMPLE_PROJECT_CONTENT).unwrap();
+        project_path
+    }
+
+    #[test]
+    fn test_extract_project_references_should_find_all_projects_in_solution() {
+        let project_references = extract_project_references(SOLUTION_WITH_TWO_PROJECTS);
 
         assert_eq!(project_references.len(), 2);
         assert_eq!(project_references[0], "Project1/Project1.csproj");
@@ -86,7 +102,7 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_project_references_with_no_projects() {
+    fn test_extract_project_references_should_return_empty_vec_for_solution_with_no_projects() {
         let solution_content = r"
         Microsoft Visual Studio Solution File, Format Version 12.00
         # Visual Studio Version 16
@@ -101,12 +117,11 @@ mod tests {
         ";
 
         let project_references = extract_project_references(solution_content);
-
         assert_eq!(project_references.len(), 0);
     }
 
     #[test]
-    fn test_extract_project_references_with_solution_folder() {
+    fn test_extract_project_references_should_ignore_solution_folders() {
         let solution_content = r#"
         Microsoft Visual Studio Solution File, Format Version 12.00
         # Visual Studio Version 16
@@ -125,8 +140,6 @@ mod tests {
         "#;
 
         let project_references = extract_project_references(solution_content);
-
-        // Expect only the actual project path
         assert_eq!(project_references.len(), 1);
         assert_eq!(
             project_references[0],
@@ -135,7 +148,7 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_project_references_with_solution_items() {
+    fn test_extract_project_references_should_ignore_solution_items() {
         let solution_content = r#"
         Microsoft Visual Studio Solution File, Format Version 12.00
         # Visual Studio Version 16
@@ -162,12 +175,64 @@ mod tests {
         "#;
 
         let project_references = extract_project_references(solution_content);
-
-        // Expect only the actual project path
         assert_eq!(project_references.len(), 1);
         assert_eq!(
             project_references[0],
             "ProjectWithParams/ProjectWithParams.csproj"
         );
+    }
+
+    #[test]
+    fn test_load_from_path_should_load_all_projects_in_solution() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let solution_path = temp_dir.path().join("test.sln");
+
+        fs::write(&solution_path, SOLUTION_WITH_TWO_PROJECTS).unwrap();
+        let project1_path = create_test_project(&temp_dir, "Project1");
+        let project2_path = create_test_project(&temp_dir, "Project2");
+
+        let solution = Solution::load_from_path(&solution_path).unwrap();
+
+        assert_eq!(solution.path, solution_path);
+        assert_eq!(solution.projects.len(), 2);
+        assert_eq!(solution.projects[0].path, project1_path);
+        assert_eq!(solution.projects[1].path, project2_path);
+    }
+
+    #[test]
+    fn test_load_from_path_should_return_error_when_solution_file_does_not_exist() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let non_existent_path = temp_dir.path().join("nonexistent.sln");
+
+        let result = Solution::load_from_path(&non_existent_path);
+        assert!(matches!(result, Err(LoadError::ReadSolutionFile(_))));
+    }
+
+    #[test]
+    fn test_load_from_path_should_return_error_when_project_file_does_not_exist() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let solution_path = temp_dir.path().join("test.sln");
+
+        let solution_content = r#"
+        Microsoft Visual Studio Solution File, Format Version 12.00
+        Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project1", "Project1\Project1.csproj", "{8C28B63A-F94D-4A0B-A2B0-6DC6E1B88264}"
+        EndProject
+        "#;
+        fs::write(&solution_path, solution_content).unwrap();
+
+        let result = Solution::load_from_path(&solution_path);
+        assert!(matches!(result, Err(LoadError::LoadProject(_))));
+    }
+
+    #[test]
+    fn test_ephemeral_solution_should_contain_single_project() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let project_path = create_test_project(&temp_dir, "test");
+        let project = Project::load_from_path(&project_path).unwrap();
+        let solution = Solution::ephemeral(project);
+
+        assert_eq!(solution.path, project_path);
+        assert_eq!(solution.projects.len(), 1);
+        assert_eq!(solution.projects[0].path, project_path);
     }
 }
