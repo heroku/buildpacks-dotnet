@@ -380,4 +380,37 @@ mod tests {
 "#;
         assert_metadata(project_xml, Some("Microsoft.NET.Sdk"), "net6.0", None, None);
     }
+
+    #[test]
+    fn test_infer_project_type_unknown_sdk_with_exe() {
+        let metadata = Metadata {
+            sdk_id: Some("Unknown.Sdk".to_string()),
+            target_framework: "net6.0".to_string(),
+            output_type: Some("Exe".to_string()),
+            assembly_name: None,
+        };
+        assert_eq!(infer_project_type(&metadata), ProjectType::Unknown);
+    }
+
+    #[test]
+    fn test_infer_project_type_net_sdk_without_exe() {
+        let metadata = Metadata {
+            sdk_id: Some("Microsoft.NET.Sdk".to_string()),
+            target_framework: "net6.0".to_string(),
+            output_type: Some("Library".to_string()),
+            assembly_name: None,
+        };
+        assert_eq!(infer_project_type(&metadata), ProjectType::Unknown);
+    }
+
+    #[test]
+    fn test_infer_project_type_no_sdk() {
+        let metadata = Metadata {
+            sdk_id: None,
+            target_framework: "net6.0".to_string(),
+            output_type: Some("Exe".to_string()),
+            assembly_name: None,
+        };
+        assert_eq!(infer_project_type(&metadata), ProjectType::Unknown);
+    }
 }
