@@ -64,6 +64,12 @@ jobs:
           name: "llvm-cov-html-${{github.event.repository.name}}-${{github.sha}}"
           path: "target/llvm-cov/html"
           if-no-files-found: "error"
+      - name: Check coverage threshold 
+        run: |
+          if ! cargo +nightly llvm-cov --locked --fail-under-lines 85 --package buildpack-heroku-dotnet; then
+            echo "::error::Line coverage is below the required 85% threshold"
+            exit 1
+          fi
 
   integration-test:
     strategy:
