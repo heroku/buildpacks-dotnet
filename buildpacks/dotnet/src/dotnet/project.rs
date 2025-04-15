@@ -429,4 +429,28 @@ mod tests {
         let result = Project::load_from_path(&project_path);
         assert!(matches!(result, Err(LoadError::MissingTargetFramework(_))));
     }
+
+    #[test]
+    fn test_load_project_with_assembly_name() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let project_path = temp_dir.path().join("ConsoleApp.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <AssemblyName>MyConsoleApp</AssemblyName>
+    </PropertyGroup>
+</Project>"#,
+        )
+        .unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        assert_eq!(project.target_framework, "net6.0");
+        assert_eq!(project.project_type, ProjectType::ConsoleApplication);
+        assert_eq!(project.assembly_name, "MyConsoleApp");
+        assert_eq!(project.path, project_path);
+    }
 }
