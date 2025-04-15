@@ -93,7 +93,7 @@ fn parse_metadata(document: &Document) -> Metadata {
             }
             "AssemblyName" => {
                 if let Some(text) = node.text() {
-                    if !text.is_empty() {
+                    if !text.trim().is_empty() {
                         metadata.assembly_name = Some(text.to_string());
                     }
                 }
@@ -353,5 +353,31 @@ mod tests {
             assembly_name: None,
         };
         assert_eq!(infer_project_type(&metadata), ProjectType::Unknown);
+    }
+
+    #[test]
+    fn test_parse_project_with_empty_assembly_name() {
+        let project_xml = r#"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <AssemblyName></AssemblyName>
+    </PropertyGroup>
+</Project>
+"#;
+        assert_metadata(project_xml, Some("Microsoft.NET.Sdk"), "net6.0", None, None);
+    }
+
+    #[test]
+    fn test_parse_project_with_whitespace_assembly_name() {
+        let project_xml = r#"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <AssemblyName>  </AssemblyName>
+    </PropertyGroup>
+</Project>
+"#;
+        assert_metadata(project_xml, Some("Microsoft.NET.Sdk"), "net6.0", None, None);
     }
 }
