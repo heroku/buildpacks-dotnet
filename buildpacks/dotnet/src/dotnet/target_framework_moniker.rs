@@ -13,13 +13,13 @@ pub(crate) struct TargetFrameworkMoniker {
     pub(crate) version_part: String,
 }
 
+const SUPPORTED_PREFIX: &str = "net";
+
 impl FromStr for TargetFrameworkMoniker {
     type Err = ParseTargetFrameworkError;
 
     fn from_str(tfm: &str) -> Result<Self, Self::Err> {
-        let supported_prefix = "net";
-
-        if !tfm.starts_with(supported_prefix) {
+        if !tfm.starts_with(SUPPORTED_PREFIX) {
             return Err(ParseTargetFrameworkError::InvalidFormat(tfm.to_string()));
         }
 
