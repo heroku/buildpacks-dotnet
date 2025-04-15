@@ -19,7 +19,7 @@ impl FromStr for TargetFrameworkMoniker {
     fn from_str(tfm: &str) -> Result<Self, Self::Err> {
         let valid_prefixes = ["net"];
 
-        if tfm.len() < 4 {
+        if tfm.len() < 3 {
             return Err(ParseTargetFrameworkError::InvalidFormat(tfm.to_string()));
         }
 
