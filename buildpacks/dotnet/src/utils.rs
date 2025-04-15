@@ -138,4 +138,46 @@ mod tests {
         assert!(to_rfc1123_label("!!!").is_err());
         assert!(to_rfc1123_label("###@@@%%%").is_err());
     }
+
+    #[test]
+    fn test_copy_recursively_file() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let src_file = temp_dir.path().join("test.txt");
+        let dst_file = temp_dir.path().join("copy.txt");
+
+        fs::write(&src_file, "test content").unwrap();
+
+        copy_recursively(&src_file, &dst_file).unwrap();
+
+        assert!(dst_file.exists());
+        assert_eq!(fs::read_to_string(&dst_file).unwrap(), "test content");
+    }
+
+    #[test]
+    fn test_copy_recursively_directory() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let src_dir = temp_dir.path().join("src");
+        let dst_dir = temp_dir.path().join("dst");
+
+        fs::create_dir_all(&src_dir).unwrap();
+        fs::write(src_dir.join("file1.txt"), "file1 content").unwrap();
+        fs::create_dir_all(src_dir.join("subdir")).unwrap();
+        fs::write(src_dir.join("subdir").join("file2.txt"), "file2 content").unwrap();
+
+        copy_recursively(&src_dir, &dst_dir).unwrap();
+
+        assert!(dst_dir.exists());
+        assert!(dst_dir.join("file1.txt").exists());
+        assert!(dst_dir.join("subdir").exists());
+        assert!(dst_dir.join("subdir").join("file2.txt").exists());
+    }
+
+    #[test]
+    fn test_copy_recursively_nonexistent_source() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let src = temp_dir.path().join("nonexistent");
+        let dst = temp_dir.path().join("copy");
+
+        assert!(copy_recursively(&src, &dst).is_err());
+    }
 }
