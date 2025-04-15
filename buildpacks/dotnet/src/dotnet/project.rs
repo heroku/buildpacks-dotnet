@@ -356,6 +356,18 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_project_with_empty_target_framework() {
+        let project_xml = r#"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework></TargetFramework>
+    </PropertyGroup>
+</Project>
+"#;
+        assert_metadata(project_xml, Some("Microsoft.NET.Sdk"), "", None, None);
+    }
+
+    #[test]
     fn test_parse_project_with_empty_assembly_name() {
         let project_xml = r#"
 <Project Sdk="Microsoft.NET.Sdk">
