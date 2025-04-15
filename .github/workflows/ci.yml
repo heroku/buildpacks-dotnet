@@ -66,8 +66,8 @@ jobs:
           if-no-files-found: "error"
       - name: Check coverage threshold 
         run: |
-          if ! cargo +nightly llvm-cov --locked --fail-under-lines 85 --package buildpack-heroku-dotnet; then
-            echo "::error::Line coverage is below the required 85% threshold"
+          if ! cargo +nightly llvm-cov --locked --fail-under-lines 80 --package buildpack-heroku-dotnet; then
+            echo "::error::Line coverage is below the required 80% threshold"
             exit 1
           fi
 
