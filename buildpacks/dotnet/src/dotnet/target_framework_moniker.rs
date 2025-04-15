@@ -23,7 +23,7 @@ impl FromStr for TargetFrameworkMoniker {
             return Err(ParseTargetFrameworkError::InvalidFormat(tfm.to_string()));
         }
 
-        let rest = &tfm[3..];
+        let rest = &tfm[SUPPORTED_PREFIX.len()..];
 
         let parts: Vec<&str> = rest.split('-').collect();
         if parts.len() > 1 {
