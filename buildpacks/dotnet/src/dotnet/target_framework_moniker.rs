@@ -17,7 +17,7 @@ impl FromStr for TargetFrameworkMoniker {
     type Err = ParseTargetFrameworkError;
 
     fn from_str(tfm: &str) -> Result<Self, Self::Err> {
-        let valid_prefixes = ["net"];
+        let supported_prefixes = ["net"];
 
         if tfm.len() < 3 {
             return Err(ParseTargetFrameworkError::InvalidFormat(tfm.to_string()));
@@ -26,7 +26,7 @@ impl FromStr for TargetFrameworkMoniker {
         let prefix = &tfm[..3];
         let rest = &tfm[3..];
 
-        if !valid_prefixes.contains(&prefix) {
+        if !supported_prefixes.contains(&prefix) {
             return Err(ParseTargetFrameworkError::InvalidFormat(tfm.to_string()));
         }
 
@@ -124,7 +124,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_invalid_prefix_only() {
+    fn test_parse_unsupported_prefix_only() {
         let tfm = "foo".to_string();
         assert_eq!(
             tfm.parse::<TargetFrameworkMoniker>(),
