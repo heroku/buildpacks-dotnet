@@ -413,4 +413,20 @@ mod tests {
         };
         assert_eq!(infer_project_type(&metadata), ProjectType::Unknown);
     }
+
+    #[test]
+    fn test_load_project_missing_target_framework() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let project_path = temp_dir.path().join("test.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+</Project>"#,
+        )
+        .unwrap();
+
+        let result = Project::load_from_path(&project_path);
+        assert!(matches!(result, Err(LoadError::MissingTargetFramework(_))));
+    }
 }
