@@ -42,14 +42,15 @@ jobs:
       with:
         tool: cargo-llvm-cov
     - name: Run tests and generate coverage report
-      run: cargo llvm-cov --locked --html --package buildpack-heroku-dotnet --ignore-filename-regex "main\.rs|layers/.*\.rs" --fail-under-lines 100 --show-missing-lines
+      run: cargo llvm-cov --locked --package buildpack-heroku-dotnet --html
     - name: Upload HTML coverage report
-      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: "llvm-cov-html-${{github.event.repository.name}}-${{github.sha}}"
         path: "target/llvm-cov/html"
         if-no-files-found: "error"
+    - name: Enforce full coverage
+      run: cargo llvm-cov report --package buildpack-heroku-dotnet --ignore-filename-regex "main\.rs|layers/.*\.rs" --fail-under-lines 100 --show-missing-lines
 
   integration-test:
     strategy:
