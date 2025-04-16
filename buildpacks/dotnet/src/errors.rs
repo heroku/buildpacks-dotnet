@@ -441,33 +441,33 @@ mod tests {
 
     #[test]
     fn test_buildpack_detection_error() {
-        assert_error_snapshot(&DotnetBuildpackError::BuildpackDetection(create_io_error()));
+        assert_error_snapshot(DotnetBuildpackError::BuildpackDetection(create_io_error()));
     }
 
     #[test]
     fn test_no_solution_projects_error() {
-        assert_error_snapshot(&DotnetBuildpackError::NoSolutionProjects(PathBuf::from(
+        assert_error_snapshot(DotnetBuildpackError::NoSolutionProjects(PathBuf::from(
             "/foo/bar.sln",
         )));
     }
 
     #[test]
     fn test_multiple_root_directory_project_files_error() {
-        assert_error_snapshot(&DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
+        assert_error_snapshot(DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
             vec![PathBuf::from("foo.csproj"), PathBuf::from("bar.fsproj")],
         ));
     }
 
     #[test]
     fn test_load_solution_file_read_error() {
-        assert_error_snapshot(&DotnetBuildpackError::LoadSolutionFile(
+        assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
             solution::LoadError::ReadSolutionFile(create_io_error()),
         ));
     }
 
     #[test]
     fn test_load_solution_file_load_project_read_error() {
-        assert_error_snapshot(&DotnetBuildpackError::LoadSolutionFile(
+        assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
             solution::LoadError::LoadProject(
                 project::LoadError::ReadProjectFile(create_io_error()),
             ),
@@ -476,7 +476,7 @@ mod tests {
 
     #[test]
     fn test_load_solution_file_load_project_xml_parse_error() {
-        assert_error_snapshot(&DotnetBuildpackError::LoadSolutionFile(
+        assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
             solution::LoadError::LoadProject(project::LoadError::XmlParseError(
                 create_xml_parse_error(),
             )),
@@ -485,14 +485,14 @@ mod tests {
 
     #[test]
     fn test_load_project_file_read_error() {
-        assert_error_snapshot(&DotnetBuildpackError::LoadProjectFile(
+        assert_error_snapshot(DotnetBuildpackError::LoadProjectFile(
             project::LoadError::ReadProjectFile(create_io_error()),
         ));
     }
 
     #[test]
     fn test_load_solution_file_load_project_missing_target_framework_error() {
-        assert_error_snapshot(&DotnetBuildpackError::LoadSolutionFile(
+        assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
             solution::LoadError::LoadProject(project::LoadError::MissingTargetFramework(
                 PathBuf::from("foo.csproj"),
             )),
@@ -501,54 +501,54 @@ mod tests {
 
     #[test]
     fn test_load_project_file_xml_parse_error() {
-        assert_error_snapshot(&DotnetBuildpackError::LoadProjectFile(
+        assert_error_snapshot(DotnetBuildpackError::LoadProjectFile(
             project::LoadError::XmlParseError(create_xml_parse_error()),
         ));
     }
 
     #[test]
     fn test_load_project_file_missing_target_framework_error() {
-        assert_error_snapshot(&DotnetBuildpackError::LoadProjectFile(
+        assert_error_snapshot(DotnetBuildpackError::LoadProjectFile(
             project::LoadError::MissingTargetFramework(PathBuf::from("fpp.csproj")),
         ));
     }
 
     #[test]
     fn test_parse_target_framework_moniker_invalid_format_error() {
-        assert_error_snapshot(&DotnetBuildpackError::ParseTargetFrameworkMoniker(
+        assert_error_snapshot(DotnetBuildpackError::ParseTargetFrameworkMoniker(
             ParseTargetFrameworkError::InvalidFormat("netfoo".to_string()),
         ));
     }
 
     #[test]
     fn test_parse_target_framework_moniker_unsupported_os_tfm_error() {
-        assert_error_snapshot(&DotnetBuildpackError::ParseTargetFrameworkMoniker(
+        assert_error_snapshot(DotnetBuildpackError::ParseTargetFrameworkMoniker(
             ParseTargetFrameworkError::UnsupportedOSTfm("net8.0-windows".to_string()),
         ));
     }
 
     #[test]
     fn test_read_global_json_file_error() {
-        assert_error_snapshot(&DotnetBuildpackError::ReadGlobalJsonFile(create_io_error()));
+        assert_error_snapshot(DotnetBuildpackError::ReadGlobalJsonFile(create_io_error()));
     }
 
     #[test]
     fn test_parse_global_json_error() {
-        assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJson(
+        assert_error_snapshot(DotnetBuildpackError::ParseGlobalJson(
             serde_json::from_str::<serde_json::Value>("invalid json").unwrap_err(),
         ));
     }
 
     #[test]
     fn test_parse_global_json_version_requirement_error() {
-        assert_error_snapshot(&DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
+        assert_error_snapshot(DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
             semver::VersionReq::parse("invalid-version").unwrap_err(),
         ));
     }
 
     #[test]
     fn test_parse_inventory_error() {
-        assert_error_snapshot(&DotnetBuildpackError::ParseInventory(
+        assert_error_snapshot(DotnetBuildpackError::ParseInventory(
             libherokubuildpack::inventory::ParseInventoryError::TomlError(
                 toml::from_str::<toml::Value>("invalid toml").unwrap_err(),
             ),
@@ -557,21 +557,21 @@ mod tests {
 
     #[test]
     fn test_parse_solution_version_requirement_error() {
-        assert_error_snapshot(&DotnetBuildpackError::ParseSolutionVersionRequirement(
+        assert_error_snapshot(DotnetBuildpackError::ParseSolutionVersionRequirement(
             semver::VersionReq::parse("invalid-version").unwrap_err(),
         ));
     }
 
     #[test]
     fn test_resolve_sdk_version_error() {
-        assert_error_snapshot(&DotnetBuildpackError::ResolveSdkVersion(
+        assert_error_snapshot(DotnetBuildpackError::ResolveSdkVersion(
             semver::VersionReq::parse("~4.8").unwrap(),
         ));
     }
 
     #[test]
     fn test_sdk_layer_download_archive_http_error() {
-        assert_error_snapshot(&DotnetBuildpackError::SdkLayer(
+        assert_error_snapshot(DotnetBuildpackError::SdkLayer(
             SdkLayerError::DownloadArchive(libherokubuildpack::download::DownloadError::HttpError(
                 Box::new(ureq::Error::ConnectionFailed),
             )),
@@ -580,7 +580,7 @@ mod tests {
 
     #[test]
     fn test_sdk_layer_download_archive_io_error() {
-        assert_error_snapshot(&DotnetBuildpackError::SdkLayer(
+        assert_error_snapshot(DotnetBuildpackError::SdkLayer(
             SdkLayerError::DownloadArchive(libherokubuildpack::download::DownloadError::IoError(
                 create_io_error(),
             )),
@@ -589,14 +589,14 @@ mod tests {
 
     #[test]
     fn test_sdk_layer_decompress_archive_error() {
-        assert_error_snapshot(&DotnetBuildpackError::SdkLayer(
+        assert_error_snapshot(DotnetBuildpackError::SdkLayer(
             SdkLayerError::DecompressArchive(create_io_error()),
         ));
     }
 
     #[test]
     fn test_sdk_layer_verify_archive_checksum_error() {
-        assert_error_snapshot(&DotnetBuildpackError::SdkLayer(
+        assert_error_snapshot(DotnetBuildpackError::SdkLayer(
             SdkLayerError::VerifyArchiveChecksum {
                 expected: vec![0xAA, 0xBB, 0xCC, 0xDD],
                 actual: vec![0x11, 0x22, 0x33, 0x44],
@@ -606,28 +606,28 @@ mod tests {
 
     #[test]
     fn test_sdk_layer_open_archive_error() {
-        assert_error_snapshot(&DotnetBuildpackError::SdkLayer(SdkLayerError::OpenArchive(
+        assert_error_snapshot(DotnetBuildpackError::SdkLayer(SdkLayerError::OpenArchive(
             create_io_error(),
         )));
     }
 
     #[test]
     fn test_sdk_layer_read_archive_error() {
-        assert_error_snapshot(&DotnetBuildpackError::SdkLayer(SdkLayerError::ReadArchive(
+        assert_error_snapshot(DotnetBuildpackError::SdkLayer(SdkLayerError::ReadArchive(
             create_io_error(),
         )));
     }
 
     #[test]
     fn test_parse_buildpack_configuration_invalid_msbuild_verbosity_level_error() {
-        assert_error_snapshot(&DotnetBuildpackError::ParseBuildpackConfiguration(
+        assert_error_snapshot(DotnetBuildpackError::ParseBuildpackConfiguration(
             DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel("Foo".to_string()),
         ));
     }
 
     #[test]
     fn test_parse_buildpack_configuration_unsupported_execution_environment_error() {
-        assert_error_snapshot(&DotnetBuildpackError::ParseBuildpackConfiguration(
+        assert_error_snapshot(DotnetBuildpackError::ParseBuildpackConfiguration(
             DotnetBuildpackConfigurationError::ExecutionEnvironmentError(
                 ExecutionEnvironmentError::UnsupportedExecutionEnvironment("foo".to_string()),
             ),
@@ -636,7 +636,7 @@ mod tests {
 
     #[test]
     fn test_restore_dotnet_tools_command_system_error() {
-        assert_error_snapshot(&DotnetBuildpackError::RestoreDotnetToolsCommand(
+        assert_error_snapshot(DotnetBuildpackError::RestoreDotnetToolsCommand(
             fun_run::CmdError::SystemError(
                 "Failed to start process".to_string(),
                 create_io_error(),
@@ -646,30 +646,32 @@ mod tests {
 
     #[test]
     fn test_restore_dotnet_tools_command_non_zero_exit_not_streamed_error() {
-        assert_error_snapshot(&DotnetBuildpackError::RestoreDotnetToolsCommand(
+        assert_error_snapshot(DotnetBuildpackError::RestoreDotnetToolsCommand(
             create_cmd_error(1),
         ));
     }
 
     #[test]
     fn test_publish_command_system_error() {
-        assert_error_snapshot(&DotnetBuildpackError::PublishCommand(
+        assert_error_snapshot(DotnetBuildpackError::PublishCommand(
             fun_run::CmdError::SystemError("Cannot find executable".to_string(), create_io_error()),
         ));
     }
 
     #[test]
     fn test_publish_command_non_zero_exit_not_streamed_error() {
-        assert_error_snapshot(&DotnetBuildpackError::PublishCommand(create_cmd_error(5)));
+        assert_error_snapshot(DotnetBuildpackError::PublishCommand(create_cmd_error(5)));
     }
 
     #[test]
     fn test_copy_runtime_files_error() {
-        assert_error_snapshot(&DotnetBuildpackError::CopyRuntimeFiles(create_io_error()));
+        assert_error_snapshot(DotnetBuildpackError::CopyRuntimeFiles(create_io_error()));
     }
 
-    fn assert_error_snapshot(error: &DotnetBuildpackError) {
-        assert_writer_snapshot(|writer| on_buildpack_error_with_writer(error, writer));
+    fn assert_error_snapshot(error: DotnetBuildpackError) {
+        assert_writer_snapshot(|writer| {
+            on_error_with_writer(libcnb::Error::BuildpackError(error), writer);
+        });
     }
 
     fn assert_writer_snapshot(function: impl FnOnce(&mut dyn Write)) {
