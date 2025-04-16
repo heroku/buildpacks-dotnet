@@ -41,7 +41,7 @@ use libherokubuildpack::inventory;
 use libherokubuildpack::inventory::artifact::Artifact;
 use semver::{Version, VersionReq};
 use sha2::Sha512;
-use std::io::Write;
+use std::io::{Write, stderr};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{env, fs, io};
@@ -266,7 +266,7 @@ impl Buildpack for DotnetBuildpack {
     }
 
     fn on_error(&self, error: libcnb::Error<Self::Error>) {
-        errors::on_error(error);
+        errors::on_error_with_writer(error, stderr());
     }
 }
 

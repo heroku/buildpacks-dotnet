@@ -7,11 +7,7 @@ use crate::dotnet_buildpack_configuration::{
 use crate::layers::sdk::SdkLayerError;
 use bullet_stream::{Print, style};
 use indoc::formatdoc;
-use std::io::{self, Write, stderr};
-
-pub(crate) fn on_error(error: libcnb::Error<DotnetBuildpackError>) {
-    on_error_with_writer(error, stderr());
-}
+use std::io::{self, Write};
 
 pub(crate) fn on_error_with_writer(
     error: libcnb::Error<DotnetBuildpackError>,
