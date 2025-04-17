@@ -42,7 +42,7 @@ jobs:
       with:
         tool: cargo-llvm-cov
     - name: Run tests and generate coverage report
-      run: cargo llvm-cov --locked --package buildpack-heroku-dotnet --html
+      run: cargo llvm-cov --locked --html
     - name: Upload HTML coverage report
       uses: actions/upload-artifact@v4
       with:
