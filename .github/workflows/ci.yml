@@ -50,7 +50,7 @@ jobs:
         path: "target/llvm-cov/html"
         if-no-files-found: "error"
     - name: Enforce full coverage
-      run: cargo llvm-cov report --package buildpack-heroku-dotnet --ignore-filename-regex "main\.rs|layers/.*\.rs" --fail-under-lines 100 --show-missing-lines
+      run: cargo llvm-cov report --ignore-filename-regex "main\.rs|layers/.*\.rs" --fail-under-lines 100 --show-missing-lines
 
   integration-test:
     strategy:
