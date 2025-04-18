@@ -37,33 +37,20 @@ jobs:
       run: rustup update
     - name: Rust Cache
       uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2.7.8
-    - name: Run unit tests
-      run: cargo test --locked
-
-  unit-test-coverage:
-    name: Generate test coverage report
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: true
-      - name: Install nightly Rust toolchain
-        run: rustup install nightly
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2.7.8
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@575f713d0233afba556737a7b85080563be14186 # v2.49.43
-        with:
-          tool: cargo-llvm-cov
-      - name: Run unit tests and generate coverage report
-        run: cargo +nightly llvm-cov --locked --html --package buildpack-heroku-dotnet
-      - name: Upload HTML coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: "llvm-cov-html-${{github.event.repository.name}}-${{github.sha}}"
-          path: "target/llvm-cov/html"
-          if-no-files-found: "error"
+    - name: Install cargo-llvm-cov
+      uses: taiki-e/install-action@575f713d0233afba556737a7b85080563be14186 # v2.49.43
+      with:
+        tool: cargo-llvm-cov
+    - name: Run tests and generate coverage report
+      run: cargo llvm-cov --locked --html
+    - name: Upload HTML coverage report
+      uses: actions/upload-artifact@v4
+      with:
+        name: "llvm-cov-html-${{github.event.repository.name}}-${{github.sha}}"
+        path: "target/llvm-cov/html"
+        if-no-files-found: "error"
+    - name: Enforce full coverage
+      run: cargo llvm-cov report --ignore-filename-regex "main\.rs|layers/.*\.rs" --fail-under-lines 100 --show-missing-lines
 
   integration-test:
     strategy:
