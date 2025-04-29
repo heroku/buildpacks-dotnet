@@ -39,7 +39,7 @@ use sha2::Sha512;
 use std::io::{Write, stderr};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::{env, fs, io};
+use std::{env, io};
 
 struct DotnetBuildpack;
 
@@ -381,7 +381,7 @@ fn detect_global_json_sdk_configuration(
     detect::global_json_file(app_dir).map_or_else(
         || Ok(None),
         |file| {
-            fs::read_to_string(file)
+            fs_err::read_to_string(file)
                 .map_err(DotnetBuildpackError::ReadGlobalJsonFile)
                 .and_then(|content| {
                     content

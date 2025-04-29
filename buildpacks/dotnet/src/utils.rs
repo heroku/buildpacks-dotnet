@@ -1,10 +1,9 @@
-use std::fs;
 use std::path::Path;
 
 pub(crate) fn copy_recursively<P: AsRef<Path>>(src: P, dst: P) -> std::io::Result<()> {
     if src.as_ref().is_dir() {
-        fs::create_dir_all(dst.as_ref())?;
-        for entry in fs::read_dir(src)? {
+        fs_err::create_dir_all(dst.as_ref())?;
+        for entry in fs_err::read_dir(src.as_ref())? {
             let entry = entry?;
             let src_path = entry.path();
             let dst_path = dst.as_ref().join(entry.file_name());
@@ -12,7 +11,7 @@ pub(crate) fn copy_recursively<P: AsRef<Path>>(src: P, dst: P) -> std::io::Resul
             copy_recursively(&src_path, &dst_path)?;
         }
     } else {
-        fs::copy(src, dst)?;
+        fs_err::copy(src, dst)?;
     }
     Ok(())
 }
@@ -80,6 +79,7 @@ pub(crate) fn to_rfc1123_label(input: &str) -> Result<String, ()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     #[test]
     fn test_allows_letters_digits_hyphen() {

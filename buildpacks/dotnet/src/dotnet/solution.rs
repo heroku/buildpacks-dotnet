@@ -1,6 +1,5 @@
 use crate::dotnet::project::{self, Project};
 use regex::Regex;
-use std::fs::{self};
 use std::io::{self};
 use std::path::{Path, PathBuf};
 
@@ -14,7 +13,7 @@ impl Solution {
         Ok(Self {
             path: path.to_path_buf(),
             projects: extract_project_references(
-                &fs::read_to_string(path).map_err(LoadError::ReadSolutionFile)?,
+                &fs_err::read_to_string(path).map_err(LoadError::ReadSolutionFile)?,
             )
             .into_iter()
             .filter_map(|project_path| {
