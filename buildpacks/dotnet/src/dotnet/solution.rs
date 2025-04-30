@@ -19,20 +19,7 @@ impl Solution {
             .filter_map(|relative_project_path| {
                 path.parent().map(|dir| dir.join(&relative_project_path))
             })
-            .map(|project_path| {
-                project_path
-                    .try_exists()
-                    .map_err(|error| {
-                        LoadError::LoadProject(project::LoadError::ReadProjectFile(error))
-                    })
-                    .and_then(|exists| {
-                        if exists {
-                            Project::load_from_path(&project_path).map_err(LoadError::LoadProject)
-                        } else {
-                            Err(LoadError::ProjectNotFound(project_path))
-                        }
-                    })
-            })
+            .map(try_load_project)
             .collect::<Result<Vec<_>, _>>()?,
         })
     }
@@ -43,6 +30,19 @@ impl Solution {
             projects: vec![project],
         }
     }
+}
+
+fn try_load_project(project_path: PathBuf) -> Result<Project, LoadError> {
+    project_path
+        .try_exists()
+        .map_err(|error| LoadError::LoadProject(project::LoadError::ReadProjectFile(error)))
+        .and_then(|exists| {
+            if exists {
+                Project::load_from_path(&project_path).map_err(LoadError::LoadProject)
+            } else {
+                Err(LoadError::ProjectNotFound(project_path))
+            }
+        })
 }
 
 #[derive(Debug)]
