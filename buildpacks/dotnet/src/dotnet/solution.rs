@@ -19,10 +19,13 @@ impl Solution {
             .filter_map(|project_path| {
                 path.parent().map(|dir| {
                     let full_project_path = dir.join(&project_path);
-                    if full_project_path.exists() {
-                        Project::load_from_path(&full_project_path).map_err(LoadError::LoadProject)
-                    } else {
-                        Err(LoadError::ProjectNotFound(full_project_path))
+                    match full_project_path.try_exists() {
+                        Ok(true) => Project::load_from_path(&full_project_path)
+                            .map_err(LoadError::LoadProject),
+                        Ok(false) => Err(LoadError::ProjectNotFound(full_project_path)),
+                        Err(error) => Err(LoadError::LoadProject(
+                            project::LoadError::ReadProjectFile(error),
+                        )),
                     }
                 })
             })
