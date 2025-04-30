@@ -16,9 +16,7 @@ impl Solution {
                 &fs_err::read_to_string(path).map_err(LoadError::ReadSolutionFile)?,
             )
             .into_iter()
-            .filter_map(|relative_project_path| {
-                path.parent().map(|dir| dir.join(&relative_project_path))
-            })
+            .filter_map(|project_path| path.parent().map(|dir| dir.join(&project_path)))
             .map(try_load_project)
             .collect::<Result<Vec<_>, _>>()?,
         })
@@ -32,15 +30,14 @@ impl Solution {
     }
 }
 
-fn try_load_project(project_path: PathBuf) -> Result<Project, LoadError> {
-    project_path
-        .try_exists()
+fn try_load_project(path: PathBuf) -> Result<Project, LoadError> {
+    path.try_exists()
         .map_err(|error| LoadError::LoadProject(project::LoadError::ReadProjectFile(error)))
         .and_then(|exists| {
             if exists {
-                Project::load_from_path(&project_path).map_err(LoadError::LoadProject)
+                Project::load_from_path(&path).map_err(LoadError::LoadProject)
             } else {
-                Err(LoadError::ProjectNotFound(project_path))
+                Err(LoadError::ProjectNotFound(path))
             }
         })
 }
