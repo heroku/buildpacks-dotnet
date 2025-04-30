@@ -18,7 +18,12 @@ impl Solution {
             .into_iter()
             .filter_map(|project_path| {
                 path.parent().map(|dir| {
-                    Project::load_from_path(&dir.join(project_path)).map_err(LoadError::LoadProject)
+                    let full_project_path = dir.join(&project_path);
+                    if full_project_path.exists() {
+                        Project::load_from_path(&full_project_path).map_err(LoadError::LoadProject)
+                    } else {
+                        Err(LoadError::ProjectNotFound(full_project_path))
+                    }
                 })
             })
             .collect::<Result<Vec<_>, _>>()?,
@@ -36,6 +41,7 @@ impl Solution {
 #[derive(Debug)]
 pub(crate) enum LoadError {
     ReadSolutionFile(io::Error),
+    ProjectNotFound(PathBuf),
     LoadProject(project::LoadError),
 }
 
@@ -211,6 +217,7 @@ mod tests {
     fn test_load_from_path_should_return_error_when_project_file_does_not_exist() {
         let temp_dir = tempfile::tempdir().unwrap();
         let solution_path = temp_dir.path().join("test.sln");
+        let missing_project_path = temp_dir.path().join("Project1").join("Project1.csproj");
 
         let solution_content = r#"
         Microsoft Visual Studio Solution File, Format Version 12.00
@@ -220,7 +227,9 @@ mod tests {
         fs::write(&solution_path, solution_content).unwrap();
 
         let result = Solution::load_from_path(&solution_path);
-        assert!(matches!(result, Err(LoadError::LoadProject(_))));
+        assert!(
+            matches!(result, Err(LoadError::ProjectNotFound(path)) if path == missing_project_path)
+        );
     }
 
     #[test]

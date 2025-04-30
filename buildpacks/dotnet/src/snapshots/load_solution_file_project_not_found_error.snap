@@ -1,0 +1,10 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Solution project not found[0m
+[0;31m![0m
+[0;31m! The solution references a project file that does not exist: `src/MyProject/MyProject.csproj`.[0m
+[0;31m![0m
+[0;31m! To resolve this issue,[0m
+[0;31m! * Ensure the project file exists.[0m
+[0;31m! * Or remove the project reference from the solution file.[0m
