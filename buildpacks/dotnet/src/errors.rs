@@ -96,6 +96,27 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     "reading solution project files",
                 );
             }
+            solution::LoadError::ProjectNotFound(project_path) => {
+                log_error_to(
+                    &mut writer,
+                    "Missing project referenced in solution",
+                    formatdoc! {"
+                    The solution references a project file that does not exist: `{}`.
+
+                    This error occurs when a project referenced in the solution file cannot be found at
+                    the expected location. This can happen if:
+                    * The project was moved or renamed.
+                    * The project was deleted but not removed from the solution.
+                    * The project path in the solution file is incorrect.
+
+                    To resolve this issue:
+                    * Verify the project exists at the expected location.
+                    * Update the project reference path in the solution file.
+                    * Or remove the project reference from the solution if it's no longer needed.
+                    ", project_path.to_string_lossy()},
+                    None,
+                );
+            }
         },
         DotnetBuildpackError::LoadProjectFile(error) => {
             on_load_dotnet_project_error_with_writer(
@@ -462,6 +483,15 @@ mod tests {
     fn test_load_solution_file_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
             solution::LoadError::ReadSolutionFile(create_io_error()),
+        ));
+    }
+
+    #[test]
+    fn test_load_solution_file_project_not_found_error() {
+        assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
+            solution::LoadError::ProjectNotFound(std::path::PathBuf::from(
+                "src/MyProject/MyProject.csproj",
+            )),
         ));
     }
 

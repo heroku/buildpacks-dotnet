@@ -16,11 +16,8 @@ impl Solution {
                 &fs_err::read_to_string(path).map_err(LoadError::ReadSolutionFile)?,
             )
             .into_iter()
-            .filter_map(|project_path| {
-                path.parent().map(|dir| {
-                    Project::load_from_path(&dir.join(project_path)).map_err(LoadError::LoadProject)
-                })
-            })
+            .filter_map(|project_path| path.parent().map(|dir| dir.join(&project_path)))
+            .map(try_load_project)
             .collect::<Result<Vec<_>, _>>()?,
         })
     }
@@ -33,9 +30,22 @@ impl Solution {
     }
 }
 
+fn try_load_project(path: PathBuf) -> Result<Project, LoadError> {
+    path.try_exists()
+        .map_err(|error| LoadError::LoadProject(project::LoadError::ReadProjectFile(error)))
+        .and_then(|exists| {
+            if exists {
+                Project::load_from_path(&path).map_err(LoadError::LoadProject)
+            } else {
+                Err(LoadError::ProjectNotFound(path))
+            }
+        })
+}
+
 #[derive(Debug)]
 pub(crate) enum LoadError {
     ReadSolutionFile(io::Error),
+    ProjectNotFound(PathBuf),
     LoadProject(project::LoadError),
 }
 
@@ -89,6 +99,20 @@ mod tests {
         let project_path = project_dir.join(format!("{project_name}.csproj"));
         fs::write(&project_path, SIMPLE_PROJECT_CONTENT).unwrap();
         project_path
+    }
+
+    #[test]
+    fn test_try_load_project_with_invalid_path() {
+        // Create an invalid path with null bytes which will cause try_exists() to fail
+        let invalid_path = PathBuf::from("some\0file.csproj");
+
+        let result = try_load_project(invalid_path);
+        assert!(matches!(
+            result,
+            Err(LoadError::LoadProject(project::LoadError::ReadProjectFile(
+                _
+            )))
+        ));
     }
 
     #[test]
@@ -211,6 +235,7 @@ mod tests {
     fn test_load_from_path_should_return_error_when_project_file_does_not_exist() {
         let temp_dir = tempfile::tempdir().unwrap();
         let solution_path = temp_dir.path().join("test.sln");
+        let missing_project_path = temp_dir.path().join("Project1").join("Project1.csproj");
 
         let solution_content = r#"
         Microsoft Visual Studio Solution File, Format Version 12.00
@@ -220,7 +245,9 @@ mod tests {
         fs::write(&solution_path, solution_content).unwrap();
 
         let result = Solution::load_from_path(&solution_path);
-        assert!(matches!(result, Err(LoadError::LoadProject(_))));
+        assert!(
+            matches!(result, Err(LoadError::ProjectNotFound(path)) if path == missing_project_path)
+        );
     }
 
     #[test]

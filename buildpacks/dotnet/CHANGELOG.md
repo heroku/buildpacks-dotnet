@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Enhance error message for missing project references in solution files to include common causes and detailed resolution steps. ([#259](https://github.com/heroku/buildpacks-dotnet/pull/259))
+
 ## [0.5.0] - 2025-04-14
 
 ### Changed

@@ -1,0 +1,17 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Missing project referenced in solution[0m
+[0;31m![0m
+[0;31m! The solution references a project file that does not exist: `src/MyProject/MyProject.csproj`.[0m
+[0;31m![0m
+[0;31m! This error occurs when a project referenced in the solution file cannot be found at[0m
+[0;31m! the expected location. This can happen if:[0m
+[0;31m! * The project was moved or renamed.[0m
+[0;31m! * The project was deleted but not removed from the solution.[0m
+[0;31m! * The project path in the solution file is incorrect.[0m
+[0;31m![0m
+[0;31m! To resolve this issue:[0m
+[0;31m! * Verify the project exists at the expected location.[0m
+[0;31m! * Update the project reference path in the solution file.[0m
+[0;31m! * Or remove the project reference from the solution if it's no longer needed.[0m
