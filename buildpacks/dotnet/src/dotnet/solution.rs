@@ -16,18 +16,22 @@ impl Solution {
                 &fs_err::read_to_string(path).map_err(LoadError::ReadSolutionFile)?,
             )
             .into_iter()
-            .filter_map(|project_path| {
-                path.parent().map(|dir| {
-                    let full_project_path = dir.join(&project_path);
-                    match full_project_path.try_exists() {
-                        Ok(true) => Project::load_from_path(&full_project_path)
-                            .map_err(LoadError::LoadProject),
-                        Ok(false) => Err(LoadError::ProjectNotFound(full_project_path)),
-                        Err(error) => Err(LoadError::LoadProject(
-                            project::LoadError::ReadProjectFile(error),
-                        )),
-                    }
-                })
+            .filter_map(|relative_project_path| {
+                path.parent().map(|dir| dir.join(&relative_project_path))
+            })
+            .map(|project_path| {
+                project_path
+                    .try_exists()
+                    .map_err(|error| {
+                        LoadError::LoadProject(project::LoadError::ReadProjectFile(error))
+                    })
+                    .and_then(|exists| {
+                        if exists {
+                            Project::load_from_path(&project_path).map_err(LoadError::LoadProject)
+                        } else {
+                            Err(LoadError::ProjectNotFound(project_path))
+                        }
+                    })
             })
             .collect::<Result<Vec<_>, _>>()?,
         })
