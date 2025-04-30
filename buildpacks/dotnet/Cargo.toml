@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 bullet_stream = "0.7"
+fs-err = "3.1.0"
 fun_run = "0.5"
 hex = "0.4"
 indoc = "2"

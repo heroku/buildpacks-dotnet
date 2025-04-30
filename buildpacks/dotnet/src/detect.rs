@@ -1,4 +1,3 @@
-use std::fs::{self};
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -14,7 +13,7 @@ pub(crate) fn get_files_with_extensions(
     dir: &Path,
     extensions: &[&str],
 ) -> Result<Vec<PathBuf>, io::Error> {
-    let project_files = fs::read_dir(dir)?
+    let project_files = fs_err::read_dir(dir)?
         .filter_map(Result::ok)
         .map(|entry| entry.path())
         .filter(|path| path.is_file())
@@ -42,7 +41,7 @@ pub(crate) fn dotnet_tools_manifest_file<P: AsRef<Path>>(dir: P) -> Option<PathB
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::{File, create_dir};
+    use std::fs::{self, File, create_dir};
     use tempfile::TempDir;
 
     #[test]

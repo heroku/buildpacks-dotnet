@@ -1,6 +1,7 @@
 use crate::{DotnetBuildpack, DotnetBuildpackError};
 use bullet_stream::global::print;
 use bullet_stream::style;
+use fs_err::File;
 use inventory::artifact::Artifact;
 use inventory::checksum::Checksum;
 use libcnb::data::layer_name;
@@ -15,7 +16,6 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use std::env::temp_dir;
-use std::fs::{self, File};
 use std::path::Path;
 use std::thread;
 use std::time::Duration;
@@ -105,7 +105,9 @@ pub(crate) fn handle(
 
             print::sub_bullet("Installing SDK");
             decompress_tarball(
-                &mut File::open(&tarball_path).map_err(SdkLayerError::OpenArchive)?,
+                &mut File::open(&tarball_path)
+                    .map_err(SdkLayerError::OpenArchive)?
+                    .into(),
                 sdk_layer.path(),
             )
             .map_err(SdkLayerError::DecompressArchive)?;
@@ -119,7 +121,7 @@ fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<
 where
     D: Digest,
 {
-    let calculated_checksum = fs::read(path.as_ref())
+    let calculated_checksum = fs_err::read(path.as_ref())
         .map(|data| D::digest(data).to_vec())
         .map_err(SdkLayerError::ReadArchive)?;
 

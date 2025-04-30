@@ -1,6 +1,6 @@
 use roxmltree::Document;
+use std::io;
 use std::path::{Path, PathBuf};
-use std::{fs, io};
 
 #[derive(Debug)]
 pub(crate) struct Project {
@@ -13,7 +13,7 @@ pub(crate) struct Project {
 
 impl Project {
     pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadError> {
-        let content = fs::read_to_string(path).map_err(LoadError::ReadProjectFile)?;
+        let content = fs_err::read_to_string(path).map_err(LoadError::ReadProjectFile)?;
         let metadata =
             parse_metadata(&Document::parse(&content).map_err(LoadError::XmlParseError)?);
 
@@ -124,6 +124,7 @@ fn infer_project_type(metadata: &Metadata) -> ProjectType {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     fn assert_metadata(
         project_xml: &str,
