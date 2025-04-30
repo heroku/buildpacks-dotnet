@@ -105,6 +105,20 @@ mod tests {
     }
 
     #[test]
+    fn test_try_load_project_with_invalid_path() {
+        // Create an invalid path with null bytes which will cause try_exists() to fail
+        let invalid_path = PathBuf::from("some\0file.csproj");
+
+        let result = try_load_project(invalid_path);
+        assert!(matches!(
+            result,
+            Err(LoadError::LoadProject(project::LoadError::ReadProjectFile(
+                _
+            )))
+        ));
+    }
+
+    #[test]
     fn test_extract_project_references_should_find_all_projects_in_solution() {
         let project_references = extract_project_references(SOLUTION_WITH_TWO_PROJECTS);
 
