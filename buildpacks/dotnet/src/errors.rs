@@ -99,13 +99,20 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             solution::LoadError::ProjectNotFound(project_path) => {
                 log_error_to(
                     &mut writer,
-                    "Solution project not found",
+                    "Missing project referenced in solution",
                     formatdoc! {"
                     The solution references a project file that does not exist: `{}`.
-    
-                    To resolve this issue,
-                    * Ensure the project file exists.
-                    * Or remove the project reference from the solution file.
+
+                    This error occurs when a project referenced in the solution file cannot be found at
+                    the expected location. This can happen if:
+                    * The project was moved or renamed.
+                    * The project was deleted but not removed from the solution.
+                    * The project path in the solution file is incorrect.
+
+                    To resolve this issue:
+                    * Verify the project exists at the expected location.
+                    * Update the project reference path in the solution file.
+                    * Or remove the project reference from the solution if it's no longer needed.
                     ", project_path.to_string_lossy()},
                     None,
                 );
