@@ -10,9 +10,9 @@ autotests = false
 workspace = true
 
 [dependencies]
-bullet_stream = "0.7"
+bullet_stream = "0.8"
 fs-err = "3.1.0"
-fun_run = "0.5"
+fun_run = "0.6"
 hex = "0.4"
 indoc = "2"
 libcnb = { version = "0.28", features = ["trace"] }
