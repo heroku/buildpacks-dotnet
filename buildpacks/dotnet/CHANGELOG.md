@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Enhance error message for missing project references in solution files to include common causes and detailed resolution steps. ([#259](https://github.com/heroku/buildpacks-dotnet/pull/259))
+- The .NET SDK inventory was updated with new release artifact download URLs. ([#263](https://github.com/heroku/buildpacks-dotnet/pull/263))
 
 ## [0.5.0] - 2025-04-14
 

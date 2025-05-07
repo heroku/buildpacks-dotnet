@@ -1,4 +1,6 @@
 use crate::tests::default_build_config;
+use crate::tests::get_dotnet_arch;
+use indoc::formatdoc;
 use indoc::indoc;
 use libcnb_test::{BuildpackReference, TestRunner, assert_contains, assert_empty};
 
@@ -89,60 +91,30 @@ fn test_sdk_basic_install_build_environment() {
     });
 }
 
-#[cfg(target_arch = "x86_64")]
 #[test]
 #[ignore = "integration test"]
 fn test_sdk_installation_with_global_json() {
+    let dotnet_arch = get_dotnet_arch();
+    let artifact_arch = match dotnet_arch.as_str() {
+        "x64" => "amd64",
+        "arm64" => "arm64",
+        _ => panic!("Unsupported architecture for this test: {dotnet_arch}"),
+    };
     TestRunner::default().build(
         default_build_config("tests/fixtures/basic_web_8.0_with_global_json"),
         |context| {
             assert_empty!(context.pack_stderr);
             assert_contains!(
                 context.pack_stdout,
-                &indoc! {r"
+                &formatdoc!("
                     - SDK version detection
                       - Detected .NET project: `/workspace/foo.csproj`
                       - Detecting version requirement from root global.json file
                       - Detected version requirement: `=8.0.101`
-                      - Resolved .NET SDK version `8.0.101` (linux-amd64)
+                      - Resolved .NET SDK version `8.0.101` (linux-{artifact_arch})
                     - SDK installation
-                      - Downloading SDK from https://download.visualstudio.microsoft.com/download/pr/9454f7dc-b98e-4a64-a96d-4eb08c7b6e66/da76f9c6bc4276332b587b771243ae34/dotnet-sdk-8.0.101-linux-x64.tar.gz"
-                }
-            );
-            assert_contains!(
-                context.pack_stdout,
-                indoc! {r"
-                    - Verifying SDK checksum
-                      - Installing SDK"}
-            );
-            // Verify SDK caching behavior
-            let config = context.config.clone();
-            context.rebuild(config, |ctx| {
-                assert_contains!(ctx.pack_stdout, "Reusing cached SDK (version 8.0.101)");
-            });
-        },
-    );
-}
-
-#[cfg(target_arch = "aarch64")]
-#[test]
-#[ignore = "integration test"]
-fn test_sdk_installation_with_global_json() {
-    TestRunner::default().build(
-        default_build_config("tests/fixtures/basic_web_8.0_with_global_json"),
-        |context| {
-            assert_empty!(context.pack_stderr);
-            assert_contains!(
-                context.pack_stdout,
-                &indoc! {r"
-                    - SDK version detection
-                      - Detected .NET project: `/workspace/foo.csproj`
-                      - Detecting version requirement from root global.json file
-                      - Detected version requirement: `=8.0.101`
-                      - Resolved .NET SDK version `8.0.101` (linux-arm64)
-                    - SDK installation
-                      - Downloading SDK from https://download.visualstudio.microsoft.com/download/pr/092bec24-9cad-421d-9b43-458b3a7549aa/84280dbd1eef750f9ed1625339235c22/dotnet-sdk-8.0.101-linux-arm64.tar.gz"
-                }
+                      - Downloading SDK from https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.101/dotnet-sdk-8.0.101-linux-{dotnet_arch}.tar.gz"
+                )
             );
             assert_contains!(
                 context.pack_stdout,
