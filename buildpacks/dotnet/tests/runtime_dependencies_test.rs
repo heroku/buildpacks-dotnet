@@ -12,7 +12,7 @@ fn verify_installed_dotnet_runtime_dependencies() {
             indoc! {r#"
                 set -euo pipefail
                 
-                # Check all required dynamically linked libraries can be found in the run image.
+                # Check that all required dynamically linked libraries can be found in the run image.
 
                 # Capture ldd output for `dotnet` executables and `*.so*` shared libraries in `/layers`.
                 ldd_output=$(find /layers -type f,l \( -name 'dotnet' -o -name '*.so*' \) -exec ldd '{}' +)
