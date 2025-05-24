@@ -731,7 +731,7 @@ mod tests {
     }
 
     fn create_io_error() -> io::Error {
-        std::io::Error::new(io::ErrorKind::Other, "foo bar baz")
+        std::io::Error::other("foo bar baz")
     }
 
     fn create_xml_parse_error() -> roxmltree::Error {
