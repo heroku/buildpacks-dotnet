@@ -137,7 +137,6 @@ version = "0.0.0"
 dependencies = [
  "bullet_stream",
  "fs-err",
- "fun_run",
  "hex",
  "indoc",
  "insta",

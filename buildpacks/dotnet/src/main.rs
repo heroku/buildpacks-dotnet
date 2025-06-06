@@ -18,9 +18,9 @@ use crate::dotnet_buildpack_configuration::{
 };
 use crate::dotnet_sdk_command::{DotnetPublishCommand, DotnetTestCommand};
 use crate::layers::sdk::SdkLayerError;
+use bullet_stream::fun_run::{self, CommandWithName};
 use bullet_stream::global::print;
 use bullet_stream::style;
-use fun_run::CommandWithName;
 use indoc::formatdoc;
 use inventory::artifact::{Arch, Os};
 use inventory::{Inventory, ParseInventoryError};
