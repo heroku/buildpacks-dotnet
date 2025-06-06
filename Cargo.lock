@@ -137,7 +137,6 @@ version = "0.0.0"
 dependencies = [
  "bullet_stream",
  "fs-err",
- "fun_run",
  "hex",
  "indoc",
  "insta",
@@ -158,9 +157,9 @@ dependencies = [
 
 [[package]]
 name = "bullet_stream"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adc54f3252b0ff30201f78a466a017afef4da0ec6c669efcabef8d4cec7c0d58"
+checksum = "ae7337274016b4da8eaf8ab3cfb51540cafcc2cc486a68d9bfcc8e53ff61aa1b"
 dependencies = [
  "fun_run",
 ]

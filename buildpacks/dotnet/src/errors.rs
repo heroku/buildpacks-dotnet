@@ -5,7 +5,7 @@ use crate::dotnet_buildpack_configuration::{
     DotnetBuildpackConfigurationError, ExecutionEnvironmentError,
 };
 use crate::layers::sdk::SdkLayerError;
-use bullet_stream::{Print, style};
+use bullet_stream::{Print, fun_run, style};
 use indoc::formatdoc;
 use std::io::{self, Write};
 
