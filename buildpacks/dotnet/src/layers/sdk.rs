@@ -94,7 +94,7 @@ pub(crate) fn handle(
                     }
                     result => {
                         result.map_err(SdkLayerError::DownloadArchive)?;
-                        let _ = log_background_bullet.done();
+                        log_background_bullet.done();
                         break;
                     }
                 }
