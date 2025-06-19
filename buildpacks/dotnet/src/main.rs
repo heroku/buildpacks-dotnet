@@ -39,6 +39,7 @@ use std::io;
 use std::io::{Write, stderr};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use tracing::instrument;
 
 struct DotnetBuildpack;
 
@@ -224,6 +225,11 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
+#[instrument(skip_all, err(Debug), fields(
+    target.os = %target.os,
+    target.arch = %target.arch,
+    sdk.version_requirement = %sdk_version_requirement,
+))]
 fn resolve_sdk_artifact(
     target: &Target,
     sdk_version_requirement: VersionReq,
@@ -251,6 +257,7 @@ fn resolve_sdk_artifact(
         })
 }
 
+#[instrument(skip_all, err(Debug))]
 fn detect_sdk_version_requirement(
     context: &BuildContext<DotnetBuildpack>,
     solution: &Solution,
@@ -266,8 +273,7 @@ fn detect_sdk_version_requirement(
             },
             |sdk_config| {
                 print::sub_bullet("Detecting version requirement from root global.json file");
-                VersionReq::try_from(sdk_config)
-                    .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)
+                parse_global_json_requirement(sdk_config)
             },
         )
         .inspect(|version_req| {
@@ -276,6 +282,16 @@ fn detect_sdk_version_requirement(
                 style::value(version_req.to_string())
             ));
         })
+}
+
+#[instrument(skip_all, err(Debug), fields(
+    dotnet.sdk.version_requirement_source = "global.json",
+))]
+fn parse_global_json_requirement(
+    sdk_config: SdkConfig,
+) -> Result<VersionReq, DotnetBuildpackError> {
+    VersionReq::try_from(sdk_config)
+        .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)
 }
 
 fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackError> {
@@ -311,6 +327,9 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
     }
 }
 
+#[instrument(skip_all, err(Debug), fields(
+    solution.path = %solution.path.display(),
+))]
 fn get_solution_sdk_version_requirement(
     solution: &Solution,
 ) -> Result<VersionReq, DotnetBuildpackError> {

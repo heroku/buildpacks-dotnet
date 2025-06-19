@@ -19,6 +19,7 @@ use std::env::temp_dir;
 use std::path::Path;
 use std::thread;
 use std::time::Duration;
+use tracing::{Span, instrument};
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SdkLayerMetadata {
@@ -31,7 +32,15 @@ pub(crate) enum CustomCause {
 }
 
 const MAX_RETRIES: u8 = 4;
+const RETRY_DELAY: Duration = Duration::from_secs(1);
 
+#[instrument(skip_all, name = "buildpack.layer.handle", err(Debug), fields(
+    layer.name = "sdk",
+    dotnet.sdk.version = %artifact.version,
+    dotnet.sdk.os = %artifact.os,
+    dotnet.sdk.arch = %artifact.arch,
+    layer.cache.hit = false,
+))]
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
     available_at_launch: bool,
@@ -60,6 +69,7 @@ pub(crate) fn handle(
 
     match sdk_layer.state {
         LayerState::Restored { .. } => {
+            Span::current().record("layer.cache.hit", true);
             print::sub_bullet(format!("Reusing cached SDK (version {})", artifact.version));
         }
         LayerState::Empty { ref cause } => {
@@ -77,62 +87,94 @@ pub(crate) fn handle(
                 artifact: artifact.clone(),
             })?;
 
-            let mut log_background_bullet = print::sub_start_timer(format!(
-                "Downloading SDK from {}",
-                style::url(artifact.clone().url)
-            ));
-
             let tarball_path = temp_dir().join("dotnetsdk.tar.gz");
-            let mut download_attempts = 0;
-            while download_attempts <= MAX_RETRIES {
-                match download_file(&artifact.url, &tarball_path) {
-                    Err(DownloadError::IoError(error)) if download_attempts < MAX_RETRIES => {
-                        let sub_bullet = log_background_bullet.cancel(format!("{error}"));
-                        download_attempts += 1;
-                        thread::sleep(Duration::from_secs(1));
-                        log_background_bullet = sub_bullet.start_timer("Retrying");
-                    }
-                    result => {
-                        result.map_err(SdkLayerError::DownloadArchive)?;
-                        log_background_bullet.done();
-                        break;
-                    }
-                }
-            }
 
-            print::sub_bullet("Verifying SDK checksum");
-            verify_checksum(&artifact.checksum, &tarball_path)?;
-
-            print::sub_bullet("Installing SDK");
-            decompress_tarball(
-                &mut File::open(&tarball_path)
-                    .map_err(SdkLayerError::OpenArchive)?
-                    .into(),
-                sdk_layer.path(),
-            )
-            .map_err(SdkLayerError::DecompressArchive)?;
+            download_sdk(artifact, &tarball_path)
+                .and_then(|()| verify_checksum(&artifact.checksum, &tarball_path))
+                .and_then(|()| extract_archive(&tarball_path, &sdk_layer.path()))?;
         }
     }
 
     Ok(sdk_layer)
 }
 
+#[instrument(skip_all, err(Debug), fields(
+    artifact.url = %artifact.url
+))]
+fn download_sdk(
+    artifact: &Artifact<Version, Sha512, Option<()>>,
+    path: &Path,
+) -> Result<(), SdkLayerError> {
+    let mut log_progress = print::sub_start_timer(format!(
+        "Downloading SDK from {}",
+        style::url(&artifact.url)
+    ));
+
+    for attempt in 0..=MAX_RETRIES {
+        if let Err(error) = download_attempt(&artifact.url, path) {
+            let sub_bullet = log_progress.cancel(format!("failed: {error}"));
+            if let DownloadError::IoError { .. } = error {
+                if attempt < MAX_RETRIES {
+                    thread::sleep(RETRY_DELAY);
+                    log_progress = sub_bullet.start_timer("Retrying download");
+                    continue;
+                }
+            }
+            return Err(SdkLayerError::DownloadArchive(error));
+        }
+        break;
+    }
+    log_progress.done();
+    Ok(())
+}
+
+#[instrument(skip_all, err(Debug), fields(
+    http.request.method = "GET",
+    url.full = %url,
+))]
+fn download_attempt(url: &str, destination: &Path) -> Result<(), DownloadError> {
+    download_file(url, destination)
+}
+
+#[instrument(skip_all, err(Debug), fields(
+    file.path = %path.as_ref().display(),
+    checksum.algorithm = %checksum.name,
+))]
 fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>
 where
     D: Digest,
 {
+    print::sub_bullet("Verifying SDK checksum");
     let calculated_checksum = fs_err::read(path.as_ref())
-        .map(|data| D::digest(data).to_vec())
-        .map_err(SdkLayerError::ReadArchive)?;
+        .map_err(SdkLayerError::ReadArchive)
+        .map(D::digest)?
+        .to_vec();
 
     if calculated_checksum == checksum.value {
         Ok(())
     } else {
         Err(SdkLayerError::VerifyArchiveChecksum {
-            expected: checksum.value.clone(),
             actual: calculated_checksum,
+            expected: checksum.value.clone(),
         })
     }
+}
+
+#[instrument(skip_all, err(Debug), fields(
+    archive.format = "tar.gz",
+    file.path = %source_path.display(),
+    destination.path = %destination_path.display(),
+))]
+fn extract_archive(source_path: &Path, destination_path: &Path) -> Result<(), SdkLayerError> {
+    print::sub_bullet("Installing SDK");
+
+    decompress_tarball(
+        &mut File::open(source_path)
+            .map_err(SdkLayerError::OpenArchive)?
+            .into(),
+        destination_path,
+    )
+    .map_err(SdkLayerError::DecompressArchive)
 }
 
 #[derive(Debug)]
