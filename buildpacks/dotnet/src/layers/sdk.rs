@@ -99,7 +99,7 @@ fn download_sdk(
         let message = if attempt == 0 {
             format!("Downloading SDK from {}", style::url(&artifact.url))
         } else {
-            "Retrying download".to_string()
+            format!("Retrying download ({}/{})", attempt + 1, MAX_RETRIES + 1)
         };
         let log_progress = print::sub_start_timer(message);
 
