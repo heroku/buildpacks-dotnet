@@ -109,10 +109,7 @@ fn download_sdk(
 
         let download_result = download_file(&artifact.url, path);
         match download_result {
-            Err(DownloadError::IoError(ref error)) => {
-                log_progress.cancel(format!("Failed: {error}"))
-            }
-            Err(DownloadError::HttpError(_)) => unimplemented!(), // TODO: Added this match arm for refactoring (to show the previous lack of log_progress state handling for this failure mode).
+            Err(ref error) => log_progress.cancel(format!("Failed: {error}")),
             Ok(()) => log_progress.done(),
         };
         match download_result {
