@@ -106,7 +106,7 @@ fn download_sdk(
                 let sub_bullet = log_progress.cancel(format!("{error}"));
                 attempt += 1;
                 thread::sleep(Duration::from_secs(1));
-                log_progress = sub_bullet.start_timer("Retrying");
+                log_progress = sub_bullet.start_timer("Retrying download");
             }
             result => {
                 result.map_err(SdkLayerError::DownloadArchive)?;
