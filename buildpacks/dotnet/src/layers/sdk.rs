@@ -77,12 +77,12 @@ pub(crate) fn handle(
                 artifact: artifact.clone(),
             })?;
 
+            let tarball_path = temp_dir().join("dotnetsdk.tar.gz");
+
             let mut log_background_bullet = print::sub_start_timer(format!(
                 "Downloading SDK from {}",
                 style::url(artifact.clone().url)
             ));
-
-            let tarball_path = temp_dir().join("dotnetsdk.tar.gz");
             let mut download_attempts = 0;
             while download_attempts <= MAX_RETRIES {
                 match download_file(&artifact.url, &tarball_path) {
