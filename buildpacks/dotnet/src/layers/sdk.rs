@@ -9,7 +9,7 @@ use libcnb::layer::{
     CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerRef, LayerState,
     RestoredLayerAction,
 };
-use libherokubuildpack::download::{DownloadError, download_file};
+use libherokubuildpack::download::DownloadError;
 use libherokubuildpack::inventory;
 use libherokubuildpack::tar::decompress_tarball;
 use retry::delay::Fixed;
@@ -114,7 +114,7 @@ fn download_sdk(
         };
         let log_progress = print::sub_start_timer(message);
 
-        match download_attempt(&artifact.url, path) {
+        match download_file(&artifact.url, path) {
             Ok(()) => {
                 log_progress.done();
                 OperationResult::Ok(())
@@ -135,8 +135,8 @@ fn download_sdk(
     http.request.method = "GET",
     url.full = %url,
 ))]
-fn download_attempt(url: &str, destination: &Path) -> Result<(), DownloadError> {
-    download_file(url, destination)
+fn download_file(url: &str, destination: &Path) -> Result<(), DownloadError> {
+    libherokubuildpack::download::download_file(url, destination)
 }
 
 #[instrument(skip_all, err(Debug), fields(
