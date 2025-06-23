@@ -109,8 +109,8 @@ fn download_sdk(
 
         let download_result = download_file(&artifact.url, path);
         match download_result {
-            Err(ref error) => log_progress.cancel(format!("Failed: {error}")),
             Ok(()) => log_progress.done(),
+            Err(ref error) => log_progress.cancel(format!("Failed: {error}")),
         };
         match download_result {
             Err(DownloadError::IoError(_)) if attempt_index < MAX_RETRIES => {
