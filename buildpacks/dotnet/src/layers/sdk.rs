@@ -103,7 +103,7 @@ fn download_sdk(
     while attempt <= MAX_RETRIES {
         match download_file(&artifact.url, path) {
             Err(DownloadError::IoError(error)) if attempt < MAX_RETRIES => {
-                let sub_bullet = log_progress.cancel(format!("{error}"));
+                let sub_bullet = log_progress.cancel(format!("Failed: {error}"));
                 attempt += 1;
                 thread::sleep(Duration::from_secs(1));
                 log_progress = sub_bullet.start_timer("Retrying download");
