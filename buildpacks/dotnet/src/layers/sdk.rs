@@ -103,14 +103,7 @@ pub(crate) fn handle(
             print::sub_bullet("Verifying SDK checksum");
             verify_checksum(&artifact.checksum, &tarball_path)?;
 
-            print::sub_bullet("Installing SDK");
-            decompress_tarball(
-                &mut File::open(&tarball_path)
-                    .map_err(SdkLayerError::OpenArchive)?
-                    .into(),
-                sdk_layer.path(),
-            )
-            .map_err(SdkLayerError::DecompressArchive)?;
+            extract_archive(&tarball_path, &sdk_layer.path())?;
         }
     }
 
@@ -133,6 +126,18 @@ where
             actual: calculated_checksum,
         })
     }
+}
+
+fn extract_archive(source_path: &Path, destination_path: &Path) -> Result<(), SdkLayerError> {
+    print::sub_bullet("Installing SDK");
+
+    decompress_tarball(
+        &mut File::open(source_path)
+            .map_err(SdkLayerError::OpenArchive)?
+            .into(),
+        destination_path,
+    )
+    .map_err(SdkLayerError::DecompressArchive)
 }
 
 #[derive(Debug)]
