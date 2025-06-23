@@ -109,13 +109,18 @@ fn download_sdk(
 
         let download_result = download_file(&artifact.url, path);
         match download_result {
-            Err(DownloadError::IoError(error)) if attempt_index < MAX_RETRIES => {
-                log_progress.cancel(format!("Failed: {error}"));
+            Err(DownloadError::IoError(ref error)) => {
+                log_progress.cancel(format!("Failed: {error}"))
+            }
+            Err(DownloadError::HttpError(_)) => unimplemented!(), // TODO: Added this match arm for refactoring (to show the previous lack of log_progress state handling for this failure mode).
+            Ok(()) => log_progress.done(),
+        };
+        match download_result {
+            Err(DownloadError::IoError(_)) if attempt_index < MAX_RETRIES => {
                 thread::sleep(Duration::from_secs(1));
             }
             result => {
                 result.map_err(SdkLayerError::DownloadArchive)?;
-                log_progress.done();
                 break;
             }
         }
