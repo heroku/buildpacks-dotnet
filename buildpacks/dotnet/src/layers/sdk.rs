@@ -116,18 +116,17 @@ fn download_sdk(
         };
         let log_progress = print::sub_start_timer(message);
 
-        match download_file(&artifact.url, path) {
-            Ok(()) => {
-                log_progress.done();
-                OperationResult::Ok(())
-            }
-            Err(error) => {
-                log_progress.cancel(format!("failed: {error}"));
-                match error {
-                    DownloadError::HttpError(_) => OperationResult::Err(error),
-                    DownloadError::IoError(_) => OperationResult::Retry(error),
-                }
-            }
+        let download_result = download_file(&artifact.url, path);
+        match download_result {
+            Ok(()) => log_progress.done(),
+            Err(ref error) => log_progress.cancel(format!("failed: {error}")),
+        };
+        match download_result {
+            Ok(()) => OperationResult::Ok(()),
+            Err(error) => match error {
+                DownloadError::HttpError(_) => OperationResult::Err(error),
+                DownloadError::IoError(_) => OperationResult::Retry(error),
+            },
         }
     })
     .map_err(|error| SdkLayerError::DownloadArchive(error.error))
