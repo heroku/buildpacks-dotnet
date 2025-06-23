@@ -101,7 +101,7 @@ fn download_sdk(
     ));
     let mut attempt = 0;
     while attempt <= MAX_RETRIES {
-        match download_file(&artifact.url, &path) {
+        match download_file(&artifact.url, path) {
             Err(DownloadError::IoError(error)) if attempt < MAX_RETRIES => {
                 let sub_bullet = log_progress.cancel(format!("{error}"));
                 attempt += 1;
