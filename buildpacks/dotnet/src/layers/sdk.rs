@@ -99,12 +99,10 @@ fn download_sdk(
         "Downloading SDK from {}",
         style::url(artifact.clone().url)
     ));
-    let mut attempt = 0;
-    while attempt <= MAX_RETRIES {
+    for attempt in 0..=MAX_RETRIES {
         match download_file(&artifact.url, path) {
             Err(DownloadError::IoError(error)) if attempt < MAX_RETRIES => {
                 let sub_bullet = log_progress.cancel(format!("Failed: {error}"));
-                attempt += 1;
                 thread::sleep(Duration::from_secs(1));
                 log_progress = sub_bullet.start_timer("Retrying download");
             }
