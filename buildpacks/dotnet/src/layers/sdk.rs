@@ -79,26 +79,7 @@ pub(crate) fn handle(
 
             let tarball_path = temp_dir().join("dotnetsdk.tar.gz");
 
-            let mut log_background_bullet = print::sub_start_timer(format!(
-                "Downloading SDK from {}",
-                style::url(artifact.clone().url)
-            ));
-            let mut download_attempts = 0;
-            while download_attempts <= MAX_RETRIES {
-                match download_file(&artifact.url, &tarball_path) {
-                    Err(DownloadError::IoError(error)) if download_attempts < MAX_RETRIES => {
-                        let sub_bullet = log_background_bullet.cancel(format!("{error}"));
-                        download_attempts += 1;
-                        thread::sleep(Duration::from_secs(1));
-                        log_background_bullet = sub_bullet.start_timer("Retrying");
-                    }
-                    result => {
-                        result.map_err(SdkLayerError::DownloadArchive)?;
-                        log_background_bullet.done();
-                        break;
-                    }
-                }
-            }
+            download_sdk(artifact, &tarball_path)?;
 
             print::sub_bullet("Verifying SDK checksum");
             verify_checksum(&artifact.checksum, &tarball_path)?;
@@ -108,6 +89,33 @@ pub(crate) fn handle(
     }
 
     Ok(sdk_layer)
+}
+
+fn download_sdk(
+    artifact: &Artifact<Version, Sha512, Option<()>>,
+    path: &Path,
+) -> Result<(), SdkLayerError> {
+    let mut log_background_bullet = print::sub_start_timer(format!(
+        "Downloading SDK from {}",
+        style::url(artifact.clone().url)
+    ));
+    let mut download_attempts = 0;
+    while download_attempts <= MAX_RETRIES {
+        match download_file(&artifact.url, &path) {
+            Err(DownloadError::IoError(error)) if download_attempts < MAX_RETRIES => {
+                let sub_bullet = log_background_bullet.cancel(format!("{error}"));
+                download_attempts += 1;
+                thread::sleep(Duration::from_secs(1));
+                log_background_bullet = sub_bullet.start_timer("Retrying");
+            }
+            result => {
+                result.map_err(SdkLayerError::DownloadArchive)?;
+                log_background_bullet.done();
+                break;
+            }
+        }
+    }
+    Ok(())
 }
 
 fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>
