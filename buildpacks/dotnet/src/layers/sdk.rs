@@ -95,16 +95,18 @@ fn download_sdk(
     artifact: &Artifact<Version, Sha512, Option<()>>,
     path: &Path,
 ) -> Result<(), SdkLayerError> {
-    let mut log_progress = print::sub_start_timer(format!(
-        "Downloading SDK from {}",
-        style::url(artifact.clone().url)
-    ));
     for attempt in 0..=MAX_RETRIES {
+        let message = if attempt == 0 {
+            format!("Downloading SDK from {}", style::url(&artifact.url))
+        } else {
+            "Retrying download".to_string()
+        };
+        let log_progress = print::sub_start_timer(message);
+
         match download_file(&artifact.url, path) {
             Err(DownloadError::IoError(error)) if attempt < MAX_RETRIES => {
-                let sub_bullet = log_progress.cancel(format!("Failed: {error}"));
+                log_progress.cancel(format!("Failed: {error}"));
                 thread::sleep(Duration::from_secs(1));
-                log_progress = sub_bullet.start_timer("Retrying download");
             }
             result => {
                 result.map_err(SdkLayerError::DownloadArchive)?;
