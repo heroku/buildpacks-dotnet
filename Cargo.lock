@@ -144,6 +144,7 @@ dependencies = [
  "libcnb-test",
  "libherokubuildpack",
  "regex",
+ "retry",
  "roxmltree",
  "semver",
  "serde",
@@ -1407,6 +1408,12 @@ name = "regex-syntax"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
+
+[[package]]
+name = "retry"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1e211f878258887b3e65dd3c8ff9f530fe109f441a117ee0cdc27f341355032"
 
 [[package]]
 name = "ring"

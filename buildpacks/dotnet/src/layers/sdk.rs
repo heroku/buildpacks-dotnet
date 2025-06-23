@@ -12,12 +12,13 @@ use libcnb::layer::{
 use libherokubuildpack::download::{DownloadError, download_file};
 use libherokubuildpack::inventory;
 use libherokubuildpack::tar::decompress_tarball;
+use retry::delay::Fixed;
+use retry::{OperationResult, retry_with_index};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use std::env::temp_dir;
 use std::path::Path;
-use std::thread;
 use std::time::Duration;
 use tracing::{Span, instrument};
 
@@ -31,7 +32,7 @@ pub(crate) enum CustomCause {
     DifferentSdkArtifact(Artifact<Version, Sha512, Option<()>>),
 }
 
-const MAX_RETRIES: u8 = 4;
+const MAX_RETRIES: usize = 4;
 const RETRY_DELAY: Duration = Duration::from_secs(1);
 
 #[instrument(skip_all, name = "buildpack.layer.handle", err(Debug), fields(
@@ -105,27 +106,29 @@ fn download_sdk(
     artifact: &Artifact<Version, Sha512, Option<()>>,
     path: &Path,
 ) -> Result<(), SdkLayerError> {
-    let mut log_progress = print::sub_start_timer(format!(
-        "Downloading SDK from {}",
-        style::url(&artifact.url)
-    ));
+    retry_with_index(Fixed::from(RETRY_DELAY).take(MAX_RETRIES), |attempt| {
+        let message = if attempt == 1 {
+            format!("Downloading SDK from {}", style::url(&artifact.url))
+        } else {
+            format!("Retrying download ({attempt}/{})", MAX_RETRIES + 1)
+        };
+        let log_progress = print::sub_start_timer(message);
 
-    for attempt in 0..=MAX_RETRIES {
-        if let Err(error) = download_attempt(&artifact.url, path) {
-            let sub_bullet = log_progress.cancel(format!("failed: {error}"));
-            if let DownloadError::IoError { .. } = error {
-                if attempt < MAX_RETRIES {
-                    thread::sleep(RETRY_DELAY);
-                    log_progress = sub_bullet.start_timer("Retrying download");
-                    continue;
+        match download_attempt(&artifact.url, path) {
+            Ok(()) => {
+                log_progress.done();
+                OperationResult::Ok(())
+            }
+            Err(error) => {
+                log_progress.cancel(format!("failed: {error}"));
+                match error {
+                    DownloadError::HttpError(_) => OperationResult::Err(error),
+                    DownloadError::IoError(_) => OperationResult::Retry(error),
                 }
             }
-            return Err(SdkLayerError::DownloadArchive(error));
         }
-        break;
-    }
-    log_progress.done();
-    Ok(())
+    })
+    .map_err(|error| SdkLayerError::DownloadArchive(error.error))
 }
 
 #[instrument(skip_all, err(Debug), fields(
