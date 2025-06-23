@@ -12,7 +12,6 @@ use libcnb::layer::{
 use libherokubuildpack::download::DownloadError;
 use libherokubuildpack::inventory;
 use libherokubuildpack::tar::decompress_tarball;
-use retry::delay::Fixed;
 use retry::{OperationResult, retry_with_index};
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -106,7 +105,8 @@ fn download_sdk(
     artifact: &Artifact<Version, Sha512, Option<()>>,
     path: &Path,
 ) -> Result<(), SdkLayerError> {
-    retry_with_index(Fixed::from(RETRY_DELAY).take(MAX_RETRIES), |attempt| {
+    let strategy = retry::delay::Fixed::from(RETRY_DELAY).take(MAX_RETRIES);
+    retry_with_index(strategy, |attempt| {
         let message = if attempt == 1 {
             format!("Downloading SDK from {}", style::url(&artifact.url))
         } else {
