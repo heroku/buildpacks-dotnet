@@ -107,7 +107,8 @@ fn download_sdk(
         };
         let log_progress = print::sub_start_timer(message);
 
-        match download_file(&artifact.url, path) {
+        let download_result = download_file(&artifact.url, path);
+        match download_result {
             Err(DownloadError::IoError(error)) if attempt_index < MAX_RETRIES => {
                 log_progress.cancel(format!("Failed: {error}"));
                 thread::sleep(Duration::from_secs(1));
