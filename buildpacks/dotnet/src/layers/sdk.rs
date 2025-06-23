@@ -107,11 +107,12 @@ fn download_sdk(
     path: &Path,
 ) -> Result<(), SdkLayerError> {
     let retry_strategy = Fixed::from(RETRY_DELAY).take(MAX_RETRIES);
-    retry_with_index(retry_strategy, |current_attempt| {
-        let message = if current_attempt == 1 {
+    retry_with_index(retry_strategy, |attempt_index| {
+        // The `attempt_index` received from `retry_with_index` is 1-based
+        let message = if attempt_index == 1 {
             format!("Downloading SDK from {}", style::url(&artifact.url))
         } else {
-            format!("Retrying download ({current_attempt}/{})", MAX_RETRIES + 1)
+            format!("Retrying download ({attempt_index}/{})", MAX_RETRIES + 1)
         };
         let log_progress = print::sub_start_timer(message);
 
