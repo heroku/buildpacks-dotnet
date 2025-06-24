@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.5] - 2025-06-24
+
 ### Removed
 
 - A warning about breaking launch process type name changes (introduced in version [0.5.0](#050---2025-04-14)) is no longer written to the buildpack log output. ([#275](https://github.com/heroku/buildpacks-dotnet/pull/275))
@@ -209,7 +211,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.4...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.5...HEAD
+[0.5.5]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.1...v0.5.2
