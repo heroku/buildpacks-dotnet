@@ -113,13 +113,13 @@ fn download_sdk(
             Err(ref error) => log_progress.cancel(format!("Failed: {error}")),
         };
         match download_result {
+            Ok(()) => break,
             Err(DownloadError::IoError(_)) if attempt_index < MAX_RETRIES => {
                 thread::sleep(Duration::from_secs(1));
             }
             Err(error) => {
                 Err(SdkLayerError::DownloadArchive(error))?;
             }
-            Ok(()) => break,
         }
     }
     Ok(())
