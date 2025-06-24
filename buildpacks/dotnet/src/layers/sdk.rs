@@ -126,8 +126,9 @@ where
     D: Digest,
 {
     let calculated_checksum = fs_err::read(path.as_ref())
-        .map(|data| D::digest(data).to_vec())
-        .map_err(SdkLayerError::ReadArchive)?;
+        .map_err(SdkLayerError::ReadArchive)
+        .map(D::digest)?
+        .to_vec();
 
     if calculated_checksum == checksum.value {
         Ok(())
