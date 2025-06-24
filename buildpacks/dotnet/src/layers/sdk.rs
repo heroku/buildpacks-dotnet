@@ -116,10 +116,10 @@ fn download_sdk(
             Err(DownloadError::IoError(_)) if attempt_index < MAX_RETRIES => {
                 thread::sleep(Duration::from_secs(1));
             }
-            result => {
-                result.map_err(SdkLayerError::DownloadArchive)?;
-                break;
+            Err(error) => {
+                Err(SdkLayerError::DownloadArchive(error))?;
             }
+            Ok(()) => break,
         }
     }
     Ok(())
