@@ -30,7 +30,7 @@ pub(crate) enum CustomCause {
     DifferentSdkArtifact(Artifact<Version, Sha512, Option<()>>),
 }
 
-const MAX_RETRIES: u8 = 4;
+const MAX_RETRIES: usize = 4;
 const RETRY_DELAY: Duration = Duration::from_secs(1);
 
 pub(crate) fn handle(
