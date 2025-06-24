@@ -31,6 +31,7 @@ pub(crate) enum CustomCause {
 }
 
 const MAX_RETRIES: u8 = 4;
+const RETRY_DELAY: Duration = Duration::from_secs(1);
 
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
@@ -115,7 +116,7 @@ fn download_sdk(
         match download_result {
             Ok(()) => break,
             Err(DownloadError::IoError(_)) if attempt_index < MAX_RETRIES => {
-                thread::sleep(Duration::from_secs(1));
+                thread::sleep(RETRY_DELAY);
             }
             Err(error) => {
                 Err(SdkLayerError::DownloadArchive(error))?;
