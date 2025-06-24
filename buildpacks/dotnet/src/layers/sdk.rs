@@ -12,12 +12,13 @@ use libcnb::layer::{
 use libherokubuildpack::download::{DownloadError, download_file};
 use libherokubuildpack::inventory;
 use libherokubuildpack::tar::decompress_tarball;
+use retry::delay::Fixed;
+use retry::{OperationResult, retry_with_index};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha512};
 use std::env::temp_dir;
 use std::path::Path;
-use std::thread;
 use std::time::Duration;
 
 #[derive(Serialize, Deserialize)]
@@ -96,15 +97,13 @@ fn download_sdk(
     artifact: &Artifact<Version, Sha512, Option<()>>,
     path: &Path,
 ) -> Result<(), SdkLayerError> {
-    for attempt_index in 0..=MAX_RETRIES {
-        let message = if attempt_index == 0 {
+    let retry_strategy = Fixed::from(RETRY_DELAY).take(MAX_RETRIES);
+    retry_with_index(retry_strategy, |attempt_index| {
+        // The `retry_with_index` function provides a 1-based `attempt_index` (so the first try is 1).
+        let message = if attempt_index == 1 {
             format!("Downloading SDK from {}", style::url(&artifact.url))
         } else {
-            format!(
-                "Retrying download ({}/{})",
-                attempt_index + 1,
-                MAX_RETRIES + 1
-            )
+            format!("Retrying download ({attempt_index}/{})", MAX_RETRIES + 1)
         };
         let log_progress = print::sub_start_timer(message);
 
@@ -114,16 +113,12 @@ fn download_sdk(
             Err(ref error) => log_progress.cancel(format!("Failed: {error}")),
         };
         match download_result {
-            Ok(()) => break,
-            Err(DownloadError::IoError(_)) if attempt_index < MAX_RETRIES => {
-                thread::sleep(RETRY_DELAY);
-            }
-            Err(error) => {
-                Err(SdkLayerError::DownloadArchive(error))?;
-            }
+            Ok(()) => OperationResult::Ok(()),
+            Err(error @ DownloadError::IoError(_)) => OperationResult::Retry(error),
+            Err(error) => OperationResult::Err(error),
         }
-    }
-    Ok(())
+    })
+    .map_err(|error| SdkLayerError::DownloadArchive(error.error))
 }
 
 fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>
