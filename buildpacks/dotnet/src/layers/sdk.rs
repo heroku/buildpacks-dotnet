@@ -81,7 +81,7 @@ pub(crate) fn handle(
 
             let tarball_path = temp_dir().join("dotnetsdk.tar.gz");
 
-            download_sdk(artifact, &tarball_path)?;
+            download_sdk(artifact, &tarball_path).map_err(SdkLayerError::DownloadArchive)?;
 
             print::sub_bullet("Verifying SDK checksum");
             verify_checksum(&artifact.checksum, &tarball_path)?;
@@ -97,7 +97,7 @@ pub(crate) fn handle(
 fn download_sdk(
     artifact: &Artifact<Version, Sha512, Option<()>>,
     path: &Path,
-) -> Result<(), SdkLayerError> {
+) -> Result<(), DownloadError> {
     let retry_strategy = Fixed::from(RETRY_DELAY).take(MAX_RETRIES);
     retry_with_index(retry_strategy, |attempt_index| {
         // The `retry_with_index` function provides a 1-based `attempt_index` (so the first try is 1).
@@ -119,7 +119,7 @@ fn download_sdk(
             Err(error) => OperationResult::Err(error),
         }
     })
-    .map_err(|error| SdkLayerError::DownloadArchive(error.error))
+    .map_err(|error| error.error)
 }
 
 fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>
