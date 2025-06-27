@@ -9,7 +9,7 @@ use libcnb::layer::{
     CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerRef, LayerState,
     RestoredLayerAction,
 };
-use libherokubuildpack::download::{DownloadError, download_file};
+use libherokubuildpack::download::DownloadError;
 use libherokubuildpack::inventory;
 use libherokubuildpack::tar::decompress_tarball;
 use retry::delay::Fixed;
@@ -120,6 +120,10 @@ fn download_sdk(
         }
     })
     .map_err(|error| error.error)
+}
+
+fn download_file(url: &str, destination: &Path) -> Result<(), DownloadError> {
+    libherokubuildpack::download::download_file(url, destination)
 }
 
 fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>
