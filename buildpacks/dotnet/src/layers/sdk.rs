@@ -20,6 +20,7 @@ use sha2::{Digest, Sha512};
 use std::env::temp_dir;
 use std::path::Path;
 use std::time::Duration;
+use tracing::instrument;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SdkLayerMetadata {
@@ -34,6 +35,7 @@ pub(crate) enum CustomCause {
 const MAX_RETRIES: usize = 4;
 const RETRY_DELAY: Duration = Duration::from_secs(1);
 
+#[instrument(skip_all, err(Debug))]
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
     available_at_launch: bool,
@@ -94,6 +96,7 @@ pub(crate) fn handle(
     Ok(sdk_layer)
 }
 
+#[instrument(skip_all, err)]
 fn download_sdk(
     artifact: &Artifact<Version, Sha512, Option<()>>,
     path: &Path,
@@ -122,10 +125,15 @@ fn download_sdk(
     .map_err(|error| error.error)
 }
 
+#[instrument(skip_all, err, fields(
+    http.request.method = "GET",
+    url.full = %url,
+))]
 fn download_file(url: &str, destination: &Path) -> Result<(), DownloadError> {
     libherokubuildpack::download::download_file(url, destination)
 }
 
+#[instrument(skip_all, err(Debug))]
 fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>
 where
     D: Digest,
@@ -145,6 +153,7 @@ where
     }
 }
 
+#[instrument(skip_all, err(Debug))]
 fn extract_tarball(path: &Path, destination: &Path) -> Result<(), SdkLayerError> {
     decompress_tarball(
         &mut File::open(path).map_err(SdkLayerError::OpenArchive)?.into(),
