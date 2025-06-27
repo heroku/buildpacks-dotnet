@@ -39,6 +39,7 @@ use std::io;
 use std::io::{Write, stderr};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use tracing::instrument;
 
 struct DotnetBuildpack;
 
@@ -251,6 +252,7 @@ fn resolve_sdk_artifact(
         })
 }
 
+#[instrument(skip_all, err(Debug))]
 fn detect_sdk_version_requirement(
     context: &BuildContext<DotnetBuildpack>,
     solution: &Solution,
