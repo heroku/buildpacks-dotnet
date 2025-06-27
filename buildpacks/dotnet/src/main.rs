@@ -225,6 +225,11 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
+#[instrument(skip_all, err(Debug), fields(
+    os.type = %target.os,
+    host.arch = %target.arch,
+    cnb.dotnet.version_requirement = %sdk_version_requirement,
+))]
 fn resolve_sdk_artifact(
     target: &Target,
     sdk_version_requirement: VersionReq,
