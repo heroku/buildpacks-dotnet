@@ -9,7 +9,7 @@ use libcnb::layer::{
     CachedLayerDefinition, EmptyLayerCause, InvalidMetadataAction, LayerRef, LayerState,
     RestoredLayerAction,
 };
-use libherokubuildpack::download::{DownloadError, download_file};
+use libherokubuildpack::download::DownloadError;
 use libherokubuildpack::inventory;
 use libherokubuildpack::tar::decompress_tarball;
 use retry::delay::Fixed;
@@ -20,6 +20,7 @@ use sha2::{Digest, Sha512};
 use std::env::temp_dir;
 use std::path::Path;
 use std::time::Duration;
+use tracing::instrument;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SdkLayerMetadata {
@@ -34,6 +35,7 @@ pub(crate) enum CustomCause {
 const MAX_RETRIES: usize = 4;
 const RETRY_DELAY: Duration = Duration::from_secs(1);
 
+#[instrument(skip_all, err(Debug))]
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
     available_at_launch: bool,
@@ -81,7 +83,7 @@ pub(crate) fn handle(
 
             let tarball_path = temp_dir().join("dotnetsdk.tar.gz");
 
-            download_sdk(artifact, &tarball_path)?;
+            download_sdk(artifact, &tarball_path).map_err(SdkLayerError::DownloadArchive)?;
 
             print::sub_bullet("Verifying SDK checksum");
             verify_checksum(&artifact.checksum, &tarball_path)?;
@@ -94,10 +96,11 @@ pub(crate) fn handle(
     Ok(sdk_layer)
 }
 
+#[instrument(skip_all, err)]
 fn download_sdk(
     artifact: &Artifact<Version, Sha512, Option<()>>,
     path: &Path,
-) -> Result<(), SdkLayerError> {
+) -> Result<(), DownloadError> {
     let retry_strategy = Fixed::from(RETRY_DELAY).take(MAX_RETRIES);
     retry_with_index(retry_strategy, |attempt_index| {
         // The `retry_with_index` function provides a 1-based `attempt_index` (so the first try is 1).
@@ -119,9 +122,18 @@ fn download_sdk(
             Err(error) => OperationResult::Err(error),
         }
     })
-    .map_err(|error| SdkLayerError::DownloadArchive(error.error))
+    .map_err(|error| error.error)
 }
 
+#[instrument(skip_all, err, fields(
+    http.request.method = "GET",
+    url.full = %url,
+))]
+fn download_file(url: &str, destination: &Path) -> Result<(), DownloadError> {
+    libherokubuildpack::download::download_file(url, destination)
+}
+
+#[instrument(skip_all, err(Debug))]
 fn verify_checksum<D>(checksum: &Checksum<D>, path: impl AsRef<Path>) -> Result<(), SdkLayerError>
 where
     D: Digest,
@@ -141,6 +153,7 @@ where
     }
 }
 
+#[instrument(skip_all, err(Debug))]
 fn extract_tarball(path: &Path, destination: &Path) -> Result<(), SdkLayerError> {
     decompress_tarball(
         &mut File::open(path).map_err(SdkLayerError::OpenArchive)?.into(),
