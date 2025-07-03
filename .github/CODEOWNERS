@@ -13,3 +13,4 @@ inventory.toml @runesoerensen
 Cargo.toml @runesoerensen
 Cargo.lock @runesoerensen
 buildpack.toml @runesoerensen
+/.github/workflows/ @runesoerensen
