@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Instrumentation of .NET SDK resolution and download operations. ([#278](https://github.com/heroku/buildpacks-dotnet/pull/278))
+
 ## [0.5.5] - 2025-06-24
 
 ### Removed
