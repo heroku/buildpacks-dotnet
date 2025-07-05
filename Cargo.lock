@@ -153,6 +153,7 @@ dependencies = [
  "shell-words",
  "tempfile",
  "toml",
+ "tracing",
  "ureq",
 ]
 
