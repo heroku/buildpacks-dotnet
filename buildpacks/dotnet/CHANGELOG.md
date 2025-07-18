@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.8] - 2025-07-18
+
 ### Added
 
 - Support for .NET SDK versions: 9.0.303 (linux-amd64), 9.0.303 (linux-arm64).
@@ -227,7 +229,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.7...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.8...HEAD
+[0.5.8]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.6...v0.5.7
 [0.5.6]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.4...v0.5.5
