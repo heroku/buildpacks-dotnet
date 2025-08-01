@@ -152,16 +152,16 @@ dependencies = [
  "sha2",
  "shell-words",
  "tempfile",
- "toml",
+ "toml 0.9.4",
  "tracing",
  "ureq",
 ]
 
 [[package]]
 name = "bullet_stream"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "848ad8d26dc3efb24babe9a899046c1c69a1134642ff74a00538b941cb79773e"
+checksum = "d0406178c12a122b39c437e4e8776f7af3a1c5e9eab0c766c31830c9f17a9ded"
 dependencies = [
  "fun_run",
 ]
@@ -449,9 +449,9 @@ checksum = "1d674e81391d1e1ab681a28d99df07927c6d4aa5b027d7da16ba32d1d21ecd99"
 
 [[package]]
 name = "flate2"
-version = "1.1.1"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ced92e76e966ca2fd84c8f7aa01a4aea65b0eb6648d72f7c8f3e2764a67fece"
+checksum = "4a3d7db9596fecd151c5f638c0ee5d5bd487b6e0ea232e5dc96d5250f6f94b1d"
 dependencies = [
  "crc32fast",
  "libz-sys",
@@ -969,7 +969,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.12",
- "toml",
+ "toml 0.8.23",
  "tracing",
  "tracing-opentelemetry",
  "tracing-subscriber",
@@ -983,7 +983,7 @@ checksum = "7f4507f01f98debdcf76149f372780b3c9ead2d50e8911cb7f4992c9d07e003b"
 dependencies = [
  "serde",
  "thiserror 2.0.12",
- "toml",
+ "toml 0.8.23",
 ]
 
 [[package]]
@@ -996,7 +996,7 @@ dependencies = [
  "libcnb-proc-macros",
  "serde",
  "thiserror 2.0.12",
- "toml",
+ "toml 0.8.23",
  "uriparse",
 ]
 
@@ -1047,9 +1047,9 @@ dependencies = [
 
 [[package]]
 name = "libherokubuildpack"
-version = "0.29.0"
+version = "0.29.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e0cd3ef181dbe315fd43be18a5da1ca124afe6325c20ca5acaa7b839b68de39"
+checksum = "f0620ae496d785893b750e7c81c68cd701d744ca397d83d43559f7df23244c0e"
 dependencies = [
  "flate2",
  "hex",
@@ -1058,7 +1058,7 @@ dependencies = [
  "sha2",
  "tar",
  "thiserror 2.0.12",
- "toml",
+ "toml 0.9.4",
  "ureq",
 ]
 
@@ -1547,9 +1547,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.140"
+version = "1.0.142"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20068b6e96dc6c9bd23e01df8827e6c7e1f2fddd43c21810382803c136b99373"
+checksum = "030fedb782600dcbd6f02d479bf0d817ac3bb40d644745b769d6a96bc3afc5a7"
 dependencies = [
  "itoa",
  "memchr",
@@ -1562,6 +1562,15 @@ name = "serde_spanned"
 version = "0.6.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf41e0cfaf7226dca15e8197172c295a782857fcb97fad1808a166870dee75a3"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "serde_spanned"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40734c41988f7306bb04f0ecf60ec0f3f1caa34290e4e8ea471dcd3346483b83"
 dependencies = [
  "serde",
 ]
@@ -1795,9 +1804,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc1beb996b9d83529a9e75c17a1686767d148d70663143c7854d8b4a09ced362"
 dependencies = [
  "serde",
- "serde_spanned",
- "toml_datetime",
+ "serde_spanned 0.6.9",
+ "toml_datetime 0.6.11",
  "toml_edit",
+]
+
+[[package]]
+name = "toml"
+version = "0.9.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41ae868b5a0f67631c14589f7e250c1ea2c574ee5ba21c6c8dd4b1485705a5a1"
+dependencies = [
+ "indexmap",
+ "serde",
+ "serde_spanned 1.0.0",
+ "toml_datetime 0.7.0",
+ "toml_parser",
+ "toml_writer",
+ "winnow",
 ]
 
 [[package]]
@@ -1810,6 +1834,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "toml_datetime"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bade1c3e902f58d73d3f294cd7f20391c1cb2fbcb643b73566bc773971df91e3"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "toml_edit"
 version = "0.22.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1817,9 +1850,18 @@ checksum = "41fe8c660ae4257887cf66394862d21dbca4a6ddd26f04a3560410406a2f819a"
 dependencies = [
  "indexmap",
  "serde",
- "serde_spanned",
- "toml_datetime",
+ "serde_spanned 0.6.9",
+ "toml_datetime 0.6.11",
  "toml_write",
+ "winnow",
+]
+
+[[package]]
+name = "toml_parser"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "97200572db069e74c512a14117b296ba0a80a30123fbbb5aa1f4a348f639ca30"
+dependencies = [
  "winnow",
 ]
 
@@ -1828,6 +1870,12 @@ name = "toml_write"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d99f8c9a7727884afe522e9bd5edbfc91a3312b36a77b5fb8926e4c31a41801"
+
+[[package]]
+name = "toml_writer"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcc842091f2def52017664b53082ecbbeb5c7731092bad69d2c63050401dfd64"
 
 [[package]]
 name = "tonic"
