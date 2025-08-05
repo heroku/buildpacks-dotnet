@@ -6,7 +6,7 @@ source: buildpacks/dotnet/src/errors.rs
       |
     1 | invalid toml
       |         ^
-    expected `.`, `=`
+    key with no value, expected `=`
 
 [0;31m! Invalid `inventory.toml` file[0m
 [0;31m![0m

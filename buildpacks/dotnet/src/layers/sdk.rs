@@ -115,7 +115,7 @@ fn download_sdk(
         match download_result {
             Ok(()) => log_progress.done(),
             Err(ref error) => log_progress.cancel(format!("Failed: {error}")),
-        };
+        }
         match download_result {
             Ok(()) => OperationResult::Ok(()),
             Err(error @ DownloadError::IoError(_)) => OperationResult::Retry(error),
