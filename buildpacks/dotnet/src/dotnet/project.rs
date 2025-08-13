@@ -94,10 +94,10 @@ fn parse_metadata(document: &Document) -> Metadata {
                 metadata.output_type = node.text().map(ToString::to_string);
             }
             "AssemblyName" => {
-                if let Some(text) = node.text() {
-                    if !text.trim().is_empty() {
-                        metadata.assembly_name = Some(text.to_string());
-                    }
+                if let Some(text) = node.text()
+                    && !text.trim().is_empty()
+                {
+                    metadata.assembly_name = Some(text.to_string());
                 }
             }
             _ => (),
