@@ -61,7 +61,7 @@ jobs:
         exclude:
           - builder: "builder:22"
             arch: "arm64"
-    runs-on: ${{ matrix.arch == 'arm64' && 'pub-hk-ubuntu-24.04-arm-medium' || 'ubuntu-24.04' }}
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     env:
       INTEGRATION_TEST_BUILDER: heroku/${{ matrix.builder }}
     steps:
@@ -96,7 +96,7 @@ jobs:
         run: cargo test --locked -- --ignored --test-threads 10
 
   print-output:
-    runs-on: 'pub-hk-ubuntu-24.04-arm-medium'
+    runs-on: 'ubuntu-24.04-arm'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
