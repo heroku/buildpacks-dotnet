@@ -81,13 +81,12 @@ fn difference<'a, T: Eq>(a: &'a [T], b: &'a [T]) -> Vec<&'a T> {
 fn update_changelog(
     changelog: &mut Changelog,
     change_group: ChangeGroup,
-    artifacts: Vec<&Artifact<Version, Sha512, Option<()>>>,
+    mut artifacts: Vec<&Artifact<Version, Sha512, Option<()>>>,
 ) {
     if !artifacts.is_empty() {
-        let mut sorted_artifacts: Vec<_> = artifacts.into_iter().collect();
-        sorted_artifacts.sort_by_key(|artifact| &artifact.version);
+        artifacts.sort_by_key(|artifact| &artifact.version);
 
-        let formatted_artifacts = sorted_artifacts
+        let formatted_artifacts = artifacts
             .iter()
             .chunk_by(|artifact| &artifact.version)
             .into_iter()
