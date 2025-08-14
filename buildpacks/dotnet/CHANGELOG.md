@@ -11,19 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for .NET SDK versions: 8.0.119 (linux-amd64, linux-arm64), 8.0.316 (linux-amd64, linux-arm64), 8.0.413 (linux-amd64, linux-arm64), 9.0.109 (linux-amd64, linux-arm64), 9.0.304 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 8.0.119, 8.0.316, 8.0.413, 9.0.109, 9.0.304.
 
 ## [0.5.8] - 2025-07-18
 
 ### Added
 
-- Support for .NET SDK versions: 9.0.303 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 9.0.303.
 
 ## [0.5.7] - 2025-07-08
 
 ### Added
 
-- Support for .NET SDK versions: 8.0.118 (linux-amd64, linux-arm64), 8.0.315 (linux-amd64, linux-arm64), 8.0.412 (linux-amd64, linux-arm64), 9.0.108 (linux-amd64, linux-arm64), 9.0.302 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 8.0.118, 8.0.315, 8.0.412, 9.0.108, 9.0.302.
 
 ## [0.5.6] - 2025-07-05
 
@@ -41,19 +41,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for .NET SDK versions: 8.0.117 (linux-amd64, linux-arm64), 8.0.314 (linux-amd64, linux-arm64), 8.0.411 (linux-amd64, linux-arm64), 9.0.107 (linux-amd64, linux-arm64), 9.0.205 (linux-amd64, linux-arm64), 9.0.301 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 8.0.117, 8.0.314, 8.0.411, 9.0.107, 9.0.205, 9.0.301.
 
 ## [0.5.3] - 2025-05-26
 
 ### Added
 
-- Support for .NET SDK versions: 8.0.313 (linux-amd64, linux-arm64), 8.0.410 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 8.0.313, 8.0.410.
 
 ## [0.5.2] - 2025-05-13
 
 ### Added
 
-- Support for .NET SDK versions: 8.0.116 (linux-amd64, linux-arm64), 8.0.312 (linux-amd64, linux-arm64), 8.0.409 (linux-amd64, linux-arm64), 9.0.106 (linux-amd64, linux-arm64), 9.0.204 (linux-amd64, linux-arm64), 9.0.300 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 8.0.116, 8.0.312, 8.0.409, 9.0.106, 9.0.204, 9.0.300.
 
 ## [0.5.1] - 2025-05-09
 
@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for .NET SDK versions: 8.0.115 (linux-amd64, linux-arm64), 8.0.311 (linux-amd64, linux-arm64), 8.0.408 (linux-amd64, linux-arm64), 9.0.105 (linux-amd64, linux-arm64), 9.0.203 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 8.0.115, 8.0.311, 8.0.408, 9.0.105, 9.0.203.
 
 ## [0.4.0] - 2025-03-25
 
@@ -92,7 +92,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for .NET SDK versions: 9.0.202 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 9.0.202.
 
 ## [0.3.4] - 2025-03-17
 
@@ -116,7 +116,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for .NET SDK versions: 8.0.114 (linux-amd64, linux-arm64), 8.0.310 (linux-amd64, linux-arm64), 8.0.407 (linux-amd64, linux-arm64), 9.0.104 (linux-amd64, linux-arm64), 9.0.201 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 8.0.114, 8.0.310, 8.0.407, 9.0.104, 9.0.201.
 
 ## [0.3.1] - 2025-03-10
 
@@ -147,7 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for .NET SDK versions: 8.0.113 (linux-amd64, linux-arm64), 8.0.309 (linux-amd64, linux-arm64), 8.0.406 (linux-amd64, linux-arm64), 9.0.103 (linux-amd64, linux-arm64), 9.0.200 (linux-amd64, linux-arm64). ([#197](https://github.com/heroku/buildpacks-dotnet/pull/197))
+- Support for .NET SDK versions: 8.0.113, 8.0.309, 8.0.406, 9.0.103, 9.0.200. ([#197](https://github.com/heroku/buildpacks-dotnet/pull/197))
 
 ## [0.2.0] - 2025-02-10
 
@@ -168,13 +168,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for .NET SDK versions: 8.0.112 (linux-amd64, linux-arm64), 8.0.308 (linux-amd64, linux-arm64), 8.0.405 (linux-amd64, linux-arm64), 9.0.102 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 8.0.112, 8.0.308, 8.0.405, 9.0.102.
 
 ## [0.1.9] - 2024-12-04
 
 ### Added
 
-- Support for .NET SDK versions: 9.0.101 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 9.0.101.
 
 ## [0.1.8] - 2024-11-30
 
@@ -192,7 +192,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for .NET SDK versions: 8.0.111 (linux-amd64, linux-arm64), 8.0.307 (linux-amd64, linux-arm64), 8.0.404 (linux-amd64, linux-arm64), 9.0.100 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 8.0.111, 8.0.307, 8.0.404, 9.0.100.
 
 ## [0.1.5] - 2024-11-11
 
@@ -202,19 +202,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for .NET SDK versions: 9.0.100-preview.1.24101.2 (linux-amd64, linux-arm64), 9.0.100-preview.2.24157.14 (linux-amd64, linux-arm64), 9.0.100-preview.3.24204.13 (linux-amd64, linux-arm64), 9.0.100-preview.4.24267.66 (linux-amd64, linux-arm64), 9.0.100-preview.5.24307.3 (linux-amd64, linux-arm64), 9.0.100-preview.6.24328.19 (linux-amd64, linux-arm64), 9.0.100-preview.7.24407.12 (linux-amd64, linux-arm64), 9.0.100-rc.1.24452.12 (linux-amd64, linux-arm64), 9.0.100-rc.2.24474.11 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 9.0.100-preview.1.24101.2, 9.0.100-preview.2.24157.14, 9.0.100-preview.3.24204.13, 9.0.100-preview.4.24267.66, 9.0.100-preview.5.24307.3, 9.0.100-preview.6.24328.19, 9.0.100-preview.7.24407.12, 9.0.100-rc.1.24452.12, 9.0.100-rc.2.24474.11.
 
 ## [0.1.4] - 2024-10-09
 
 ### Added
 
-- Support for .NET SDK versions: 8.0.110 (linux-amd64, linux-arm64), 8.0.306 (linux-amd64, linux-arm64), 8.0.403 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 8.0.110, 8.0.306, 8.0.403.
 
 ## [0.1.3] - 2024-09-25
 
 ### Added
 
-- Support for .NET SDK versions: 8.0.402 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 8.0.402.
 
 ## [0.1.2] - 2024-08-29
 
@@ -227,7 +227,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for .NET SDK versions: 8.0.401 (linux-amd64, linux-arm64).
+- Support for .NET SDK versions: 8.0.401.
 
 ## [0.1.0] - 2024-08-15
 
