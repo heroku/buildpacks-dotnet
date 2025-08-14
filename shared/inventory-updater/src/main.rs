@@ -123,7 +123,7 @@ struct File {
     hash: String,
 }
 
-const SUPPORTED_MAJOR_VERSIONS: &[i32] = &[8, 9];
+const SUPPORTED_MAJOR_VERSIONS: &[i32] = &[8, 9, 10];
 const REQUIRED_ARCHS: [Arch; 2] = [Arch::Amd64, Arch::Arm64];
 
 fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, Option<()>>> {
