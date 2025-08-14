@@ -1,6 +1,7 @@
 use inventory::Inventory;
 use inventory::artifact::{Arch, Artifact, Os};
 use inventory::checksum::Checksum;
+use itertools::Itertools;
 use keep_a_changelog_file::{ChangeGroup, Changelog};
 use libherokubuildpack::inventory;
 use semver::Version;
@@ -57,12 +58,12 @@ fn main() {
     update_changelog(
         &mut changelog,
         ChangeGroup::Added,
-        difference(&remote_inventory.artifacts, &local_inventory.artifacts),
+        &difference(&remote_inventory.artifacts, &local_inventory.artifacts),
     );
     update_changelog(
         &mut changelog,
         ChangeGroup::Removed,
-        difference(&local_inventory.artifacts, &remote_inventory.artifacts),
+        &difference(&local_inventory.artifacts, &remote_inventory.artifacts),
     );
 
     fs::write(&changelog_path, changelog.to_string()).unwrap_or_else(|e| {
@@ -80,19 +81,18 @@ fn difference<'a, T: Eq>(a: &'a [T], b: &'a [T]) -> Vec<&'a T> {
 fn update_changelog(
     changelog: &mut Changelog,
     change_group: ChangeGroup,
-    artifacts: Vec<&Artifact<Version, Sha512, Option<()>>>,
+    artifacts: &[&Artifact<Version, Sha512, Option<()>>],
 ) {
     if !artifacts.is_empty() {
-        let mut sorted_artifacts: Vec<_> = artifacts.into_iter().collect();
-        sorted_artifacts.sort_by_key(|artifact| &artifact.version);
-        let formatted_artifacts = sorted_artifacts
+        let mut versions = artifacts
             .iter()
-            .map(|artifact| format!("{} ({}-{})", artifact.version, artifact.os, artifact.arch))
-            .collect::<Vec<_>>()
-            .join(", ");
+            .map(|artifact| &artifact.version)
+            .sorted()
+            .unique();
+
         changelog.unreleased.add(
             change_group,
-            format!("Support for .NET SDK versions: {formatted_artifacts}."),
+            format!("Support for .NET SDK versions: {}.", versions.join(", ")),
         );
     }
 }
@@ -124,6 +124,7 @@ struct File {
 }
 
 const SUPPORTED_MAJOR_VERSIONS: &[i32] = &[8, 9];
+const REQUIRED_ARCHS: [Arch; 2] = [Arch::Amd64, Arch::Arm64];
 
 fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, Option<()>>> {
     SUPPORTED_MAJOR_VERSIONS
@@ -136,28 +137,40 @@ fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, Option<()>>> {
                 .read_json::<DotNetReleaseFeed>()
                 .expect(".NET release feed should be parsable from JSON")
                 .releases
-                .into_iter()
-                .flat_map(|release| {
-                    release.sdks.into_iter().flat_map(|sdk| {
-                        sdk.files.into_iter().filter_map(move |file| {
-                            let (os, arch) = match file.rid.as_str() {
-                                "linux-x64" => (Os::Linux, Arch::Amd64),
-                                "linux-arm64" => (Os::Linux, Arch::Arm64),
-                                _ => return None,
-                            };
-                            Some(Artifact {
-                                version: sdk.version.clone(),
-                                os,
-                                arch,
-                                url: file.url.clone(),
-                                checksum: format!("sha512:{}", file.hash)
-                                    .parse::<Checksum<Sha512>>()
-                                    .expect("checksum should be a valid hex-encoded SHA-512 string"),
-                                metadata: None,
-                            })
-                        })
-                    })
-                })
+        })
+        .flat_map(|release| release.sdks)
+        .flat_map(|sdk| {
+            REQUIRED_ARCHS.iter().map(move |&arch| {
+                let rid = match arch {
+                    Arch::Amd64 => "linux-x64",
+                    Arch::Arm64 => "linux-arm64",
+                };
+
+                // Find the corresponding file in the SDK's file list.
+                // Panic if a required artifact is missing, as we require each version
+                // to support all required platforms.
+                let file = sdk
+                    .files
+                    .iter()
+                    .find(|file| file.rid == rid)
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "SDK version {} is missing the {rid} artifact for Linux.",
+                            sdk.version
+                        )
+                    });
+
+                Artifact {
+                    version: sdk.version.clone(),
+                    os: Os::Linux,
+                    arch,
+                    url: file.url.clone(),
+                    checksum: format!("sha512:{}", file.hash)
+                        .parse::<Checksum<Sha512>>()
+                        .expect("Checksum should be a valid hex-encoded SHA-512 string"),
+                    metadata: None,
+                }
+            })
         })
         .collect()
 }
