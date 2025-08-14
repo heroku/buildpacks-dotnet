@@ -77,6 +77,8 @@ fn difference<'a, T: Eq>(a: &'a [T], b: &'a [T]) -> Vec<&'a T> {
     a.iter().filter(|&artifact| !b.contains(artifact)).collect()
 }
 
+const REQUIRED_ARCHS: [Arch; 2] = [Arch::Amd64, Arch::Arm64];
+
 /// Helper function to update the changelog.
 fn update_changelog(
     changelog: &mut Changelog,
@@ -90,13 +92,21 @@ fn update_changelog(
             .iter()
             .chunk_by(|artifact| &artifact.version)
             .into_iter()
-            .map(|(version, artifacts)| {
-                format!(
-                    "{version} ({})",
-                    artifacts
-                        .map(|artifact| format!("{}-{}", artifact.os, artifact.arch))
-                        .join(", ")
-                )
+            .map(|(version, group)| {
+                let group_artifacts: Vec<_> = group.collect();
+
+                for required_arch in REQUIRED_ARCHS {
+                    group_artifacts
+                    .iter()
+                    .find(|artifact| artifact.os == Os::Linux && artifact.arch == required_arch)
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "Version {version} is missing the {required_arch} artifact for Linux."
+                        )
+                    });
+                }
+
+                version
             })
             .join(", ");
 
