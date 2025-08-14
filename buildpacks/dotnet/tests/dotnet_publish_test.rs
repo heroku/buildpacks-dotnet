@@ -38,7 +38,7 @@ fn test_dotnet_publish_with_compilation_error() {
             .expected_pack_result(PackResult::Failure),
         |context| {
             assert_contains!(
-                &context.pack_stderr,
+                &context.pack_stdout,
                 &indoc! {r"
                   ! Unable to publish
                   !

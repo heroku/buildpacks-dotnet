@@ -43,7 +43,7 @@ fn test_dotnet_restore_dotnet_tool_with_configuration_error() {
                           Version 0.0.0-foobar of package dotnetsay is not found in NuGet feeds https://api.nuget.org/v3/index.json."}
             );
             assert_contains!(
-                &context.pack_stderr,
+                &context.pack_stdout,
                 &indoc! {r"
                     ! Unable to restore .NET tools
                     !
