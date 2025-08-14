@@ -8,6 +8,7 @@ license.workspace = true
 workspace = true
 
 [dependencies]
+itertools = "0.14"
 libherokubuildpack = { version = "0.29", default-features = false, features = ["inventory", "inventory-semver", "inventory-sha2"] }
 keep_a_changelog_file = "0.1"
 semver = "1.0"

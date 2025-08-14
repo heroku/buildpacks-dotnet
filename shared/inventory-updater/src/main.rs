@@ -1,6 +1,7 @@
 use inventory::Inventory;
 use inventory::artifact::{Arch, Artifact, Os};
 use inventory::checksum::Checksum;
+use itertools::Itertools;
 use keep_a_changelog_file::{ChangeGroup, Changelog};
 use libherokubuildpack::inventory;
 use semver::Version;
@@ -85,11 +86,21 @@ fn update_changelog(
     if !artifacts.is_empty() {
         let mut sorted_artifacts: Vec<_> = artifacts.into_iter().collect();
         sorted_artifacts.sort_by_key(|artifact| &artifact.version);
+
         let formatted_artifacts = sorted_artifacts
             .iter()
-            .map(|artifact| format!("{} ({}-{})", artifact.version, artifact.os, artifact.arch))
-            .collect::<Vec<_>>()
+            .chunk_by(|artifact| &artifact.version)
+            .into_iter()
+            .map(|(version, artifacts)| {
+                format!(
+                    "{version} ({})",
+                    artifacts
+                        .map(|artifact| format!("{}-{}", artifact.os, artifact.arch))
+                        .join(", ")
+                )
+            })
             .join(", ");
+
         changelog.unreleased.add(
             change_group,
             format!("Support for .NET SDK versions: {formatted_artifacts}."),
