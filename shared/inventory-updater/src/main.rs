@@ -58,12 +58,12 @@ fn main() {
     update_changelog(
         &mut changelog,
         ChangeGroup::Added,
-        difference(&remote_inventory.artifacts, &local_inventory.artifacts),
+        &difference(&remote_inventory.artifacts, &local_inventory.artifacts),
     );
     update_changelog(
         &mut changelog,
         ChangeGroup::Removed,
-        difference(&local_inventory.artifacts, &remote_inventory.artifacts),
+        &difference(&local_inventory.artifacts, &remote_inventory.artifacts),
     );
 
     fs::write(&changelog_path, changelog.to_string()).unwrap_or_else(|e| {
@@ -77,42 +77,22 @@ fn difference<'a, T: Eq>(a: &'a [T], b: &'a [T]) -> Vec<&'a T> {
     a.iter().filter(|&artifact| !b.contains(artifact)).collect()
 }
 
-const REQUIRED_ARCHS: [Arch; 2] = [Arch::Amd64, Arch::Arm64];
-
 /// Helper function to update the changelog.
 fn update_changelog(
     changelog: &mut Changelog,
     change_group: ChangeGroup,
-    mut artifacts: Vec<&Artifact<Version, Sha512, Option<()>>>,
+    artifacts: &[&Artifact<Version, Sha512, Option<()>>],
 ) {
     if !artifacts.is_empty() {
-        artifacts.sort_by_key(|artifact| &artifact.version);
-
-        let formatted_artifacts = artifacts
+        let mut versions = artifacts
             .iter()
-            .chunk_by(|artifact| &artifact.version)
-            .into_iter()
-            .map(|(version, group)| {
-                let group_artifacts: Vec<_> = group.collect();
-
-                for required_arch in REQUIRED_ARCHS {
-                    group_artifacts
-                    .iter()
-                    .find(|artifact| artifact.os == Os::Linux && artifact.arch == required_arch)
-                    .unwrap_or_else(|| {
-                        panic!(
-                            "Version {version} is missing the {required_arch} artifact for Linux."
-                        )
-                    });
-                }
-
-                version
-            })
-            .join(", ");
+            .map(|artifact| &artifact.version)
+            .sorted()
+            .unique();
 
         changelog.unreleased.add(
             change_group,
-            format!("Support for .NET SDK versions: {formatted_artifacts}."),
+            format!("Support for .NET SDK versions: {}.", versions.join(", ")),
         );
     }
 }
@@ -144,6 +124,7 @@ struct File {
 }
 
 const SUPPORTED_MAJOR_VERSIONS: &[i32] = &[8, 9];
+const REQUIRED_ARCHS: [Arch; 2] = [Arch::Amd64, Arch::Arm64];
 
 fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, Option<()>>> {
     SUPPORTED_MAJOR_VERSIONS
@@ -156,28 +137,40 @@ fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, Option<()>>> {
                 .read_json::<DotNetReleaseFeed>()
                 .expect(".NET release feed should be parsable from JSON")
                 .releases
-                .into_iter()
-                .flat_map(|release| {
-                    release.sdks.into_iter().flat_map(|sdk| {
-                        sdk.files.into_iter().filter_map(move |file| {
-                            let (os, arch) = match file.rid.as_str() {
-                                "linux-x64" => (Os::Linux, Arch::Amd64),
-                                "linux-arm64" => (Os::Linux, Arch::Arm64),
-                                _ => return None,
-                            };
-                            Some(Artifact {
-                                version: sdk.version.clone(),
-                                os,
-                                arch,
-                                url: file.url.clone(),
-                                checksum: format!("sha512:{}", file.hash)
-                                    .parse::<Checksum<Sha512>>()
-                                    .expect("checksum should be a valid hex-encoded SHA-512 string"),
-                                metadata: None,
-                            })
-                        })
-                    })
-                })
+        })
+        .flat_map(|release| release.sdks)
+        .flat_map(|sdk| {
+            REQUIRED_ARCHS.iter().map(move |&arch| {
+                let rid = match arch {
+                    Arch::Amd64 => "linux-x64",
+                    Arch::Arm64 => "linux-arm64",
+                };
+
+                // Find the corresponding file in the SDK's file list.
+                // Panic if a required artifact is missing, as we require each version
+                // to support all required platforms.
+                let file = sdk
+                    .files
+                    .iter()
+                    .find(|file| file.rid == rid)
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "SDK version {} is missing the {rid} artifact for Linux.",
+                            sdk.version
+                        )
+                    });
+
+                Artifact {
+                    version: sdk.version.clone(),
+                    os: Os::Linux,
+                    arch,
+                    url: file.url.clone(),
+                    checksum: format!("sha512:{}", file.hash)
+                        .parse::<Checksum<Sha512>>()
+                        .expect("Checksum should be a valid hex-encoded SHA-512 string"),
+                    metadata: None,
+                }
+            })
         })
         .collect()
 }
