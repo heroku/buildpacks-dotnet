@@ -135,7 +135,7 @@ fn test_sdk_installation_with_global_json() {
 #[ignore = "integration test"]
 fn test_sdk_installation_with_global_json_prerelease_sdk() {
     TestRunner::default().build(
-        default_build_config("tests/fixtures/basic_web_9.0_with_global_json_prerelease_sdk"),
+        default_build_config("tests/fixtures/basic_web_with_global_json_prerelease_sdk"),
         |context| {
             assert_empty!(context.pack_stderr);
             assert_contains!(
@@ -144,8 +144,8 @@ fn test_sdk_installation_with_global_json_prerelease_sdk() {
                     - SDK version detection
                       - Detected .NET project: `/workspace/foo.csproj`
                       - Detecting version requirement from root global.json file
-                      - Detected version requirement: `=9.0.100-rc.1.24452.12`
-                      - Resolved .NET SDK version `9.0.100-rc.1.24452.12`"
+                      - Detected version requirement: `=10.0.100-preview.7.25380.108`
+                      - Resolved .NET SDK version `10.0.100-preview.7.25380.108`"
                 }
             );
         },
