@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The buildpack now supports projects using .NET 10.0 preview releases (without custom `global.json` config). ([#301](https://github.com/heroku/buildpacks-dotnet/pull/301))
+
 ## [0.6.1] - 2025-08-14
 
 ### Added
