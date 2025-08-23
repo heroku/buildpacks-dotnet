@@ -232,8 +232,23 @@ impl Buildpack for DotnetBuildpack {
 ))]
 fn resolve_sdk_artifact(
     target: &Target,
-    sdk_version_requirement: VersionReq,
+    mut sdk_version_requirement: VersionReq,
 ) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
+    // When VersionReq is derived from the TFM for .NET 10.0, which has no
+    // stable releases, rewrite the requirement to match preview and release
+    // candidate releases.
+    // TODO: Remove this logic when stable .NET 10.0 releases are added to the
+    // the inventory, and update the .NET 10 SDK resolution integration test.
+    if sdk_version_requirement
+        == VersionReq::try_from(&TargetFrameworkMoniker {
+            version_part: String::from("10.0"),
+        })
+        .expect("TargetFrameworkMoniker should always be parseable")
+    {
+        sdk_version_requirement = VersionReq::parse("^10.0.100-preview")
+            .expect("VersionReq string should always be parseable");
+    }
+
     include_str!("../inventory.toml")
         .parse::<Inventory<_, _, _>>()
         .map_err(DotnetBuildpackError::ParseInventory)
