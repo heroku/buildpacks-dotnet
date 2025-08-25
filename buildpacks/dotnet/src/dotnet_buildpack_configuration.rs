@@ -1,3 +1,4 @@
+use crate::project_toml::DotnetConfig;
 use std::fmt;
 use std::str::FromStr;
 
@@ -10,16 +11,20 @@ pub(crate) struct DotnetBuildpackConfiguration {
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum DotnetBuildpackConfigurationError {
-    ExecutionEnvironmentError(ExecutionEnvironmentError),
-    InvalidMsbuildVerbosityLevel(String),
+    ExecutionEnvironment(ExecutionEnvironmentError),
+    VerbosityLevel(ParseVerbosityLevelError),
 }
 
-impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
-    type Error = DotnetBuildpackConfigurationError;
-
-    fn try_from(env: &libcnb::Env) -> Result<Self, Self::Error> {
+impl DotnetBuildpackConfiguration {
+    pub(crate) fn try_from_env_and_project_toml(
+        env: &libcnb::Env,
+        project_toml_config: Option<&DotnetConfig>,
+    ) -> Result<Self, DotnetBuildpackConfigurationError> {
+        let msbuild_config = || project_toml_config.and_then(|config| config.msbuild.as_ref());
         Ok(Self {
-            build_configuration: env.get_string_lossy("BUILD_CONFIGURATION"),
+            build_configuration: env
+                .get_string_lossy("BUILD_CONFIGURATION")
+                .or_else(|| msbuild_config()?.configuration.clone()),
             execution_environment: env
                 .get_string_lossy("CNB_EXEC_ENV")
                 .as_deref()
@@ -27,27 +32,34 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
                     || Ok(ExecutionEnvironment::Production),
                     ExecutionEnvironment::from_str,
                 )
-                .map_err(DotnetBuildpackConfigurationError::ExecutionEnvironmentError)?,
-            msbuild_verbosity_level: detect_msbuild_verbosity_level(env).transpose()?,
+                .map_err(DotnetBuildpackConfigurationError::ExecutionEnvironment)?,
+            msbuild_verbosity_level: env
+                .get_string_lossy("MSBUILD_VERBOSITY_LEVEL")
+                .as_deref()
+                .or_else(|| msbuild_config()?.verbosity.as_deref())
+                .map(str::parse)
+                .transpose()
+                .map_err(DotnetBuildpackConfigurationError::VerbosityLevel)?,
         })
     }
 }
 
-fn detect_msbuild_verbosity_level(
-    env: &libcnb::Env,
-) -> Option<Result<VerbosityLevel, DotnetBuildpackConfigurationError>> {
-    env.get("MSBUILD_VERBOSITY_LEVEL")
-        .map(|value| value.to_string_lossy())
-        .map(|value| match value.to_lowercase().as_str() {
+#[derive(Debug, PartialEq)]
+pub(crate) struct ParseVerbosityLevelError(pub(crate) String);
+
+impl FromStr for VerbosityLevel {
+    type Err = ParseVerbosityLevelError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value.to_lowercase().as_str() {
             "q" | "quiet" => Ok(VerbosityLevel::Quiet),
             "m" | "minimal" => Ok(VerbosityLevel::Minimal),
             "n" | "normal" => Ok(VerbosityLevel::Normal),
             "d" | "detailed" => Ok(VerbosityLevel::Detailed),
             "diag" | "diagnostic" => Ok(VerbosityLevel::Diagnostic),
-            _ => Err(
-                DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(value.to_string()),
-            ),
-        })
+            _ => Err(ParseVerbosityLevelError(value.to_string())),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -99,6 +111,7 @@ impl fmt::Display for VerbosityLevel {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::project_toml::MsbuildConfig;
     use libcnb::Env;
 
     fn create_env(variables: &[(&str, &str)]) -> Env {
@@ -112,7 +125,8 @@ mod tests {
     #[test]
     fn test_default_buildpack_configuration() {
         let env = create_env(&[]);
-        let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
+        let result =
+            DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env, None).unwrap();
 
         assert_eq!(
             result,
@@ -125,11 +139,54 @@ mod tests {
     }
 
     #[test]
-    fn test_buildpack_configuration_test_execution_environment() {
-        let env = create_env(&[("CNB_EXEC_ENV", "test")]);
-        let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
+    fn test_project_toml_is_used_when_env_is_absent() {
+        let project_toml_config = DotnetConfig {
+            msbuild: Some(MsbuildConfig {
+                configuration: Some("Debug".to_string()),
+                verbosity: Some("Detailed".to_string()),
+            }),
+        };
+        let env = create_env(&[]);
 
-        assert_eq!(result.execution_environment, ExecutionEnvironment::Test);
+        let config = DotnetBuildpackConfiguration::try_from_env_and_project_toml(
+            &env,
+            Some(&project_toml_config),
+        )
+        .unwrap();
+
+        assert_eq!(config.build_configuration, Some("Debug".to_string()));
+        assert_eq!(
+            config.msbuild_verbosity_level,
+            Some(VerbosityLevel::Detailed)
+        );
+    }
+
+    #[test]
+    fn test_env_overrides_project_toml() {
+        let project_toml_config = DotnetConfig {
+            msbuild: Some(MsbuildConfig {
+                configuration: Some("Debug".to_string()),
+                verbosity: Some("Quiet".to_string()),
+            }),
+        };
+        let env_override = create_env(&[
+            ("BUILD_CONFIGURATION", "Release"),
+            ("MSBUILD_VERBOSITY_LEVEL", "Detailed"),
+            ("CNB_EXEC_ENV", "test"),
+        ]);
+
+        let config = DotnetBuildpackConfiguration::try_from_env_and_project_toml(
+            &env_override,
+            Some(&project_toml_config),
+        )
+        .unwrap();
+
+        assert_eq!(config.build_configuration, Some("Release".to_string()));
+        assert_eq!(
+            config.msbuild_verbosity_level,
+            Some(VerbosityLevel::Detailed)
+        );
+        assert_eq!(config.execution_environment, ExecutionEnvironment::Test);
     }
 
     #[test]
@@ -150,34 +207,31 @@ mod tests {
     }
 
     #[test]
-    fn test_detect_msbuild_verbosity_level() {
-        let cases = [
-            ("q", Ok(VerbosityLevel::Quiet)),
-            ("quiet", Ok(VerbosityLevel::Quiet)),
-            ("minimal", Ok(VerbosityLevel::Minimal)),
-            ("m", Ok(VerbosityLevel::Minimal)),
-            ("normal", Ok(VerbosityLevel::Normal)),
-            ("n", Ok(VerbosityLevel::Normal)),
-            ("detailed", Ok(VerbosityLevel::Detailed)),
-            ("d", Ok(VerbosityLevel::Detailed)),
-            ("diagnostic", Ok(VerbosityLevel::Diagnostic)),
-            ("diag", Ok(VerbosityLevel::Diagnostic)),
-            (
-                "invalid",
-                Err(
-                    DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(
-                        "invalid".to_string(),
-                    ),
-                ),
-            ),
+    fn test_verbosity_level_parsing() {
+        let valid_cases = [
+            ("q", VerbosityLevel::Quiet),
+            ("quiet", VerbosityLevel::Quiet),
+            ("QUIET", VerbosityLevel::Quiet),
+            ("minimal", VerbosityLevel::Minimal),
+            ("m", VerbosityLevel::Minimal),
+            ("normal", VerbosityLevel::Normal),
+            ("n", VerbosityLevel::Normal),
+            ("detailed", VerbosityLevel::Detailed),
+            ("d", VerbosityLevel::Detailed),
+            ("DIAGNOSTIC", VerbosityLevel::Diagnostic),
+            ("diag", VerbosityLevel::Diagnostic),
         ];
 
-        for (input, expected) in cases {
-            let env = create_env(&[("MSBUILD_VERBOSITY_LEVEL", input)]);
-            let result = detect_msbuild_verbosity_level(&env);
-            assert_eq!(result, Some(expected));
+        for (input, expected) in valid_cases {
+            let result = input.parse();
+            assert_eq!(result, Ok(expected));
         }
-        assert!(detect_msbuild_verbosity_level(&Env::new()).is_none());
+
+        let result = "invalid".parse::<VerbosityLevel>();
+        assert!(matches!(
+            result,
+            Err(ParseVerbosityLevelError(s)) if s == "invalid"
+        ));
     }
 
     #[test]
