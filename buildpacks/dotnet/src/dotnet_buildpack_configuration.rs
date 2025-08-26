@@ -160,7 +160,7 @@ mod tests {
     }
 
     #[test]
-    fn test_detect_msbuild_verbosity_level() {
+    fn test_parse_msbuild_verbosity_level() {
         let valid_cases = [
             ("q", VerbosityLevel::Quiet),
             ("quiet", VerbosityLevel::Quiet),
