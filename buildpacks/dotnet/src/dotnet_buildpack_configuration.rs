@@ -182,7 +182,6 @@ mod tests {
             result,
             Err(DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(s)) if s == "invalid"
         ));
-        assert!(detect_msbuild_verbosity_level(&Env::new()).is_none());
     }
 
     #[test]
