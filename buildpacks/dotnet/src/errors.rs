@@ -484,6 +484,18 @@ mod tests {
     }
 
     #[test]
+    fn test_read_project_toml_file_error() {
+        assert_error_snapshot(DotnetBuildpackError::ReadProjectTomlFile(create_io_error()));
+    }
+
+    #[test]
+    fn test_parse_project_toml_error() {
+        assert_error_snapshot(DotnetBuildpackError::ParseProjectToml(
+            toml::from_str::<toml::Value>("foo").unwrap_err(),
+        ));
+    }
+
+    #[test]
     fn test_no_solution_projects_error() {
         assert_error_snapshot(DotnetBuildpackError::NoSolutionProjects(PathBuf::from(
             "/foo/bar.sln",
