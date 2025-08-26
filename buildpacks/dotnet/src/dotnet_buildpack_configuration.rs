@@ -14,10 +14,8 @@ pub(crate) enum DotnetBuildpackConfigurationError {
     VerbosityLevel(ParseVerbosityLevelError),
 }
 
-impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
-    type Error = DotnetBuildpackConfigurationError;
-
-    fn try_from(env: &libcnb::Env) -> Result<Self, Self::Error> {
+impl DotnetBuildpackConfiguration {
+    pub(crate) fn try_from(env: &libcnb::Env) -> Result<Self, DotnetBuildpackConfigurationError> {
         Ok(Self {
             build_configuration: env.get_string_lossy("BUILD_CONFIGURATION"),
             execution_environment: env
