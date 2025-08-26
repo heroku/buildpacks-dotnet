@@ -28,17 +28,13 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
                     ExecutionEnvironment::from_str,
                 )
                 .map_err(DotnetBuildpackConfigurationError::ExecutionEnvironmentError)?,
-            msbuild_verbosity_level: detect_msbuild_verbosity_level(env).transpose()?,
+            msbuild_verbosity_level: env
+                .get("MSBUILD_VERBOSITY_LEVEL")
+                .map(|value| value.to_string_lossy())
+                .map(|value| value.parse())
+                .transpose()?,
         })
     }
-}
-
-fn detect_msbuild_verbosity_level(
-    env: &libcnb::Env,
-) -> Option<Result<VerbosityLevel, DotnetBuildpackConfigurationError>> {
-    env.get("MSBUILD_VERBOSITY_LEVEL")
-        .map(|value| value.to_string_lossy())
-        .map(|value| value.parse())
 }
 
 impl FromStr for VerbosityLevel {
