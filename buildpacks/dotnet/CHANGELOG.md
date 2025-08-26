@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support for customizing the default build configuration and MSBuild verbosity level with a `project.toml` file. ([#303](https://github.com/heroku/buildpacks-dotnet/pull/303))
+
 ### Changed
 
 - The buildpack now supports projects using .NET 10.0 preview releases (without custom `global.json` config). ([#301](https://github.com/heroku/buildpacks-dotnet/pull/301))
