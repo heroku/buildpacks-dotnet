@@ -38,7 +38,14 @@ fn detect_msbuild_verbosity_level(
 ) -> Option<Result<VerbosityLevel, DotnetBuildpackConfigurationError>> {
     env.get("MSBUILD_VERBOSITY_LEVEL")
         .map(|value| value.to_string_lossy())
-        .map(|value| match value.to_lowercase().as_str() {
+        .map(|value| value.parse())
+}
+
+impl FromStr for VerbosityLevel {
+    type Err = DotnetBuildpackConfigurationError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value.to_lowercase().as_str() {
             "q" | "quiet" => Ok(VerbosityLevel::Quiet),
             "m" | "minimal" => Ok(VerbosityLevel::Minimal),
             "n" | "normal" => Ok(VerbosityLevel::Normal),
@@ -47,7 +54,8 @@ fn detect_msbuild_verbosity_level(
             _ => Err(
                 DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(value.to_string()),
             ),
-        })
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
