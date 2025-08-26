@@ -11,7 +11,7 @@ pub(crate) struct DotnetBuildpackConfiguration {
 #[derive(Debug, PartialEq)]
 pub(crate) enum DotnetBuildpackConfigurationError {
     ExecutionEnvironmentError(ExecutionEnvironmentError),
-    InvalidMsbuildVerbosityLevel(String),
+    InvalidMsbuildVerbosityLevel(ParseVerbosityLevelError),
 }
 
 impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
@@ -32,7 +32,8 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
                 .get("MSBUILD_VERBOSITY_LEVEL")
                 .map(|value| value.to_string_lossy())
                 .map(|value| value.parse())
-                .transpose()?,
+                .transpose()
+                .map_err(DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel)?,
         })
     }
 }
@@ -71,8 +72,11 @@ pub(crate) enum VerbosityLevel {
     Diagnostic,
 }
 
+#[derive(Debug, PartialEq)]
+pub(crate) struct ParseVerbosityLevelError(pub(crate) String);
+
 impl FromStr for VerbosityLevel {
-    type Err = DotnetBuildpackConfigurationError;
+    type Err = ParseVerbosityLevelError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         match value.to_lowercase().as_str() {
@@ -81,9 +85,7 @@ impl FromStr for VerbosityLevel {
             "n" | "normal" => Ok(VerbosityLevel::Normal),
             "d" | "detailed" => Ok(VerbosityLevel::Detailed),
             "diag" | "diagnostic" => Ok(VerbosityLevel::Diagnostic),
-            _ => Err(
-                DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(value.to_string()),
-            ),
+            _ => Err(ParseVerbosityLevelError(value.to_string())),
         }
     }
 }
@@ -185,7 +187,7 @@ mod tests {
         let result = "invalid".parse::<VerbosityLevel>();
         assert!(matches!(
             result,
-            Err(DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(s)) if s == "invalid"
+            Err(ParseVerbosityLevelError(s)) if s == "invalid"
         ));
     }
 

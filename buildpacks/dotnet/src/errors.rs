@@ -2,7 +2,7 @@ use crate::DotnetBuildpackError;
 use crate::dotnet::target_framework_moniker::ParseTargetFrameworkError;
 use crate::dotnet::{project, solution};
 use crate::dotnet_buildpack_configuration::{
-    DotnetBuildpackConfigurationError, ExecutionEnvironmentError,
+    DotnetBuildpackConfigurationError, ExecutionEnvironmentError, ParseVerbosityLevelError,
 };
 use crate::layers::sdk::SdkLayerError;
 use bullet_stream::{Print, fun_run, style};
@@ -262,7 +262,9 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             ),
         },
         DotnetBuildpackError::ParseBuildpackConfiguration(error) => match error {
-            DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(verbosity_level) => {
+            DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(
+                ParseVerbosityLevelError(verbosity_level),
+            ) => {
                 log_error_to(
                     &mut writer,
                     "Invalid MSBuild verbosity level",
@@ -651,7 +653,9 @@ mod tests {
     #[test]
     fn test_parse_buildpack_configuration_invalid_msbuild_verbosity_level_error() {
         assert_error_snapshot(DotnetBuildpackError::ParseBuildpackConfiguration(
-            DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel("Foo".to_string()),
+            DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(
+                ParseVerbosityLevelError("Foo".to_string()),
+            ),
         ));
     }
 
