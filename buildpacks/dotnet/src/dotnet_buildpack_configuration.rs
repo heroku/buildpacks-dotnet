@@ -43,6 +43,11 @@ pub(crate) enum ExecutionEnvironment {
     Test,
 }
 
+#[derive(Debug, PartialEq)]
+pub(crate) enum ExecutionEnvironmentError {
+    UnsupportedExecutionEnvironment(String),
+}
+
 impl FromStr for ExecutionEnvironment {
     type Err = ExecutionEnvironmentError;
 
@@ -55,11 +60,6 @@ impl FromStr for ExecutionEnvironment {
             )),
         }
     }
-}
-
-#[derive(Debug, PartialEq)]
-pub(crate) enum ExecutionEnvironmentError {
-    UnsupportedExecutionEnvironment(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
