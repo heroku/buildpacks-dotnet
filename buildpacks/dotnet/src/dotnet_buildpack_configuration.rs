@@ -159,31 +159,29 @@ mod tests {
 
     #[test]
     fn test_detect_msbuild_verbosity_level() {
-        let cases = [
-            ("q", Ok(VerbosityLevel::Quiet)),
-            ("quiet", Ok(VerbosityLevel::Quiet)),
-            ("minimal", Ok(VerbosityLevel::Minimal)),
-            ("m", Ok(VerbosityLevel::Minimal)),
-            ("normal", Ok(VerbosityLevel::Normal)),
-            ("n", Ok(VerbosityLevel::Normal)),
-            ("detailed", Ok(VerbosityLevel::Detailed)),
-            ("d", Ok(VerbosityLevel::Detailed)),
-            ("diagnostic", Ok(VerbosityLevel::Diagnostic)),
-            ("diag", Ok(VerbosityLevel::Diagnostic)),
-            (
-                "invalid",
-                Err(
-                    DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(
-                        "invalid".to_string(),
-                    ),
-                ),
-            ),
+        let valid_cases = [
+            ("q", VerbosityLevel::Quiet),
+            ("quiet", VerbosityLevel::Quiet),
+            ("minimal", VerbosityLevel::Minimal),
+            ("m", VerbosityLevel::Minimal),
+            ("normal", VerbosityLevel::Normal),
+            ("n", VerbosityLevel::Normal),
+            ("detailed", VerbosityLevel::Detailed),
+            ("d", VerbosityLevel::Detailed),
+            ("diagnostic", VerbosityLevel::Diagnostic),
+            ("diag", VerbosityLevel::Diagnostic),
         ];
 
-        for (input, expected) in cases {
+        for (input, expected) in valid_cases {
             let result = input.parse();
-            assert_eq!(result, expected);
+            assert_eq!(result, Ok(expected));
         }
+
+        let result = "invalid".parse::<VerbosityLevel>();
+        assert!(matches!(
+            result,
+            Err(DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(s)) if s == "invalid"
+        ));
         assert!(detect_msbuild_verbosity_level(&Env::new()).is_none());
     }
 
