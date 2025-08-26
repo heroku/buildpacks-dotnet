@@ -37,23 +37,6 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
     }
 }
 
-impl FromStr for VerbosityLevel {
-    type Err = DotnetBuildpackConfigurationError;
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        match value.to_lowercase().as_str() {
-            "q" | "quiet" => Ok(VerbosityLevel::Quiet),
-            "m" | "minimal" => Ok(VerbosityLevel::Minimal),
-            "n" | "normal" => Ok(VerbosityLevel::Normal),
-            "d" | "detailed" => Ok(VerbosityLevel::Detailed),
-            "diag" | "diagnostic" => Ok(VerbosityLevel::Diagnostic),
-            _ => Err(
-                DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(value.to_string()),
-            ),
-        }
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub(crate) enum ExecutionEnvironment {
     Production,
@@ -86,6 +69,23 @@ pub(crate) enum VerbosityLevel {
     Normal,
     Detailed,
     Diagnostic,
+}
+
+impl FromStr for VerbosityLevel {
+    type Err = DotnetBuildpackConfigurationError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value.to_lowercase().as_str() {
+            "q" | "quiet" => Ok(VerbosityLevel::Quiet),
+            "m" | "minimal" => Ok(VerbosityLevel::Minimal),
+            "n" | "normal" => Ok(VerbosityLevel::Normal),
+            "d" | "detailed" => Ok(VerbosityLevel::Detailed),
+            "diag" | "diagnostic" => Ok(VerbosityLevel::Diagnostic),
+            _ => Err(
+                DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(value.to_string()),
+            ),
+        }
+    }
 }
 
 impl fmt::Display for VerbosityLevel {
