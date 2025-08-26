@@ -29,8 +29,7 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
                 )
                 .map_err(DotnetBuildpackConfigurationError::ExecutionEnvironment)?,
             msbuild_verbosity_level: env
-                .get("MSBUILD_VERBOSITY_LEVEL")
-                .map(|value| value.to_string_lossy())
+                .get_string_lossy("MSBUILD_VERBOSITY_LEVEL")
                 .map(|value| value.parse())
                 .transpose()
                 .map_err(DotnetBuildpackConfigurationError::VerbosityLevel)?,
