@@ -1,3 +1,4 @@
+use crate::project_toml::DotnetConfig;
 use std::fmt;
 use std::str::FromStr;
 
@@ -15,8 +16,9 @@ pub(crate) enum DotnetBuildpackConfigurationError {
 }
 
 impl DotnetBuildpackConfiguration {
-    pub(crate) fn try_from_env(
+    pub(crate) fn try_from_env_and_project_toml(
         env: &libcnb::Env,
+        _project_toml_config: Option<&DotnetConfig>,
     ) -> Result<Self, DotnetBuildpackConfigurationError> {
         Ok(Self {
             build_configuration: env.get_string_lossy("BUILD_CONFIGURATION"),
@@ -117,7 +119,8 @@ mod tests {
     #[test]
     fn test_default_buildpack_configuration() {
         let env = create_env(&[]);
-        let result = DotnetBuildpackConfiguration::try_from_env(&env).unwrap();
+        let result =
+            DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env, None).unwrap();
 
         assert_eq!(
             result,
@@ -136,7 +139,8 @@ mod tests {
             ("MSBUILD_VERBOSITY_LEVEL", "Detailed"),
             ("CNB_EXEC_ENV", "test"),
         ]);
-        let result = DotnetBuildpackConfiguration::try_from_env(&env).unwrap();
+        let result =
+            DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env, None).unwrap();
 
         assert_eq!(result.build_configuration, Some("Release".to_string()));
         assert_eq!(result.execution_environment, ExecutionEnvironment::Test);

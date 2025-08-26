@@ -68,9 +68,11 @@ impl Buildpack for DotnetBuildpack {
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
         let project_toml_config = load_project_toml_config(&context.app_dir)?;
 
-        let buildpack_configuration =
-            DotnetBuildpackConfiguration::try_from_env(&Env::from_current())
-                .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
+        let buildpack_configuration = DotnetBuildpackConfiguration::try_from_env_and_project_toml(
+            &Env::from_current(),
+            project_toml_config.as_ref(),
+        )
+        .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
 
         bullet_stream::global::set_writer(std::io::stdout());
         print::h2("Heroku .NET Buildpack");
