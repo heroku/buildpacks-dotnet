@@ -44,6 +44,22 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             "determining if we must run the Heroku .NET buildpack for this application",
             io_error,
         ),
+        DotnetBuildpackError::ReadProjectTomlFile(io_error) => log_io_error_to(
+            &mut writer,
+            "Error reading `project.toml` file",
+            "reading `project.toml` file",
+            io_error,
+        ),
+        DotnetBuildpackError::ParseProjectToml(error) => log_error_to(
+            &mut writer,
+            "Invalid `project.toml` file",
+            formatdoc! {"
+                We can't parse the `project.toml` file because it contains invalid TOML.
+
+                Use the debug information above to troubleshoot and retry your build.
+            "},
+            Some(error.to_string()),
+        ),
         DotnetBuildpackError::NoSolutionProjects(solution_path) => {
             log_error_to(
                 &mut writer,
