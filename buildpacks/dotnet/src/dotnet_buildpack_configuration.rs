@@ -15,7 +15,9 @@ pub(crate) enum DotnetBuildpackConfigurationError {
 }
 
 impl DotnetBuildpackConfiguration {
-    pub(crate) fn try_from(env: &libcnb::Env) -> Result<Self, DotnetBuildpackConfigurationError> {
+    pub(crate) fn try_from_env(
+        env: &libcnb::Env,
+    ) -> Result<Self, DotnetBuildpackConfigurationError> {
         Ok(Self {
             build_configuration: env.get_string_lossy("BUILD_CONFIGURATION"),
             execution_environment: env
@@ -115,7 +117,7 @@ mod tests {
     #[test]
     fn test_default_buildpack_configuration() {
         let env = create_env(&[]);
-        let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
+        let result = DotnetBuildpackConfiguration::try_from_env(&env).unwrap();
 
         assert_eq!(
             result,
@@ -134,7 +136,7 @@ mod tests {
             ("MSBUILD_VERBOSITY_LEVEL", "Detailed"),
             ("CNB_EXEC_ENV", "test"),
         ]);
-        let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
+        let result = DotnetBuildpackConfiguration::try_from_env(&env).unwrap();
 
         assert_eq!(result.build_configuration, Some("Release".to_string()));
         assert_eq!(result.execution_environment, ExecutionEnvironment::Test);
