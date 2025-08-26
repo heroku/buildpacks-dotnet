@@ -149,19 +149,14 @@ mod tests {
 
     #[test]
     fn test_parse_execution_environment() {
-        let cases = [
-            ("production", Ok(ExecutionEnvironment::Production)),
-            ("test", Ok(ExecutionEnvironment::Test)),
-            (
-                "foo",
-                Err(ExecutionEnvironmentError::UnsupportedExecutionEnvironment(
-                    "foo".to_string(),
-                )),
-            ),
-        ];
-        for (input, expected) in cases {
-            assert_eq!(ExecutionEnvironment::from_str(input), expected);
-        }
+        assert_eq!("production".parse(), Ok(ExecutionEnvironment::Production));
+        assert_eq!("test".parse(), Ok(ExecutionEnvironment::Test));
+        assert_eq!(
+            "invalid".parse::<ExecutionEnvironment>(),
+            Err(ExecutionEnvironmentError::UnsupportedExecutionEnvironment(
+                "invalid".to_string()
+            ))
+        );
     }
 
     #[test]
