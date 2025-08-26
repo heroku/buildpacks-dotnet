@@ -262,9 +262,9 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             ),
         },
         DotnetBuildpackError::ParseBuildpackConfiguration(error) => match error {
-            DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(
-                ParseVerbosityLevelError(verbosity_level),
-            ) => {
+            DotnetBuildpackConfigurationError::VerbosityLevel(ParseVerbosityLevelError(
+                verbosity_level,
+            )) => {
                 log_error_to(
                     &mut writer,
                     "Invalid MSBuild verbosity level",
@@ -286,7 +286,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     None,
                 );
             }
-            DotnetBuildpackConfigurationError::ExecutionEnvironmentError(error) => match error {
+            DotnetBuildpackConfigurationError::ExecutionEnvironment(error) => match error {
                 ExecutionEnvironmentError::UnsupportedExecutionEnvironment(
                     execution_environment,
                 ) => {
@@ -653,16 +653,16 @@ mod tests {
     #[test]
     fn test_parse_buildpack_configuration_invalid_msbuild_verbosity_level_error() {
         assert_error_snapshot(DotnetBuildpackError::ParseBuildpackConfiguration(
-            DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel(
-                ParseVerbosityLevelError("Foo".to_string()),
-            ),
+            DotnetBuildpackConfigurationError::VerbosityLevel(ParseVerbosityLevelError(
+                "Foo".to_string(),
+            )),
         ));
     }
 
     #[test]
     fn test_parse_buildpack_configuration_unsupported_execution_environment_error() {
         assert_error_snapshot(DotnetBuildpackError::ParseBuildpackConfiguration(
-            DotnetBuildpackConfigurationError::ExecutionEnvironmentError(
+            DotnetBuildpackConfigurationError::ExecutionEnvironment(
                 ExecutionEnvironmentError::UnsupportedExecutionEnvironment("foo".to_string()),
             ),
         ));

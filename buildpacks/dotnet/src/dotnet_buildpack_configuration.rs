@@ -10,8 +10,8 @@ pub(crate) struct DotnetBuildpackConfiguration {
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum DotnetBuildpackConfigurationError {
-    ExecutionEnvironmentError(ExecutionEnvironmentError),
-    InvalidMsbuildVerbosityLevel(ParseVerbosityLevelError),
+    ExecutionEnvironment(ExecutionEnvironmentError),
+    VerbosityLevel(ParseVerbosityLevelError),
 }
 
 impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
@@ -27,13 +27,13 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
                     || Ok(ExecutionEnvironment::Production),
                     ExecutionEnvironment::from_str,
                 )
-                .map_err(DotnetBuildpackConfigurationError::ExecutionEnvironmentError)?,
+                .map_err(DotnetBuildpackConfigurationError::ExecutionEnvironment)?,
             msbuild_verbosity_level: env
                 .get("MSBUILD_VERBOSITY_LEVEL")
                 .map(|value| value.to_string_lossy())
                 .map(|value| value.parse())
                 .transpose()
-                .map_err(DotnetBuildpackConfigurationError::InvalidMsbuildVerbosityLevel)?,
+                .map_err(DotnetBuildpackConfigurationError::VerbosityLevel)?,
         })
     }
 }
