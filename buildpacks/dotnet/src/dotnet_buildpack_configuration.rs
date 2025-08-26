@@ -129,11 +129,20 @@ mod tests {
     }
 
     #[test]
-    fn test_buildpack_configuration_test_execution_environment() {
-        let env = create_env(&[("CNB_EXEC_ENV", "test")]);
+    fn test_env_overrides_default_config() {
+        let env = create_env(&[
+            ("BUILD_CONFIGURATION", "Release"),
+            ("MSBUILD_VERBOSITY_LEVEL", "Detailed"),
+            ("CNB_EXEC_ENV", "test"),
+        ]);
         let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
 
+        assert_eq!(result.build_configuration, Some("Release".to_string()));
         assert_eq!(result.execution_environment, ExecutionEnvironment::Test);
+        assert_eq!(
+            result.msbuild_verbosity_level,
+            Some(VerbosityLevel::Detailed)
+        );
     }
 
     #[test]
