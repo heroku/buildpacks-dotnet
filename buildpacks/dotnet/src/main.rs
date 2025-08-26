@@ -6,6 +6,7 @@ mod dotnet_sdk_command;
 mod errors;
 mod launch_process;
 mod layers;
+mod project_toml;
 mod utils;
 
 use crate::dotnet::global_json::{GlobalJson, SdkConfig};
