@@ -181,9 +181,8 @@ mod tests {
         ];
 
         for (input, expected) in cases {
-            let env = create_env(&[("MSBUILD_VERBOSITY_LEVEL", input)]);
-            let result = detect_msbuild_verbosity_level(&env);
-            assert_eq!(result, Some(expected));
+            let result = input.parse();
+            assert_eq!(result, expected);
         }
         assert!(detect_msbuild_verbosity_level(&Env::new()).is_none());
     }
