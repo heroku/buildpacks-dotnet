@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2025-08-27
+
 ### Added
 
 - Support for customizing the default build configuration and MSBuild verbosity level with a `project.toml` file. ([#303](https://github.com/heroku/buildpacks-dotnet/pull/303))
@@ -249,7 +251,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.6.1...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/heroku/buildpacks-dotnet/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.8...v0.6.0
 [0.5.8]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.7...v0.5.8
