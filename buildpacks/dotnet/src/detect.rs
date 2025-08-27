@@ -38,6 +38,12 @@ pub(crate) fn dotnet_tools_manifest_file<P: AsRef<Path>>(dir: P) -> Option<PathB
     path.is_file().then_some(path)
 }
 
+/// Returns the path to `project.toml` if it exists in the given directory.
+pub(crate) fn project_toml_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
+    let path = dir.as_ref().join("project.toml");
+    path.is_file().then_some(path)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -118,6 +124,34 @@ mod tests {
         fs::create_dir(global_json_path).unwrap();
 
         let result = global_json_file(temp_dir.path());
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_project_toml_file_exists() {
+        let temp_dir = TempDir::new().unwrap();
+        let project_toml_path = temp_dir.path().join("project.toml");
+
+        File::create(&project_toml_path).unwrap();
+
+        let result = project_toml_file(temp_dir.path());
+        assert_eq!(result, Some(project_toml_path));
+    }
+
+    #[test]
+    fn test_project_toml_file_does_not_exist() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = project_toml_file(temp_dir.path());
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_project_toml_file_is_directory() {
+        let temp_dir = TempDir::new().unwrap();
+        let project_toml_path = temp_dir.path().join("project.toml");
+        fs::create_dir(project_toml_path).unwrap();
+
+        let result = project_toml_file(temp_dir.path());
         assert_eq!(result, None);
     }
 }

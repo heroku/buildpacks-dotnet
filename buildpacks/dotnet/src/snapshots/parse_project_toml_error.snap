@@ -1,0 +1,15 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+- [1;36mDebug info[0m
+  - TOML parse error at line 1, column 4
+      |
+    1 | foo
+      |    ^
+    key with no value, expected `=`
+
+[0;31m! Invalid `project.toml` file[0m
+[0;31m![0m
+[0;31m! We can't parse the `project.toml` file because it contains invalid TOML.[0m
+[0;31m![0m
+[0;31m! Use the debug information above to troubleshoot and retry your build.[0m

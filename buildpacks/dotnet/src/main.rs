@@ -6,6 +6,7 @@ mod dotnet_sdk_command;
 mod errors;
 mod launch_process;
 mod layers;
+mod project_toml;
 mod utils;
 
 use crate::dotnet::global_json::{GlobalJson, SdkConfig};
@@ -18,6 +19,7 @@ use crate::dotnet_buildpack_configuration::{
 };
 use crate::dotnet_sdk_command::{DotnetPublishCommand, DotnetTestCommand};
 use crate::layers::sdk::SdkLayerError;
+use crate::project_toml::DotnetConfig;
 use bullet_stream::fun_run::{self, CommandWithName};
 use bullet_stream::global::print;
 use bullet_stream::style;
@@ -64,8 +66,13 @@ impl Buildpack for DotnetBuildpack {
 
     #[allow(clippy::too_many_lines)]
     fn build(&self, context: BuildContext<Self>) -> libcnb::Result<BuildResult, Self::Error> {
-        let buildpack_configuration = DotnetBuildpackConfiguration::try_from(&Env::from_current())
-            .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
+        let project_toml_config = load_project_toml_config(&context.app_dir)?;
+
+        let buildpack_configuration = DotnetBuildpackConfiguration::try_from_env_and_project_toml(
+            &Env::from_current(),
+            project_toml_config.as_ref(),
+        )
+        .map_err(DotnetBuildpackError::ParseBuildpackConfiguration)?;
 
         bullet_stream::global::set_writer(std::io::stdout());
         print::h2("Heroku .NET Buildpack");
@@ -225,6 +232,19 @@ impl Buildpack for DotnetBuildpack {
     }
 }
 
+fn load_project_toml_config(app_dir: &Path) -> Result<Option<DotnetConfig>, DotnetBuildpackError> {
+    detect::project_toml_file(app_dir).map_or_else(
+        || Ok(None),
+        |file| {
+            fs_err::read_to_string(file)
+                .map_err(DotnetBuildpackError::ReadProjectTomlFile)
+                .and_then(|content| {
+                    project_toml::parse(&content).map_err(DotnetBuildpackError::ParseProjectToml)
+                })
+        },
+    )
+}
+
 #[instrument(skip_all, err(Debug), fields(
     os.type = %target.os,
     host.arch = %target.arch,
@@ -377,6 +397,8 @@ fn detect_global_json_sdk_configuration(
 #[derive(Debug)]
 enum DotnetBuildpackError {
     BuildpackDetection(io::Error),
+    ReadProjectTomlFile(io::Error),
+    ParseProjectToml(toml::de::Error),
     NoSolutionProjects(PathBuf),
     MultipleRootDirectoryProjectFiles(Vec<PathBuf>),
     LoadSolutionFile(dotnet::solution::LoadError),

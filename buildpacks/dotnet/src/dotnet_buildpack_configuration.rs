@@ -1,3 +1,4 @@
+use crate::project_toml::DotnetConfig;
 use std::fmt;
 use std::str::FromStr;
 
@@ -14,12 +15,16 @@ pub(crate) enum DotnetBuildpackConfigurationError {
     VerbosityLevel(ParseVerbosityLevelError),
 }
 
-impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
-    type Error = DotnetBuildpackConfigurationError;
-
-    fn try_from(env: &libcnb::Env) -> Result<Self, Self::Error> {
+impl DotnetBuildpackConfiguration {
+    pub(crate) fn try_from_env_and_project_toml(
+        env: &libcnb::Env,
+        project_toml_config: Option<&DotnetConfig>,
+    ) -> Result<Self, DotnetBuildpackConfigurationError> {
+        let msbuild_config = project_toml_config.and_then(|config| config.msbuild.as_ref());
         Ok(Self {
-            build_configuration: env.get_string_lossy("BUILD_CONFIGURATION"),
+            build_configuration: env
+                .get_string_lossy("BUILD_CONFIGURATION")
+                .or_else(|| msbuild_config?.configuration.clone()),
             execution_environment: env
                 .get_string_lossy("CNB_EXEC_ENV")
                 .as_deref()
@@ -30,7 +35,9 @@ impl TryFrom<&libcnb::Env> for DotnetBuildpackConfiguration {
                 .map_err(DotnetBuildpackConfigurationError::ExecutionEnvironment)?,
             msbuild_verbosity_level: env
                 .get_string_lossy("MSBUILD_VERBOSITY_LEVEL")
-                .map(|value| value.parse())
+                .as_deref()
+                .or_else(|| msbuild_config?.verbosity.as_deref())
+                .map(str::parse)
                 .transpose()
                 .map_err(DotnetBuildpackConfigurationError::VerbosityLevel)?,
         })
@@ -104,6 +111,7 @@ impl fmt::Display for VerbosityLevel {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::project_toml::MsbuildConfig;
     use libcnb::Env;
 
     fn create_env(variables: &[(&str, &str)]) -> Env {
@@ -117,7 +125,8 @@ mod tests {
     #[test]
     fn test_default_buildpack_configuration() {
         let env = create_env(&[]);
-        let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
+        let result =
+            DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env, None).unwrap();
 
         assert_eq!(
             result,
@@ -130,13 +139,35 @@ mod tests {
     }
 
     #[test]
-    fn test_env_overrides_default_config() {
+    fn test_project_toml_overrides_default_config() {
+        let project_toml_config = DotnetConfig {
+            msbuild: Some(MsbuildConfig {
+                configuration: Some("Debug".to_string()),
+                verbosity: Some("Detailed".to_string()),
+            }),
+        };
+        let result = DotnetBuildpackConfiguration::try_from_env_and_project_toml(
+            &create_env(&[]),
+            Some(&project_toml_config),
+        )
+        .unwrap();
+
+        assert_eq!(result.build_configuration, Some("Debug".to_string()));
+        assert_eq!(
+            result.msbuild_verbosity_level,
+            Some(VerbosityLevel::Detailed)
+        );
+    }
+
+    #[test]
+    fn test_env_overrides_project_toml() {
         let env = create_env(&[
             ("BUILD_CONFIGURATION", "Release"),
             ("MSBUILD_VERBOSITY_LEVEL", "Detailed"),
             ("CNB_EXEC_ENV", "test"),
         ]);
-        let result = DotnetBuildpackConfiguration::try_from(&env).unwrap();
+        let result =
+            DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env, None).unwrap();
 
         assert_eq!(result.build_configuration, Some("Release".to_string()));
         assert_eq!(result.execution_environment, ExecutionEnvironment::Test);

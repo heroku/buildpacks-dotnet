@@ -90,6 +90,22 @@ fn test_dotnet_publish_with_debug_configuration() {
 
 #[test]
 #[ignore = "integration test"]
+fn test_dotnet_publish_with_project_toml_configuration() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/project_with_project_toml"),
+        |context| {
+            let rid = get_rid();
+            assert_contains!(
+                &context.pack_stdout,
+                &formatdoc! {r#"
+                    - Running `dotnet publish /workspace/foo.csproj --runtime {rid} "-p:PublishDir=bin/publish" --artifacts-path /tmp/build_artifacts --configuration Debug --verbosity quiet`"#}
+            );
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
 fn test_dotnet_publish_process_registration_with_procfile() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/basic_web_9.0_with_procfile"),
