@@ -54,6 +54,33 @@ To install a different .NET SDK version, add a [`global.json` file][global-json]
 
 A complete inventory of supported .NET SDK versions and platforms [is available here](./buildpacks/dotnet/inventory.toml).
 
+### MSBuild
+
+The recommended way to customize MSBuild is by creating a `project.toml` file in the root of your project. This allows you to change the default build configuration, `Release`, and the default verbosity level, `minimal`.
+
+```toml
+[_]
+schema-version = "0.2"
+
+[com.heroku.buildpacks.dotnet.msbuild]
+configuration = "Debug"
+verbosity = "quiet"
+```
+
+Alternatively, you can use the `BUILD_CONFIGURATION` and `MSBUILD_VERBOSITY_LEVEL` environment variables during build.
+
+To build using a `Debug` build configuration and `detailed` verbosity level:
+
+```bash
+$ pack build sample-app \
+    --env "BUILD_CONFIGURATION=Debug" \
+    --env "MSBUILD_VERBOSITY_LEVEL=detailed" \
+    --builder heroku/builder:24
+```
+
+> [!NOTE]
+> If you use both a `project.toml` file and environment variables, the settings from the environment variables will take precedence.
+
 ## Contributing
 
 Issues and pull requests are welcome. See our [contributing guidelines](./CONTRIBUTING.md) if you would like to help.
