@@ -79,7 +79,17 @@ impl Buildpack for DotnetBuildpack {
         let started = std::time::Instant::now();
         print::bullet("SDK version detection");
 
-        let solution = get_solution_to_publish(&context.app_dir)?;
+        let solution = buildpack_configuration.solution_file.map_or_else(
+            || get_solution_to_publish(&context.app_dir),
+            |path| {
+                print::sub_bullet(format!(
+                    "Using configured solution file: {}",
+                    style::value(path.to_string_lossy())
+                ));
+                Solution::load_from_path(&context.app_dir.join(context.app_dir.join(path)))
+                    .map_err(DotnetBuildpackError::LoadSolutionFile)
+            },
+        )?;
 
         let sdk_version_requirement = detect_sdk_version_requirement(&context, &solution)?;
 
