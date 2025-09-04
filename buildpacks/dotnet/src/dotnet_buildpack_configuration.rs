@@ -42,7 +42,7 @@ impl DotnetBuildpackConfiguration {
                 .map(str::parse)
                 .transpose()
                 .map_err(DotnetBuildpackConfigurationError::VerbosityLevel)?,
-            solution_file: None,
+            solution_file: project_toml_config.and_then(|config| config.solution_file.clone()),
         })
     }
 }
@@ -149,6 +149,7 @@ mod tests {
                 configuration: Some("Debug".to_string()),
                 verbosity: Some("Detailed".to_string()),
             }),
+            solution_file: Some(PathBuf::from("foo.sln")),
         };
         let result = DotnetBuildpackConfiguration::try_from_env_and_project_toml(
             &create_env(&[]),
@@ -156,7 +157,7 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(result.solution_file, None);
+        assert_eq!(result.solution_file, Some(PathBuf::from("foo.sln")));
         assert_eq!(result.build_configuration, Some("Debug".to_string()));
         assert_eq!(
             result.msbuild_verbosity_level,
