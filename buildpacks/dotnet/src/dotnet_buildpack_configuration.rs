@@ -1,5 +1,6 @@
 use crate::project_toml::DotnetConfig;
 use std::fmt;
+use std::path::PathBuf;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
@@ -7,6 +8,7 @@ pub(crate) struct DotnetBuildpackConfiguration {
     pub(crate) build_configuration: Option<String>,
     pub(crate) execution_environment: ExecutionEnvironment,
     pub(crate) msbuild_verbosity_level: Option<VerbosityLevel>,
+    pub(crate) solution_file: Option<PathBuf>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -40,6 +42,7 @@ impl DotnetBuildpackConfiguration {
                 .map(str::parse)
                 .transpose()
                 .map_err(DotnetBuildpackConfigurationError::VerbosityLevel)?,
+            solution_file: None,
         })
     }
 }
@@ -133,7 +136,8 @@ mod tests {
             DotnetBuildpackConfiguration {
                 build_configuration: None,
                 execution_environment: ExecutionEnvironment::Production,
-                msbuild_verbosity_level: None
+                msbuild_verbosity_level: None,
+                solution_file: None
             }
         );
     }
@@ -152,6 +156,7 @@ mod tests {
         )
         .unwrap();
 
+        assert_eq!(result.solution_file, None);
         assert_eq!(result.build_configuration, Some("Debug".to_string()));
         assert_eq!(
             result.msbuild_verbosity_level,
