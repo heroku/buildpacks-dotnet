@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Solution file paths in the root directory are now consistently sorted by the buildpack. ([#311](https://github.com/heroku/buildpacks-dotnet/pull/311))
+
 ## [0.7.0] - 2025-08-27
 
 ### Added
