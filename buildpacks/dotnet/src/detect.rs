@@ -6,9 +6,7 @@ pub(crate) fn project_file_paths<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathB
 }
 
 pub(crate) fn solution_file_paths<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
-    let mut solution_files = get_files_with_extensions(dir.as_ref(), &["sln"])?;
-    solution_files.sort();
-    Ok(solution_files)
+    get_files_with_extensions(dir.as_ref(), &["sln"])
 }
 
 pub(crate) fn get_files_with_extensions(
