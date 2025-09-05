@@ -86,7 +86,7 @@ impl Buildpack for DotnetBuildpack {
                     "Using configured solution file: {}",
                     style::value(path.to_string_lossy())
                 ));
-                Solution::load_from_path(&context.app_dir.join(context.app_dir.join(path)))
+                Solution::load_from_path(&context.app_dir.join(path))
                     .map_err(DotnetBuildpackError::LoadSolutionFile)
             },
         )?;
