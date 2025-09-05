@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Solution file paths in the root directory are now consistently sorted by the buildpack. ([#311](https://github.com/heroku/buildpacks-dotnet/pull/311))
+- The buildpack now requires an explicitly configured solution file when multiple solutions are present in the root directory. ([#312](https://github.com/heroku/buildpacks-dotnet/pull/312))
 
 ### Added
 

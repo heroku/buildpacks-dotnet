@@ -332,33 +332,40 @@ fn detect_sdk_version_requirement(
 fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackError> {
     let solution_file_paths =
         detect::solution_file_paths(app_dir).expect("function to pass after detection");
-    // TODO: Handle situation where multiple solution files are found (e.g. by logging a
-    // warning, or by building all solutions).
-    if let Some(solution_file) = solution_file_paths.first() {
-        print::sub_bullet(format!(
-            "Detected .NET solution: {}",
-            style::value(solution_file.to_string_lossy())
-        ));
-        Solution::load_from_path(solution_file).map_err(DotnetBuildpackError::LoadSolutionFile)
-    } else {
-        let project_file_paths =
-            detect::project_file_paths(app_dir).expect("function to pass after detection");
-
-        match project_file_paths.as_slice() {
-            [single_project] => Ok(Solution::ephemeral(
-                Project::load_from_path(single_project)
-                    .map_err(DotnetBuildpackError::LoadProjectFile)
-                    .inspect(|project| {
-                        print::sub_bullet(format!(
-                            "Detected .NET project: {}",
-                            style::value(project.path.to_string_lossy())
-                        ));
-                    })?,
-            )),
-            _ => Err(DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
-                project_file_paths,
-            )),
+    match solution_file_paths.as_slice() {
+        // A single solution file was found.
+        [solution_file] => {
+            print::sub_bullet(format!(
+                "Detected .NET solution: {}",
+                style::value(solution_file.to_string_lossy())
+            ));
+            Solution::load_from_path(solution_file).map_err(DotnetBuildpackError::LoadSolutionFile)
         }
+        // No solution files were found, so we look for project files.
+        [] => {
+            let project_file_paths =
+                detect::project_file_paths(app_dir).expect("function to pass after detection");
+
+            match project_file_paths.as_slice() {
+                [single_project] => Ok(Solution::ephemeral(
+                    Project::load_from_path(single_project)
+                        .map_err(DotnetBuildpackError::LoadProjectFile)
+                        .inspect(|project| {
+                            print::sub_bullet(format!(
+                                "Detected .NET project: {}",
+                                style::value(project.path.to_string_lossy())
+                            ));
+                        })?,
+                )),
+                _ => Err(DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
+                    project_file_paths,
+                )),
+            }
+        }
+        // Multiple solution files were found, so we return an error.
+        _ => Err(DotnetBuildpackError::MultipleRootDirectorySolutionFiles(
+            solution_file_paths,
+        )),
     }
 }
 
@@ -409,6 +416,7 @@ enum DotnetBuildpackError {
     ReadProjectTomlFile(io::Error),
     ParseProjectToml(toml::de::Error),
     NoSolutionProjects(PathBuf),
+    MultipleRootDirectorySolutionFiles(Vec<PathBuf>),
     MultipleRootDirectoryProjectFiles(Vec<PathBuf>),
     LoadSolutionFile(dotnet::solution::LoadError),
     LoadProjectFile(dotnet::project::LoadError),

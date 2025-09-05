@@ -78,6 +78,24 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 None,
             );
         }
+        DotnetBuildpackError::MultipleRootDirectorySolutionFiles(paths) => log_error_to(
+            &mut writer,
+            "Multiple .NET solution files",
+            formatdoc! {"
+                The root directory contains multiple .NET solution files: `{}`.
+
+                When there are multiple solution files in the root directory, you must specify
+                which one to use.
+
+                For more information, see:
+                https://github.com/heroku/buildpacks-dotnet#solution-file
+                ", paths.iter()
+                    .map(|f| f.to_string_lossy().to_string())
+                    .collect::<Vec<String>>()
+                    .join("`, `"),
+            },
+            None,
+        ),
         DotnetBuildpackError::MultipleRootDirectoryProjectFiles(paths) => log_error_to(
             &mut writer,
             "Multiple .NET project files",
@@ -500,6 +518,13 @@ mod tests {
         assert_error_snapshot(DotnetBuildpackError::NoSolutionProjects(PathBuf::from(
             "/foo/bar.sln",
         )));
+    }
+
+    #[test]
+    fn test_multiple_root_directory_solution_files_error() {
+        assert_error_snapshot(DotnetBuildpackError::MultipleRootDirectorySolutionFiles(
+            vec![PathBuf::from("foo.sln"), PathBuf::from("bar.sln")],
+        ));
     }
 
     #[test]
