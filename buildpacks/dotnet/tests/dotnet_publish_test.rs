@@ -108,13 +108,10 @@ fn test_dotnet_publish_with_project_toml_configuration() {
 #[ignore = "integration test"]
 fn test_solution_detection_with_multiple_workspace_root_solutions() {
     TestRunner::default().build(
-        default_build_config("tests/fixtures/multiple_solutions"),
+        default_build_config("tests/fixtures/multiple_solutions")
+            .expected_pack_result(PackResult::Failure),
         |context| {
-            assert_empty!(context.pack_stderr);
-            assert_contains!(
-                context.pack_stdout,
-                "- Detected .NET solution: `/workspace/bar.sln`"
-            );
+            assert_contains!(context.pack_stdout, "! Multiple .NET solution files");
         },
     );
 }

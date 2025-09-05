@@ -333,10 +333,8 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
     let solution_file_paths =
         detect::solution_file_paths(app_dir).expect("function to pass after detection");
     match solution_file_paths.as_slice() {
-        // TODO: Handle situation where multiple solution files are found (e.g. by logging a
-        // warning, or by building all solutions).
-        // One or more solution files were found. Use the first one.
-        [solution_file, ..] => {
+        // A single solution file was found.
+        [solution_file] => {
             print::sub_bullet(format!(
                 "Detected .NET solution: {}",
                 style::value(solution_file.to_string_lossy())
@@ -364,6 +362,10 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
                 )),
             }
         }
+        // Multiple solution files were found, so we return an error.
+        _ => Err(DotnetBuildpackError::MultipleRootDirectorySolutionFiles(
+            solution_file_paths,
+        )),
     }
 }
 
@@ -414,6 +416,7 @@ enum DotnetBuildpackError {
     ReadProjectTomlFile(io::Error),
     ParseProjectToml(toml::de::Error),
     NoSolutionProjects(PathBuf),
+    MultipleRootDirectorySolutionFiles(Vec<PathBuf>),
     MultipleRootDirectoryProjectFiles(Vec<PathBuf>),
     LoadSolutionFile(dotnet::solution::LoadError),
     LoadProjectFile(dotnet::project::LoadError),
