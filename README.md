@@ -54,6 +54,20 @@ To install a different .NET SDK version, add a [`global.json` file][global-json]
 
 A complete inventory of supported .NET SDK versions and platforms [is available here](./buildpacks/dotnet/inventory.toml).
 
+### Solution File
+
+By default, the buildpack automatically detects the solution or project file to build and publish. However, if your codebase contains multiple solution files in the root directory, you must specify which one to use.
+
+To configure the solution for publishing, create a `project.toml` file in the root of your project:
+
+```toml
+[_]
+schema-version = "0.2"
+
+[com.heroku.buildpacks.dotnet]
+solution_file = "foo.sln"
+```
+
 ### MSBuild
 
 The recommended way to customize MSBuild is by creating a `project.toml` file in the root of your project. This allows you to change the default build configuration, `Release`, and the default verbosity level, `minimal`.

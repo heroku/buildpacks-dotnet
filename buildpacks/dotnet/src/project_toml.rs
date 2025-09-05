@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::path::PathBuf;
 
 #[derive(Debug, Deserialize)]
 struct ProjectToml {
@@ -23,6 +24,7 @@ struct BuildpacksSection {
 #[derive(Debug, Deserialize)]
 pub(crate) struct DotnetConfig {
     pub(crate) msbuild: Option<MsbuildConfig>,
+    pub(crate) solution_file: Option<PathBuf>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -49,6 +51,7 @@ mod tests {
     fn test_parse() {
         let project_toml_content = r#"
 [com.heroku.buildpacks.dotnet]
+solution_file = "foo.sln"
 msbuild.configuration = "Debug"
 msbuild.verbosity = "Detailed"
 "#;
@@ -58,6 +61,7 @@ msbuild.verbosity = "Detailed"
         assert!(result.is_some());
 
         let config = result.unwrap();
+        assert_eq!(config.solution_file, Some(PathBuf::from("foo.sln")));
         assert_eq!(
             config.msbuild.as_ref().unwrap().configuration,
             Some("Debug".to_string())
