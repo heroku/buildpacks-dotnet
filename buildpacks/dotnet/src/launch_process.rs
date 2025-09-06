@@ -7,19 +7,38 @@ use std::path::{Path, PathBuf};
 
 /// Detects processes in a solution's projects
 pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> Vec<Process> {
-    solution
+    let mut processes: Vec<Process> = solution
         .projects
         .iter()
-        .filter_map(|project| project_launch_process(app_dir, solution, project))
-        .collect()
+        .filter_map(|project| project_launch_process(app_dir, project))
+        .collect();
+
+    // If there's only one web application in the solution, set its process type to "web"
+    let web_app_count = solution
+        .projects
+        .iter()
+        .filter(|p| p.project_type == ProjectType::WebApplication)
+        .count();
+
+    if web_app_count == 1 {
+        for process in &mut processes {
+            if let Some(web_project) = solution
+                .projects
+                .iter()
+                .find(|p| p.project_type == ProjectType::WebApplication)
+                && process.r#type == project_process_type(web_project)
+            {
+                process.r#type = process_type!("web");
+                break;
+            }
+        }
+    }
+
+    processes
 }
 
 /// Determines if a project should have a launchable process and constructs it
-fn project_launch_process(
-    app_dir: &Path,
-    solution: &Solution,
-    project: &Project,
-) -> Option<Process> {
+fn project_launch_process(app_dir: &Path, project: &Project) -> Option<Process> {
     if !matches!(
         project.project_type,
         ProjectType::ConsoleApplication | ProjectType::WebApplication | ProjectType::WorkerService
@@ -30,21 +49,7 @@ fn project_launch_process(
 
     let command = build_command(&relative_executable_path, project.project_type);
 
-    let process_type = match project.project_type {
-        // If project is a web application, and there's only one web application in the solution,
-        // set the process type to `web`.
-        ProjectType::WebApplication
-            if solution
-                .projects
-                .iter()
-                .filter(|p| p.project_type == ProjectType::WebApplication)
-                .count()
-                == 1 =>
-        {
-            process_type!("web")
-        }
-        _ => project_process_type(project),
-    };
+    let process_type = project_process_type(project);
 
     Some(ProcessBuilder::new(process_type, ["bash", "-c", &command]).build())
 }
