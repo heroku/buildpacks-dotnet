@@ -7,9 +7,8 @@ use std::path::{Path, PathBuf};
 
 /// Detects processes in a solution's projects
 pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> Vec<Process> {
-    // First, determine if there is exactly one web application.
-    // This is cheap and avoids complex logic inside the main loop.
-    let is_single_web_app = solution
+    // Check if the solution contains exactly one web application.
+    let has_single_web_app = solution
         .projects
         .iter()
         .filter(|p| p.project_type == ProjectType::WebApplication)
@@ -20,11 +19,10 @@ pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> 
         .projects
         .iter()
         .filter_map(|project| {
-            // Attempt to create a launch process for the project.
             let mut process = project_launch_process(app_dir, project)?;
 
-            // If it's a web app and the only one, override its type to "web".
-            if is_single_web_app && project.project_type == ProjectType::WebApplication {
+            // If it's a web app and the only one, override its type.
+            if has_single_web_app && project.project_type == ProjectType::WebApplication {
                 process.r#type = process_type!("web");
             }
 
