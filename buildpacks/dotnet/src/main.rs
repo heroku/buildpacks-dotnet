@@ -197,7 +197,8 @@ impl Buildpack for DotnetBuildpack {
 
                 print::bullet("Process types");
                 print::sub_bullet("Detecting process types from published artifacts");
-                let processes = launch_process::detect_solution_processes(&solution);
+                let processes =
+                    launch_process::detect_solution_processes(&context.app_dir, &solution);
                 if processes.is_empty() {
                     print::sub_bullet("No processes were detected");
                 } else {
