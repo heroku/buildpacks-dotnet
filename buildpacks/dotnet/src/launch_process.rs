@@ -7,34 +7,30 @@ use std::path::{Path, PathBuf};
 
 /// Detects processes in a solution's projects
 pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> Vec<Process> {
-    let mut processes: Vec<Process> = solution
-        .projects
-        .iter()
-        .filter_map(|project| project_launch_process(app_dir, project))
-        .collect();
-
-    // If there's only one web application in the solution, set its process type to "web"
-    let web_app_count = solution
+    // First, determine if there is exactly one web application.
+    // This is cheap and avoids complex logic inside the main loop.
+    let is_single_web_app = solution
         .projects
         .iter()
         .filter(|p| p.project_type == ProjectType::WebApplication)
-        .count();
+        .count()
+        == 1;
 
-    if web_app_count == 1 {
-        for process in &mut processes {
-            if let Some(web_project) = solution
-                .projects
-                .iter()
-                .find(|p| p.project_type == ProjectType::WebApplication)
-                && process.r#type == project_process_type(web_project)
-            {
+    solution
+        .projects
+        .iter()
+        .filter_map(|project| {
+            // Attempt to create a launch process for the project.
+            let mut process = project_launch_process(app_dir, project)?;
+
+            // If it's a web app and the only one, override its type to "web".
+            if is_single_web_app && project.project_type == ProjectType::WebApplication {
                 process.r#type = process_type!("web");
-                break;
             }
-        }
-    }
 
-    processes
+            Some(process)
+        })
+        .collect()
 }
 
 /// Determines if a project should have a launchable process and constructs it
