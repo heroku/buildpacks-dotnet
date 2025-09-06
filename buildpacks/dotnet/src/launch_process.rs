@@ -26,7 +26,7 @@ fn project_launch_process(
     ) {
         return None;
     }
-    let relative_executable_path = relative_executable_path(app_dir, solution, project);
+    let relative_executable_path = relative_executable_path(app_dir, project);
 
     let command = build_command(&relative_executable_path, project.project_type);
 
@@ -85,7 +85,7 @@ fn project_process_type(project: &Project) -> ProcessType {
 }
 
 /// Returns the (expected) relative executable path from the app directory
-fn relative_executable_path(app_dir: &Path, _solution: &Solution, project: &Project) -> PathBuf {
+fn relative_executable_path(app_dir: &Path, project: &Project) -> PathBuf {
     project_executable_path(project)
         .strip_prefix(app_dir)
         .expect("Executable path should be inside the app directory")
@@ -225,11 +225,6 @@ mod tests {
     #[test]
     fn test_relative_executable_path() {
         let app_dir = Path::new("/tmp");
-        let solution = Solution {
-            path: PathBuf::from("/tmp/solution.sln"),
-            projects: vec![],
-        };
-
         let project = create_test_project(
             "/tmp/project/project.csproj",
             "TestApp",
@@ -237,7 +232,7 @@ mod tests {
         );
 
         assert_eq!(
-            relative_executable_path(app_dir, &solution, &project),
+            relative_executable_path(app_dir, &project),
             PathBuf::from("project/bin/publish/TestApp")
         );
     }
