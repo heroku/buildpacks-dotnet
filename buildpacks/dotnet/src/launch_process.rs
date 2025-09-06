@@ -271,4 +271,37 @@ mod tests {
             "cd 'some/project with #special$chars/bin/publish'; ./My-App+v1.2_Release!"
         );
     }
+
+    #[test]
+    fn test_detect_solution_processes_nested_solution() {
+        // This test demonstrates an issue with the current implementation: when a solution is nested in
+        // a subdirectory, it currently generates commands relative to the solution's parent
+        // directory instead of the app root directory.
+        let solution = Solution {
+            path: PathBuf::from("/tmp/src/MyApp.sln"), // Solution is in src/ subdirectory
+            projects: vec![create_test_project(
+                "/tmp/src/MyApp/MyApp.csproj", // Project is also in src/ subdirectory
+                "MyApp",
+                ProjectType::WebApplication,
+            )],
+        };
+
+        let expected_processes = vec![Process {
+            r#type: process_type!("web"),
+            // The command should be relative to the app_dir/root (/tmp), not the solution's parent (/tmp/src)
+            command: vec![
+                "bash".to_string(),
+                "-c".to_string(),
+                "cd src/MyApp/bin/publish; ./MyApp --urls http://*:$PORT".to_string(),
+            ],
+            args: vec![],
+            default: false,
+            working_directory: WorkingDirectory::App,
+        }];
+
+        // This test will fail with the current implementation because:
+        // - Current: cd MyApp/bin/publish; ./MyApp --urls http://*:$PORT (relative to /tmp/src)
+        // - Expected: cd src/MyApp/bin/publish; ./MyApp --urls http://*:$PORT (relative to /tmp)
+        assert_eq!(detect_solution_processes(&solution), expected_processes);
+    }
 }
