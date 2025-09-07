@@ -62,6 +62,7 @@ impl Buildpack for DotnetBuildpack {
                         For more information, see: https://github.com/heroku/buildpacks-dotnet#application-requirements
                     "};
                     std::io::stdout().flush().expect("Couldn't flush output stream");
+                    let _ = std::io::stdout().flush();
                     DetectResultBuilder::fail().build()
                 } else {
                     DetectResultBuilder::pass().build()
