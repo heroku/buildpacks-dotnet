@@ -55,7 +55,7 @@ impl Buildpack for DotnetBuildpack {
             .map(|paths| {
                 if paths.is_empty() {
                     println!("No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.");
-                    std::io::stdout().flush().expect("Couldn't flush output stream");
+                    let _ = std::io::stdout().flush();
                     DetectResultBuilder::fail().build()
                 } else {
                     DetectResultBuilder::pass().build()
