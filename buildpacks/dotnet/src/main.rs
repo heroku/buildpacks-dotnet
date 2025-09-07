@@ -51,17 +51,21 @@ impl Buildpack for DotnetBuildpack {
     type Error = DotnetBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
-        detect::get_files_with_extensions(&context.app_dir, &["sln", "csproj", "vbproj", "fsproj"])
-            .map(|paths| {
-                if paths.is_empty() {
-                    println!("No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.");
-                    let _ = std::io::stdout().flush();
-                    DetectResultBuilder::fail().build()
-                } else {
-                    DetectResultBuilder::pass().build()
-                }
-            })
-            .map_err(DotnetBuildpackError::BuildpackDetection)?
+        let paths = detect::get_files_with_extensions(
+            &context.app_dir,
+            &["sln", "csproj", "vbproj", "fsproj"],
+        )
+        .map_err(DotnetBuildpackError::BuildpackDetection)?;
+
+        if paths.is_empty() {
+            println!(
+                "No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found."
+            );
+            let _ = std::io::stdout().flush();
+            DetectResultBuilder::fail().build()
+        } else {
+            DetectResultBuilder::pass().build()
+        }
     }
 
     #[allow(clippy::too_many_lines)]
