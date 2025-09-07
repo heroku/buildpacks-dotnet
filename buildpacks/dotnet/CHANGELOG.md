@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Support for configuring the solution to build and publish in `project.toml`. ([#310](https://github.com/heroku/buildpacks-dotnet/pull/310))
+- Support for configuring the solution to build and publish in `project.toml`, including solutions located in subdirectories. ([#310](https://github.com/heroku/buildpacks-dotnet/pull/310), [#313](https://github.com/heroku/buildpacks-dotnet/pull/313))
 
 ## [0.7.0] - 2025-08-27
 
