@@ -67,9 +67,11 @@ impl Buildpack for DotnetBuildpack {
         .map_err(DotnetBuildpackError::BuildpackDetection)?;
 
         if paths.is_empty() {
+            println!("No .NET application found. This buildpack requires either:");
             println!(
-                "No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found."
+                "- .NET solution (`.sln`) or project (`.csproj`, `.vbproj`, `.fsproj`) files in the root directory"
             );
+            println!("- A `solution_file` configured in `project.toml`");
             let _ = std::io::stdout().flush();
             DetectResultBuilder::fail().build()
         } else {
