@@ -51,6 +51,15 @@ impl Buildpack for DotnetBuildpack {
     type Error = DotnetBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
+        // Check if a solution file is configured in project.toml
+        let project_toml_config = load_project_toml_config(&context.app_dir)?;
+        if let Some(config) = &project_toml_config
+            && config.solution_file.is_some()
+        {
+            return DetectResultBuilder::pass().build();
+        }
+
+        // Otherwise, perform standard detection by looking for .NET files
         let paths = detect::get_files_with_extensions(
             &context.app_dir,
             &["sln", "csproj", "vbproj", "fsproj"],
