@@ -9,4 +9,4 @@ source: buildpacks/dotnet/src/errors.rs
 [0;31m! which one to use.[0m
 [0;31m![0m
 [0;31m! For more information, see:[0m
-[0;31m! https://github.com/heroku/buildpacks-dotnet#solution-file[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet#solution-file-configuration[0m
