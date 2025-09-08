@@ -10,10 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The buildpack now requires an explicitly configured solution file when multiple solutions are present in the root directory. ([#312](https://github.com/heroku/buildpacks-dotnet/pull/312))
+- Enhanced detection failure error message with actionable guidance and link to relevant documentation. ([#314](https://github.com/heroku/buildpacks-dotnet/pull/314))
 
 ### Added
 
-- Support for configuring the solution to build and publish in `project.toml`, including solutions located in subdirectories. ([#310](https://github.com/heroku/buildpacks-dotnet/pull/310), [#313](https://github.com/heroku/buildpacks-dotnet/pull/313))
+- Support for configuring the solution to build and publish in `project.toml`, including solutions located in subdirectories. ([#310](https://github.com/heroku/buildpacks-dotnet/pull/310), [#313](https://github.com/heroku/buildpacks-dotnet/pull/313), [#314](https://github.com/heroku/buildpacks-dotnet/pull/314))
 
 ## [0.7.0] - 2025-08-27
 
