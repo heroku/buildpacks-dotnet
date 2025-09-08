@@ -72,6 +72,10 @@ impl Buildpack for DotnetBuildpack {
                 "- .NET solution (`.sln`) or project (`.csproj`, `.vbproj`, `.fsproj`) files in the root directory"
             );
             println!("- A `solution_file` configured in `project.toml`");
+            println!();
+            println!(
+                "For more information, see: https://github.com/heroku/buildpacks-dotnet#detection"
+            );
             let _ = std::io::stdout().flush();
             DetectResultBuilder::fail().build()
         } else {

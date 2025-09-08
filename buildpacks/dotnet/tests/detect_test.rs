@@ -14,6 +14,8 @@ fn detect_rejects_non_dotnet_projects() {
                     No .NET application found. This buildpack requires either:
                     - .NET solution (`.sln`) or project (`.csproj`, `.vbproj`, `.fsproj`) files in the root directory
                     - A `solution_file` configured in `project.toml`
+                    
+                    For more information, see: https://github.com/heroku/buildpacks-dotnet#detection
                     ======== Results ========"}
             );
         },
