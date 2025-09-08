@@ -1,0 +1,6 @@
+[_]
+schema-version = "0.2"
+
+[com.heroku.buildpacks.dotnet.msbuild]
+configuration = "Debug"
+verbosity = "quiet"

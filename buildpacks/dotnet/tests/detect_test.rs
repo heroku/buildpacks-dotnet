@@ -39,3 +39,20 @@ fn detect_passes_with_project_toml_solution_file() {
         },
     );
 }
+
+#[test]
+#[ignore = "integration test"]
+fn detect_rejects_project_toml_without_solution_file() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/project_toml_msbuild_only")
+            .expected_pack_result(PackResult::Failure),
+        |context| {
+            // Detection should fail because project.toml only has msbuild config,
+            // no solution_file, and no .NET files in root directory
+            assert_contains!(
+                context.pack_stdout,
+                "No .NET application found. This buildpack requires either:"
+            );
+        },
+    );
+}
