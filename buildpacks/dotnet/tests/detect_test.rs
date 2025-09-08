@@ -11,8 +11,47 @@ fn detect_rejects_non_dotnet_projects() {
             assert_contains!(
                 context.pack_stdout,
                 indoc! {"========
-                    No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.
+                    No .NET application found. This buildpack requires either:
+                    - .NET solution (`.sln`) or project (`.csproj`, `.vbproj`, `.fsproj`) files in the root directory
+                    - A `solution_file` configured in `project.toml`
+                    
+                    For more information, see: https://github.com/heroku/buildpacks-dotnet#detection
                     ======== Results ========"}
+            );
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
+fn detect_passes_with_project_toml_solution_file() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/project_toml_solution_only")
+            .expected_pack_result(PackResult::Failure),
+        |context| {
+            // Detection should pass because solution file is configured in project.toml
+            // Build will fail because the configured solution file doesn't exist
+            assert_contains!(context.pack_stdout, "===> DETECTING\nheroku/dotnet");
+            assert_contains!(
+                context.pack_stdout,
+                "Using configured solution file: `MyApp.sln`"
+            );
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
+fn detect_rejects_project_toml_without_solution_file() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/project_toml_msbuild_only")
+            .expected_pack_result(PackResult::Failure),
+        |context| {
+            // Detection should fail because project.toml only has msbuild config,
+            // no solution_file, and no .NET files in root directory
+            assert_contains!(
+                context.pack_stdout,
+                "No .NET application found. This buildpack requires either:"
             );
         },
     );

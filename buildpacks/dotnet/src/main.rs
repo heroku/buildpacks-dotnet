@@ -23,6 +23,7 @@ use crate::project_toml::DotnetConfig;
 use bullet_stream::fun_run::{self, CommandWithName};
 use bullet_stream::global::print;
 use bullet_stream::style;
+use indoc::printdoc;
 use inventory::artifact::{Arch, Os};
 use inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
@@ -51,17 +52,34 @@ impl Buildpack for DotnetBuildpack {
     type Error = DotnetBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
-        detect::get_files_with_extensions(&context.app_dir, &["sln", "csproj", "vbproj", "fsproj"])
-            .map(|paths| {
-                if paths.is_empty() {
-                    println!("No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.");
-                    std::io::stdout().flush().expect("Couldn't flush output stream");
-                    DetectResultBuilder::fail().build()
-                } else {
-                    DetectResultBuilder::pass().build()
-                }
-            })
-            .map_err(DotnetBuildpackError::BuildpackDetection)?
+        // Check if a solution file is configured in project.toml
+        let project_toml_config = load_project_toml_config(&context.app_dir)?;
+        if let Some(config) = &project_toml_config
+            && config.solution_file.is_some()
+        {
+            return DetectResultBuilder::pass().build();
+        }
+
+        // Otherwise, perform standard detection by looking for .NET files
+        let paths = detect::get_files_with_extensions(
+            &context.app_dir,
+            &["sln", "csproj", "vbproj", "fsproj"],
+        )
+        .map_err(DotnetBuildpackError::BuildpackDetection)?;
+
+        if paths.is_empty() {
+            printdoc! {"
+                No .NET application found. This buildpack requires either:
+                - .NET solution (`.sln`) or project (`.csproj`, `.vbproj`, `.fsproj`) files in the root directory
+                - A `solution_file` configured in `project.toml`
+
+                For more information, see: https://github.com/heroku/buildpacks-dotnet#detection
+            "};
+            let _ = std::io::stdout().flush();
+            DetectResultBuilder::fail().build()
+        } else {
+            DetectResultBuilder::pass().build()
+        }
     }
 
     #[allow(clippy::too_many_lines)]
