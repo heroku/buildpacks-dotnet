@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2025-09-08
+
 ### Changed
 
 - The buildpack now requires an explicitly configured solution file when multiple solutions are present in the root directory. ([#312](https://github.com/heroku/buildpacks-dotnet/pull/312))
@@ -260,7 +262,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.7.0...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/heroku/buildpacks-dotnet/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.5.8...v0.6.0
