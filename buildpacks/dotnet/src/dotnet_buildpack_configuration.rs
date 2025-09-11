@@ -170,6 +170,32 @@ mod tests {
         let env = create_env(&[
             ("BUILD_CONFIGURATION", "Release"),
             ("MSBUILD_VERBOSITY_LEVEL", "Detailed"),
+        ]);
+        let project_toml_config = DotnetConfig {
+            msbuild: Some(MsbuildConfig {
+                configuration: Some("Debug".to_string()),
+                verbosity: Some("Quiet".to_string()),
+            }),
+            solution_file: None,
+        };
+        let result = DotnetBuildpackConfiguration::try_from_env_and_project_toml(
+            &env,
+            Some(&project_toml_config),
+        )
+        .unwrap();
+
+        assert_eq!(result.build_configuration, Some("Release".to_string()));
+        assert_eq!(
+            result.msbuild_verbosity_level,
+            Some(VerbosityLevel::Detailed)
+        );
+    }
+
+    #[test]
+    fn test_env_vars_override_default_config() {
+        let env = create_env(&[
+            ("BUILD_CONFIGURATION", "Release"),
+            ("MSBUILD_VERBOSITY_LEVEL", "Detailed"),
             ("CNB_EXEC_ENV", "test"),
         ]);
         let result =
