@@ -52,15 +52,6 @@ impl Buildpack for DotnetBuildpack {
     type Error = DotnetBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
-        // Check if a solution file is configured in project.toml
-        let project_toml_config = load_project_toml_config(&context.app_dir)?;
-        if let Some(config) = &project_toml_config
-            && config.solution_file.is_some()
-        {
-            return DetectResultBuilder::pass().build();
-        }
-
-        // Otherwise, perform standard detection by looking for .NET files
         let paths = detect::get_files_with_extensions(
             &context.app_dir,
             &["sln", "csproj", "vbproj", "fsproj"],
@@ -69,11 +60,10 @@ impl Buildpack for DotnetBuildpack {
 
         if paths.is_empty() {
             printdoc! {"
-                No .NET application found. This buildpack requires either:
-                - .NET solution (`.sln`) or project (`.csproj`, `.vbproj`, `.fsproj`) files in the root directory
-                - A `solution_file` configured in `project.toml`
-
-                For more information, see: https://github.com/heroku/buildpacks-dotnet#detection
+                No .NET application found. This buildpack requires solution (`.sln`)
+                or project (`.csproj`, `.vbproj`, `.fsproj`) files in the root directory.
+                
+                For more information, see: https://github.com/heroku/buildpacks-dotnet#application-requirements
             "};
             let _ = std::io::stdout().flush();
             DetectResultBuilder::fail().build()

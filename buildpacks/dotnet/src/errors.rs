@@ -88,7 +88,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 which one to use.
 
                 For more information, see:
-                https://github.com/heroku/buildpacks-dotnet#solution-file-configuration
+                https://github.com/heroku/buildpacks-dotnet#solution-file
                 ", paths.iter()
                     .map(|f| f.to_string_lossy().to_string())
                     .collect::<Vec<String>>()
