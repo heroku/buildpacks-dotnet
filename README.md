@@ -31,27 +31,9 @@ docker run --rm -it -e "PORT=8080" -p 8080:8080 sample-app
 
 ## Application Requirements
 
-The buildpack supports C#, Visual Basic and F# projects using the .NET and ASP.NET Core frameworks (version 8.0 and up).
+A solution file (e.g. `MySolution.sln`) or .NET project file (e.g. `*.csproj`, `*.vbproj` or `*.fsproj`) must be present in the application’s root directory. If the root directory contains both solution and project files, the solution file will be preferred for the build and publish process.
 
-## Detection
-
-Detection will pass and your app will be built if one of the following conditions is met:
-
-- **Solution or project files**: A solution file (`.sln`) or .NET project file (`.csproj`, `.vbproj`, `.fsproj`) is present in the application's root directory. If the root directory contains both solution and project files, the solution file will be preferred for the build and publish process.
-
-- **Solution file configuration**: A `solution_file` setting is configured in your `project.toml` file. This is useful when you have multiple solution files or when your solution file is not in the root directory.
-
-### Solution File Configuration
-
-To configure a specific solution file, create a `project.toml` file in the root of your project:
-
-```toml
-[_]
-schema-version = "0.2"
-
-[com.heroku.buildpacks.dotnet]
-solution_file = "foo.sln"
-```
+The buildpack support C#, Visual Basic and F# projects using the .NET and ASP.NET Core frameworks (version 8.0 and up).
 
 ## Configuration
 
@@ -71,6 +53,20 @@ To install a different .NET SDK version, add a [`global.json` file][global-json]
 ```
 
 A complete inventory of supported .NET SDK versions and platforms [is available here](./buildpacks/dotnet/inventory.toml).
+
+### Solution File
+
+By default, the buildpack automatically detects the solution or project file to build and publish. However, if your codebase contains multiple solution files in the root directory, you must specify which one to use.
+
+To configure the solution for publishing, create a `project.toml` file in the root of your project:
+
+```toml
+[_]
+schema-version = "0.2"
+
+[com.heroku.buildpacks.dotnet]
+solution_file = "foo.sln"
+```
 
 ### MSBuild
 
