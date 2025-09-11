@@ -23,6 +23,7 @@ use crate::project_toml::DotnetConfig;
 use bullet_stream::fun_run::{self, CommandWithName};
 use bullet_stream::global::print;
 use bullet_stream::style;
+use indoc::printdoc;
 use inventory::artifact::{Arch, Os};
 use inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
@@ -54,7 +55,12 @@ impl Buildpack for DotnetBuildpack {
         detect::get_files_with_extensions(&context.app_dir, &["sln", "csproj", "vbproj", "fsproj"])
             .map(|paths| {
                 if paths.is_empty() {
-                    println!("No .NET solution or project files (such as `foo.sln` or `foo.csproj`) found.");
+                    printdoc! {"
+                        No .NET application found. This buildpack requires solution (`.sln`)
+                        or project (`.csproj`, `.vbproj`, `.fsproj`) files in the root directory.
+                        
+                        For more information, see: https://github.com/heroku/buildpacks-dotnet#application-requirements
+                    "};
                     std::io::stdout().flush().expect("Couldn't flush output stream");
                     DetectResultBuilder::fail().build()
                 } else {
