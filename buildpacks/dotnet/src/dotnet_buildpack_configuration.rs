@@ -42,7 +42,10 @@ impl DotnetBuildpackConfiguration {
                 .map(str::parse)
                 .transpose()
                 .map_err(DotnetBuildpackConfigurationError::VerbosityLevel)?,
-            solution_file: project_toml_config.and_then(|config| config.solution_file.clone()),
+            solution_file: env
+                .get_string_lossy("SOLUTION_FILE")
+                .map(PathBuf::from)
+                .or_else(|| project_toml_config.and_then(|config| config.solution_file.clone())),
         })
     }
 }
