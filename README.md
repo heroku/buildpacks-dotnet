@@ -58,7 +58,21 @@ A complete inventory of supported .NET SDK versions and platforms [is available 
 
 By default, the buildpack automatically detects the solution or project file to build and publish. However, if your codebase contains multiple solution files in the root directory, you must specify which one to use.
 
-To configure the solution for publishing, create a `project.toml` file in the root of your project:
+You can configure the solution file using either an environment variable or a `project.toml` file.
+
+#### Using Environment Variable
+
+Set the `SOLUTION_FILE` environment variable during build:
+
+```bash
+$ pack build sample-app \
+    --env "SOLUTION_FILE=foo.sln" \
+    --builder heroku/builder:24
+```
+
+#### Using project.toml
+
+Alternatively, create a `project.toml` file in the root of your project:
 
 ```toml
 [_]
@@ -67,6 +81,9 @@ schema-version = "0.2"
 [com.heroku.buildpacks.dotnet]
 solution_file = "foo.sln"
 ```
+
+> [!NOTE]
+> If you use both an environment variable and a `project.toml` file, the environment variable will take precedence.
 
 ### MSBuild
 

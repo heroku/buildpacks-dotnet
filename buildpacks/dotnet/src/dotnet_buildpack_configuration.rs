@@ -42,7 +42,10 @@ impl DotnetBuildpackConfiguration {
                 .map(str::parse)
                 .transpose()
                 .map_err(DotnetBuildpackConfigurationError::VerbosityLevel)?,
-            solution_file: project_toml_config.and_then(|config| config.solution_file.clone()),
+            solution_file: env
+                .get_string_lossy("SOLUTION_FILE")
+                .map(PathBuf::from)
+                .or_else(|| project_toml_config.and_then(|config| config.solution_file.clone())),
         })
     }
 }
@@ -170,13 +173,14 @@ mod tests {
         let env = create_env(&[
             ("BUILD_CONFIGURATION", "Release"),
             ("MSBUILD_VERBOSITY_LEVEL", "Detailed"),
+            ("SOLUTION_FILE", "env-solution.sln"),
         ]);
         let project_toml_config = DotnetConfig {
             msbuild: Some(MsbuildConfig {
                 configuration: Some("Debug".to_string()),
                 verbosity: Some("Quiet".to_string()),
             }),
-            solution_file: None,
+            solution_file: Some(PathBuf::from("toml-solution.sln")),
         };
         let result = DotnetBuildpackConfiguration::try_from_env_and_project_toml(
             &env,
@@ -189,6 +193,10 @@ mod tests {
             result.msbuild_verbosity_level,
             Some(VerbosityLevel::Detailed)
         );
+        assert_eq!(
+            result.solution_file,
+            Some(PathBuf::from("env-solution.sln"))
+        );
     }
 
     #[test]
@@ -197,6 +205,7 @@ mod tests {
             ("BUILD_CONFIGURATION", "Release"),
             ("MSBUILD_VERBOSITY_LEVEL", "Detailed"),
             ("CNB_EXEC_ENV", "test"),
+            ("SOLUTION_FILE", "env-solution.sln"),
         ]);
         let result =
             DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env, None).unwrap();
@@ -206,6 +215,10 @@ mod tests {
         assert_eq!(
             result.msbuild_verbosity_level,
             Some(VerbosityLevel::Detailed)
+        );
+        assert_eq!(
+            result.solution_file,
+            Some(PathBuf::from("env-solution.sln"))
         );
     }
 

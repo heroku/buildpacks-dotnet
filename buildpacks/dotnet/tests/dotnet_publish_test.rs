@@ -133,6 +133,37 @@ fn test_solution_detection_with_multiple_workspace_root_solutions_and_project_to
 
 #[test]
 #[ignore = "integration test"]
+fn test_solution_detection_with_multiple_workspace_root_solutions_and_solution_file_env_var() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/multiple_solutions").env("SOLUTION_FILE", "bar.sln"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            assert_contains!(
+                context.pack_stdout,
+                "- Using configured solution file: `bar.sln`"
+            );
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
+fn test_solution_file_env_var_takes_precedence_over_project_toml() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/multiple_solutions_with_project_toml")
+            .env("SOLUTION_FILE", "bar.sln"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            assert_contains!(
+                context.pack_stdout,
+                "- Using configured solution file: `bar.sln`"
+            );
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
 fn test_dotnet_publish_process_registration_with_procfile() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/basic_web_9.0_with_procfile"),
