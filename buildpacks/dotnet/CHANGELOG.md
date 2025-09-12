@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2025-09-12
+
 ### Changed
 
 - The buildpack now only passes detection when solution or project files are present in the root directory. ([#320](https://github.com/heroku/buildpacks-dotnet/pull/320))
@@ -276,7 +278,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.8.1...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/heroku/buildpacks-dotnet/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.6.1...v0.7.0
