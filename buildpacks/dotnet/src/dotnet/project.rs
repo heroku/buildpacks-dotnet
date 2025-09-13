@@ -1,4 +1,5 @@
-use roxmltree::Document;
+use quick_xml::de::from_str;
+use serde::Deserialize;
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -14,8 +15,9 @@ pub(crate) struct Project {
 impl Project {
     pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadError> {
         let content = fs_err::read_to_string(path).map_err(LoadError::ReadProjectFile)?;
-        let metadata =
-            parse_metadata(&Document::parse(&content).map_err(LoadError::XmlParseError)?);
+        let project_xml: ProjectXml = from_str(&content).map_err(LoadError::XmlParseError)?;
+
+        let metadata = project_xml.into_metadata();
 
         if metadata.target_framework.is_none() {
             return Err(LoadError::MissingTargetFramework(path.to_path_buf()));
@@ -42,12 +44,77 @@ impl Project {
     }
 }
 
+#[derive(Debug, Deserialize)]
+struct ProjectXml {
+    #[serde(rename = "@Sdk")]
+    sdk: Option<String>,
+    #[serde(rename = "Sdk", default)]
+    sdk_elements: Vec<SdkElement>,
+    #[serde(rename = "PropertyGroup", default)]
+    property_groups: Vec<PropertyGroup>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SdkElement {
+    #[serde(rename = "@Name")]
+    name: Option<String>,
+    #[serde(rename = "$text")]
+    text: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct PropertyGroup {
+    #[serde(rename = "TargetFramework")]
+    target_framework: Option<String>,
+    #[serde(rename = "OutputType")]
+    output_type: Option<String>,
+    #[serde(rename = "AssemblyName")]
+    assembly_name: Option<String>,
+}
+
 #[derive(Debug)]
 struct Metadata {
     target_framework: Option<String>,
     sdk_id: Option<String>,
     output_type: Option<String>,
     assembly_name: Option<String>,
+}
+
+impl ProjectXml {
+    fn into_metadata(self) -> Metadata {
+        let sdk_id = self.sdk.or_else(|| {
+            self.sdk_elements
+                .into_iter()
+                .find_map(|sdk| sdk.name.or(sdk.text))
+        });
+
+        let target_framework = self
+            .property_groups
+            .iter()
+            .find_map(|pg| pg.target_framework.as_ref())
+            .filter(|tf| !tf.trim().is_empty())
+            .cloned();
+
+        let output_type = self
+            .property_groups
+            .iter()
+            .find_map(|pg| pg.output_type.as_ref())
+            .cloned();
+
+        let assembly_name = self
+            .property_groups
+            .iter()
+            .find_map(|pg| pg.assembly_name.as_ref())
+            .filter(|name| !name.trim().is_empty())
+            .cloned();
+
+        Metadata {
+            target_framework,
+            sdk_id,
+            output_type,
+            assembly_name,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -61,49 +128,8 @@ pub(crate) enum ProjectType {
 #[derive(Debug)]
 pub(crate) enum LoadError {
     ReadProjectFile(io::Error),
-    XmlParseError(roxmltree::Error),
+    XmlParseError(quick_xml::de::DeError),
     MissingTargetFramework(PathBuf),
-}
-
-fn parse_metadata(document: &Document) -> Metadata {
-    let mut metadata = Metadata {
-        sdk_id: None,
-        target_framework: None,
-        output_type: None,
-        assembly_name: None,
-    };
-
-    for node in document.descendants() {
-        match node.tag_name().name() {
-            "Project" => {
-                if let Some(sdk) = node.attribute("Sdk") {
-                    metadata.sdk_id = Some(sdk.to_string());
-                }
-            }
-            "Sdk" => {
-                if let Some(name) = node.attribute("Name") {
-                    metadata.sdk_id = Some(name.to_string());
-                } else {
-                    metadata.sdk_id = node.text().map(ToString::to_string);
-                }
-            }
-            "TargetFramework" => {
-                metadata.target_framework = node.text().map(ToString::to_string);
-            }
-            "OutputType" => {
-                metadata.output_type = node.text().map(ToString::to_string);
-            }
-            "AssemblyName" => {
-                if let Some(text) = node.text()
-                    && !text.trim().is_empty()
-                {
-                    metadata.assembly_name = Some(text.to_string());
-                }
-            }
-            _ => (),
-        }
-    }
-    metadata
 }
 
 fn infer_project_type(metadata: &Metadata) -> ProjectType {
@@ -133,7 +159,8 @@ mod tests {
         expected_output_type: Option<&str>,
         expected_assembly_name: Option<&str>,
     ) {
-        let metadata = parse_metadata(&Document::parse(project_xml).unwrap());
+        let project_xml: ProjectXml = from_str(project_xml).unwrap();
+        let metadata = project_xml.into_metadata();
         assert_eq!(metadata.sdk_id, expected_sdk_id.map(ToString::to_string));
         assert_eq!(
             metadata.target_framework,
