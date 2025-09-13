@@ -1,5 +1,5 @@
 use quick_xml::de::from_str;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -17,29 +17,26 @@ impl Project {
         let content = fs_err::read_to_string(path).map_err(LoadError::ReadProjectFile)?;
         let project_xml: ProjectXml = from_str(&content).map_err(LoadError::XmlParseError)?;
 
-        let metadata = project_xml.into_metadata();
+        let target_framework = project_xml.find_property("TargetFramework")
+            .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?;
 
-        if metadata.target_framework.is_none() {
-            return Err(LoadError::MissingTargetFramework(path.to_path_buf()));
-        }
+        let sdk_id = project_xml.sdk_id();
+        let output_type = project_xml.find_property("OutputType");
+        let project_type = infer_project_type(&sdk_id, &output_type);
 
-        let project_type = infer_project_type(&metadata);
+        let assembly_name = project_xml.find_property("AssemblyName")
+            .unwrap_or_else(|| {
+                path.file_stem()
+                    .expect("path to have a file name")
+                    .to_string_lossy()
+                    .to_string()
+            });
 
         Ok(Self {
             path: path.to_path_buf(),
-            target_framework: metadata
-                .target_framework
-                .expect("target_framework to be some after earlier check"),
+            target_framework,
             project_type,
-            assembly_name: metadata
-                .assembly_name
-                .filter(|name| !name.is_empty())
-                .unwrap_or_else(|| {
-                    path.file_stem()
-                        .expect("path to have a file name")
-                        .to_string_lossy()
-                        .to_string()
-                }),
+            assembly_name,
         })
     }
 }
@@ -64,56 +61,32 @@ struct SdkElement {
 
 #[derive(Debug, Deserialize)]
 struct PropertyGroup {
-    #[serde(rename = "TargetFramework")]
+    #[serde(rename = "TargetFramework", default, deserialize_with = "deserialize_non_empty_string")]
     target_framework: Option<String>,
-    #[serde(rename = "OutputType")]
+    #[serde(rename = "OutputType", default, deserialize_with = "deserialize_non_empty_string")]
     output_type: Option<String>,
-    #[serde(rename = "AssemblyName")]
-    assembly_name: Option<String>,
-}
-
-#[derive(Debug)]
-struct Metadata {
-    target_framework: Option<String>,
-    sdk_id: Option<String>,
-    output_type: Option<String>,
+    #[serde(rename = "AssemblyName", default, deserialize_with = "deserialize_non_empty_string")]
     assembly_name: Option<String>,
 }
 
 impl ProjectXml {
-    fn into_metadata(self) -> Metadata {
-        let sdk_id = self.sdk.or_else(|| {
+    fn sdk_id(&self) -> Option<String> {
+        self.sdk.clone().or_else(|| {
             self.sdk_elements
-                .into_iter()
-                .find_map(|sdk| sdk.name.or(sdk.text))
-        });
+                .iter()
+                .find_map(|sdk| sdk.name.clone().or_else(|| sdk.text.clone()))
+        })
+    }
 
-        let target_framework = self
-            .property_groups
+    fn find_property(&self, property_name: &str) -> Option<String> {
+        self.property_groups
             .iter()
-            .find_map(|pg| pg.target_framework.as_ref())
-            .filter(|tf| !tf.trim().is_empty())
-            .cloned();
-
-        let output_type = self
-            .property_groups
-            .iter()
-            .find_map(|pg| pg.output_type.as_ref())
-            .cloned();
-
-        let assembly_name = self
-            .property_groups
-            .iter()
-            .find_map(|pg| pg.assembly_name.as_ref())
-            .filter(|name| !name.trim().is_empty())
-            .cloned();
-
-        Metadata {
-            target_framework,
-            sdk_id,
-            output_type,
-            assembly_name,
-        }
+            .find_map(|pg| match property_name {
+                "TargetFramework" => pg.target_framework.clone(),
+                "OutputType" => pg.output_type.clone(),
+                "AssemblyName" => pg.assembly_name.clone(),
+                _ => None,
+            })
     }
 }
 
@@ -132,19 +105,24 @@ pub(crate) enum LoadError {
     MissingTargetFramework(PathBuf),
 }
 
-fn infer_project_type(metadata: &Metadata) -> ProjectType {
-    if let Some(sdk_id) = &metadata.sdk_id {
-        return match sdk_id.as_str() {
-            "Microsoft.NET.Sdk" => match metadata.output_type.as_deref() {
-                Some("Exe") => ProjectType::ConsoleApplication,
-                _ => ProjectType::Unknown,
-            },
-            "Microsoft.NET.Sdk.Web" | "Microsoft.NET.Sdk.Razor" => ProjectType::WebApplication,
-            "Microsoft.NET.Sdk.Worker" => ProjectType::WorkerService,
+fn infer_project_type(sdk_id: &Option<String>, output_type: &Option<String>) -> ProjectType {
+    match sdk_id.as_deref() {
+        Some("Microsoft.NET.Sdk") => match output_type.as_deref() {
+            Some("Exe") => ProjectType::ConsoleApplication,
             _ => ProjectType::Unknown,
-        };
+        },
+        Some("Microsoft.NET.Sdk.Web" | "Microsoft.NET.Sdk.Razor") => ProjectType::WebApplication,
+        Some("Microsoft.NET.Sdk.Worker") => ProjectType::WorkerService,
+        _ => ProjectType::Unknown,
     }
-    ProjectType::Unknown
+}
+
+fn deserialize_non_empty_string<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt: Option<String> = Option::deserialize(deserializer)?;
+    Ok(opt.filter(|s| !s.trim().is_empty()))
 }
 
 #[cfg(test)]
@@ -152,7 +130,7 @@ mod tests {
     use super::*;
     use std::fs;
 
-    fn assert_metadata(
+    fn assert_project_data(
         project_xml: &str,
         expected_sdk_id: Option<&str>,
         expected_target_framework: Option<&str>,
@@ -160,17 +138,10 @@ mod tests {
         expected_assembly_name: Option<&str>,
     ) {
         let project_xml: ProjectXml = from_str(project_xml).unwrap();
-        let metadata = project_xml.into_metadata();
-        assert_eq!(metadata.sdk_id, expected_sdk_id.map(ToString::to_string));
-        assert_eq!(
-            metadata.target_framework,
-            expected_target_framework.map(String::from)
-        );
-        assert_eq!(metadata.output_type, expected_output_type.map(String::from));
-        assert_eq!(
-            metadata.assembly_name,
-            expected_assembly_name.map(String::from)
-        );
+        assert_eq!(project_xml.sdk_id(), expected_sdk_id.map(String::from));
+        assert_eq!(project_xml.find_property("TargetFramework"), expected_target_framework.map(String::from));
+        assert_eq!(project_xml.find_property("OutputType"), expected_output_type.map(String::from));
+        assert_eq!(project_xml.find_property("AssemblyName"), expected_assembly_name.map(String::from));
     }
 
     #[test]
@@ -184,7 +155,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        assert_metadata(
+        assert_project_data(
             project_xml,
             Some("Microsoft.NET.Sdk"),
             Some("net6.0"),
@@ -202,7 +173,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_metadata(
+        assert_project_data(
             project_xml,
             Some("Microsoft.NET.Sdk.Web"),
             Some("net6.0"),
@@ -221,7 +192,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_metadata(
+        assert_project_data(
             project_xml,
             Some("Microsoft.NET.Sdk.Razor"),
             Some("net6.0"),
@@ -240,7 +211,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_metadata(
+        assert_project_data(
             project_xml,
             Some("Microsoft.NET.Sdk.BlazorWebAssembly"),
             Some("net6.0"),
@@ -259,7 +230,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_metadata(
+        assert_project_data(
             project_xml,
             Some("Microsoft.NET.Sdk.Worker"),
             Some("net6.0"),
@@ -277,7 +248,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_metadata(
+        assert_project_data(
             project_xml,
             Some("Microsoft.NET.Sdk"),
             Some("net6.0"),
@@ -296,7 +267,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_metadata(
+        assert_project_data(
             project_xml,
             Some("Microsoft.NET.Sdk"),
             Some("net6.0"),
@@ -315,7 +286,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 ";
-        assert_metadata(project_xml, None, Some("net6.0"), Some("Library"), None);
+        assert_project_data(project_xml, None, Some("net6.0"), Some("Library"), None);
     }
 
     #[test]
@@ -330,7 +301,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_metadata(
+        assert_project_data(
             project_xml,
             Some("Microsoft.NET.Sdk"),
             Some("net6.0"),
@@ -341,57 +312,36 @@ mod tests {
 
     #[test]
     fn test_infer_project_type_console_application() {
-        let metadata = Metadata {
-            sdk_id: Some("Microsoft.NET.Sdk".to_string()),
-            target_framework: Some("net6.0".to_string()),
-            output_type: Some("Exe".to_string()),
-            assembly_name: None,
-        };
+        let sdk_id = Some("Microsoft.NET.Sdk".to_string());
+        let output_type = Some("Exe".to_string());
         assert_eq!(
-            infer_project_type(&metadata),
+            infer_project_type(&sdk_id, &output_type),
             ProjectType::ConsoleApplication
         );
     }
 
     #[test]
     fn test_infer_project_type_worker() {
-        let metadata = Metadata {
-            sdk_id: Some("Microsoft.NET.Sdk.Worker".to_string()),
-            target_framework: Some("net6.0".to_string()),
-            output_type: None,
-            assembly_name: None,
-        };
-        assert_eq!(infer_project_type(&metadata), ProjectType::WorkerService);
+        let sdk_id = Some("Microsoft.NET.Sdk.Worker".to_string());
+        let output_type = None;
+        assert_eq!(infer_project_type(&sdk_id, &output_type), ProjectType::WorkerService);
     }
 
     #[test]
     fn test_infer_project_type_web_application() {
-        let metadata = Metadata {
-            sdk_id: Some("Microsoft.NET.Sdk.Web".to_string()),
-            target_framework: Some("net6.0".to_string()),
-            output_type: None,
-            assembly_name: None,
-        };
-        assert_eq!(infer_project_type(&metadata), ProjectType::WebApplication);
+        let sdk_id = Some("Microsoft.NET.Sdk.Web".to_string());
+        let output_type = None;
+        assert_eq!(infer_project_type(&sdk_id, &output_type), ProjectType::WebApplication);
 
-        let metadata = Metadata {
-            sdk_id: Some("Microsoft.NET.Sdk.Razor".to_string()),
-            target_framework: Some("net6.0".to_string()),
-            output_type: None,
-            assembly_name: None,
-        };
-        assert_eq!(infer_project_type(&metadata), ProjectType::WebApplication);
+        let sdk_id = Some("Microsoft.NET.Sdk.Razor".to_string());
+        assert_eq!(infer_project_type(&sdk_id, &output_type), ProjectType::WebApplication);
     }
 
     #[test]
     fn test_infer_project_type_unknown() {
-        let metadata = Metadata {
-            sdk_id: Some("Unknown.Sdk".to_string()),
-            target_framework: Some("net6.0".to_string()),
-            output_type: None,
-            assembly_name: None,
-        };
-        assert_eq!(infer_project_type(&metadata), ProjectType::Unknown);
+        let sdk_id = Some("Unknown.Sdk".to_string());
+        let output_type = None;
+        assert_eq!(infer_project_type(&sdk_id, &output_type), ProjectType::Unknown);
     }
 
     #[test]
@@ -403,7 +353,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_metadata(project_xml, Some("Microsoft.NET.Sdk"), None, None, None);
+        assert_project_data(project_xml, Some("Microsoft.NET.Sdk"), None, None, None);
     }
 
     #[test]
@@ -416,7 +366,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_metadata(
+        assert_project_data(
             project_xml,
             Some("Microsoft.NET.Sdk"),
             Some("net6.0"),
@@ -435,7 +385,7 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        assert_metadata(
+        assert_project_data(
             project_xml,
             Some("Microsoft.NET.Sdk"),
             Some("net6.0"),
@@ -446,35 +396,23 @@ mod tests {
 
     #[test]
     fn test_infer_project_type_unknown_sdk_with_exe() {
-        let metadata = Metadata {
-            sdk_id: Some("Unknown.Sdk".to_string()),
-            target_framework: Some("net6.0".to_string()),
-            output_type: Some("Exe".to_string()),
-            assembly_name: None,
-        };
-        assert_eq!(infer_project_type(&metadata), ProjectType::Unknown);
+        let sdk_id = Some("Unknown.Sdk".to_string());
+        let output_type = Some("Exe".to_string());
+        assert_eq!(infer_project_type(&sdk_id, &output_type), ProjectType::Unknown);
     }
 
     #[test]
     fn test_infer_project_type_net_sdk_without_exe() {
-        let metadata = Metadata {
-            sdk_id: Some("Microsoft.NET.Sdk".to_string()),
-            target_framework: Some("net6.0".to_string()),
-            output_type: Some("Library".to_string()),
-            assembly_name: None,
-        };
-        assert_eq!(infer_project_type(&metadata), ProjectType::Unknown);
+        let sdk_id = Some("Microsoft.NET.Sdk".to_string());
+        let output_type = Some("Library".to_string());
+        assert_eq!(infer_project_type(&sdk_id, &output_type), ProjectType::Unknown);
     }
 
     #[test]
     fn test_infer_project_type_no_sdk() {
-        let metadata = Metadata {
-            sdk_id: None,
-            target_framework: Some("net6.0".to_string()),
-            output_type: Some("Exe".to_string()),
-            assembly_name: None,
-        };
-        assert_eq!(infer_project_type(&metadata), ProjectType::Unknown);
+        let sdk_id = None;
+        let output_type = Some("Exe".to_string());
+        assert_eq!(infer_project_type(&sdk_id, &output_type), ProjectType::Unknown);
     }
 
     #[test]
