@@ -54,8 +54,8 @@ impl Project {
 struct ProjectXml {
     #[serde(rename = "@Sdk")]
     sdk: Option<String>,
-    #[serde(rename = "Sdk", default)]
-    sdk_elements: Vec<SdkElement>,
+    #[serde(rename = "Sdk")]
+    sdk_element: Option<SdkElement>,
     #[serde(rename = "PropertyGroup", default)]
     property_groups: Vec<PropertyGroup>,
 }
@@ -79,9 +79,9 @@ struct PropertyGroup {
 impl ProjectXml {
     fn sdk_id(&self) -> Option<&str> {
         self.sdk.as_deref().or_else(|| {
-            self.sdk_elements
-                .iter()
-                .find_map(|sdk| sdk.name.as_deref().or(sdk.text.as_deref()))
+            self.sdk_element
+                .as_ref()
+                .and_then(|sdk| sdk.name.as_deref().or(sdk.text.as_deref()))
         })
     }
 }
