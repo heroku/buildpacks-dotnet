@@ -208,7 +208,7 @@ mod tests {
     }
 
     #[test]
-    fn test_worker_service_inference() {
+    fn test_infer_project_type_worker() {
         assert_eq!(
             infer_project_type("Microsoft.NET.Sdk.Worker", None),
             ProjectType::WorkerService
