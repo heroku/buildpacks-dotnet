@@ -1,5 +1,5 @@
 use quick_xml::de::from_str;
-use serde::{Deserialize, Deserializer};
+use serde::Deserialize;
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -68,25 +68,13 @@ struct SdkElement {
     text: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 struct PropertyGroup {
-    #[serde(
-        rename = "TargetFramework",
-        default,
-        deserialize_with = "deserialize_non_empty_string"
-    )]
+    #[serde(rename = "TargetFramework")]
     target_framework: Option<String>,
-    #[serde(
-        rename = "OutputType",
-        default,
-        deserialize_with = "deserialize_non_empty_string"
-    )]
+    #[serde(rename = "OutputType")]
     output_type: Option<String>,
-    #[serde(
-        rename = "AssemblyName",
-        default,
-        deserialize_with = "deserialize_non_empty_string"
-    )]
+    #[serde(rename = "AssemblyName")]
     assembly_name: Option<String>,
 }
 
@@ -125,14 +113,6 @@ fn infer_project_type(sdk_id: Option<&str>, output_type: Option<&str>) -> Projec
         Some("Microsoft.NET.Sdk.Worker") => ProjectType::WorkerService,
         _ => ProjectType::Unknown,
     }
-}
-
-fn deserialize_non_empty_string<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let opt: Option<String> = Option::deserialize(deserializer)?;
-    Ok(opt.filter(|s| !s.trim().is_empty()))
 }
 
 #[cfg(test)]
@@ -212,45 +192,6 @@ mod tests {
                 .iter()
                 .find_map(|pg| pg.output_type.clone()),
             Some("Library".to_string())
-        );
-    }
-
-    #[test]
-    fn test_parse_project_with_empty_target_framework() {
-        let project_xml = r#"
-<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <TargetFramework></TargetFramework>
-    </PropertyGroup>
-</Project>
-"#;
-        let project_xml: ProjectXml = from_str(project_xml).unwrap();
-        assert_eq!(
-            project_xml
-                .property_groups
-                .iter()
-                .find_map(|pg| pg.target_framework.clone()),
-            None
-        );
-    }
-
-    #[test]
-    fn test_parse_project_with_whitespace_assembly_name() {
-        let project_xml = r#"
-<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
-        <AssemblyName>  </AssemblyName>
-    </PropertyGroup>
-</Project>
-"#;
-        let project_xml: ProjectXml = from_str(project_xml).unwrap();
-        assert_eq!(
-            project_xml
-                .property_groups
-                .iter()
-                .find_map(|pg| pg.assembly_name.clone()),
-            None
         );
     }
 
