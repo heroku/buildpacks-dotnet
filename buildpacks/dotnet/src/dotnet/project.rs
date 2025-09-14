@@ -81,8 +81,6 @@ struct ProjectXml {
 struct SdkElement {
     #[serde(rename = "@Name")]
     name: Option<String>,
-    #[serde(rename = "$text")]
-    text: Option<String>,
 }
 
 impl ProjectXml {
@@ -90,7 +88,7 @@ impl ProjectXml {
         self.sdk.as_deref().or_else(|| {
             self.sdk_element
                 .as_ref()
-                .and_then(|sdk| sdk.name.as_deref().or(sdk.text.as_deref()))
+                .and_then(|sdk| sdk.name.as_deref())
         })
     }
 }
@@ -135,21 +133,6 @@ mod tests {
 ";
         let project_xml: ProjectXml = from_str(project_xml).unwrap();
         assert_eq!(project_xml.sdk_id(), None);
-    }
-
-    #[test]
-    fn test_parse_console_application_with_sdk_element() {
-        let project_xml = r"
-<Project>
-    <Sdk>Microsoft.NET.Sdk</Sdk>
-    <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
-        <OutputType>Exe</OutputType>
-    </PropertyGroup>
-</Project>
-";
-        let project_xml: ProjectXml = from_str(project_xml).unwrap();
-        assert_eq!(project_xml.sdk_id(), Some("Microsoft.NET.Sdk"));
     }
 
     #[test]
