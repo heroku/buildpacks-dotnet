@@ -17,29 +17,29 @@ impl Project {
         let content = fs_err::read_to_string(path).map_err(LoadError::ReadProjectFile)?;
         let project_xml: ProjectXml = from_str(&content).map_err(LoadError::XmlParseError)?;
 
-        let target_framework = project_xml
+        let (target_framework, output_type, assembly_name) = project_xml
             .property_groups
             .iter()
-            .find_map(|pg| pg.target_framework.clone())
+            .fold((None, None, None), |(tf, ot, an), pg| {
+                (
+                    tf.or(pg.target_framework.clone()),
+                    ot.or(pg.output_type.as_deref()),
+                    an.or_else(|| pg.assembly_name.clone()),
+                )
+            });
+
+        let target_framework = target_framework
             .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?;
 
         let sdk_id = project_xml.sdk_id();
-        let output_type = project_xml
-            .property_groups
-            .iter()
-            .find_map(|pg| pg.output_type.clone());
-        let project_type = infer_project_type(sdk_id.as_ref(), output_type.as_ref());
+        let project_type = infer_project_type(sdk_id, output_type);
 
-        let assembly_name = project_xml
-            .property_groups
-            .iter()
-            .find_map(|pg| pg.assembly_name.clone())
-            .unwrap_or_else(|| {
-                path.file_stem()
-                    .expect("path to have a file name")
-                    .to_string_lossy()
-                    .to_string()
-            });
+        let assembly_name = assembly_name.unwrap_or_else(|| {
+            path.file_stem()
+                .expect("path to have a file name")
+                .to_string_lossy()
+                .to_string()
+        });
 
         Ok(Self {
             path: path.to_path_buf(),
@@ -91,11 +91,11 @@ struct PropertyGroup {
 }
 
 impl ProjectXml {
-    fn sdk_id(&self) -> Option<String> {
-        self.sdk.clone().or_else(|| {
+    fn sdk_id(&self) -> Option<&str> {
+        self.sdk.as_deref().or_else(|| {
             self.sdk_elements
                 .iter()
-                .find_map(|sdk| sdk.name.clone().or_else(|| sdk.text.clone()))
+                .find_map(|sdk| sdk.name.as_deref().or(sdk.text.as_deref()))
         })
     }
 }
@@ -115,9 +115,9 @@ pub(crate) enum LoadError {
     MissingTargetFramework(PathBuf),
 }
 
-fn infer_project_type(sdk_id: Option<&String>, output_type: Option<&String>) -> ProjectType {
-    match sdk_id.map(String::as_str) {
-        Some("Microsoft.NET.Sdk") => match output_type.map(String::as_str) {
+fn infer_project_type(sdk_id: Option<&str>, output_type: Option<&str>) -> ProjectType {
+    match sdk_id {
+        Some("Microsoft.NET.Sdk") => match output_type {
             Some("Exe") => ProjectType::ConsoleApplication,
             _ => ProjectType::Unknown,
         },
@@ -140,14 +140,8 @@ mod tests {
     use super::*;
     use std::fs;
 
-    // Helper to test project type inference without XML parsing
     fn assert_project_type(sdk: &str, output_type: Option<&str>, expected: ProjectType) {
-        let sdk_id = Some(sdk.to_string());
-        let output_type = output_type.map(String::from);
-        assert_eq!(
-            infer_project_type(sdk_id.as_ref(), output_type.as_ref()),
-            expected
-        );
+        assert_eq!(infer_project_type(Some(sdk), output_type), expected);
     }
 
     #[test]
@@ -162,7 +156,7 @@ mod tests {
 </Project>
 ";
         let project_xml: ProjectXml = from_str(project_xml).unwrap();
-        assert_eq!(project_xml.sdk_id(), Some("Microsoft.NET.Sdk".to_string()));
+        assert_eq!(project_xml.sdk_id(), Some("Microsoft.NET.Sdk"));
     }
 
     #[test]
@@ -175,10 +169,7 @@ mod tests {
 </Project>
 "#;
         let project_xml: ProjectXml = from_str(project_xml).unwrap();
-        assert_eq!(
-            project_xml.sdk_id(),
-            Some("Microsoft.NET.Sdk.Web".to_string())
-        );
+        assert_eq!(project_xml.sdk_id(), Some("Microsoft.NET.Sdk.Web"));
     }
 
     #[test]
@@ -192,10 +183,7 @@ mod tests {
 </Project>
 "#;
         let project_xml: ProjectXml = from_str(project_xml).unwrap();
-        assert_eq!(
-            project_xml.sdk_id(),
-            Some("Microsoft.NET.Sdk.Razor".to_string())
-        );
+        assert_eq!(project_xml.sdk_id(), Some("Microsoft.NET.Sdk.Razor"));
     }
 
     #[test]
@@ -294,11 +282,8 @@ mod tests {
 
         // No SDK case
         let no_sdk = None;
-        let exe_output = Some("Exe".to_string());
-        assert_eq!(
-            infer_project_type(no_sdk, exe_output.as_ref()),
-            ProjectType::Unknown
-        );
+        let exe_output = Some("Exe");
+        assert_eq!(infer_project_type(no_sdk, exe_output), ProjectType::Unknown);
     }
 
     #[test]
