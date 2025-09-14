@@ -36,8 +36,7 @@ impl Project {
         let target_framework = target_framework
             .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?;
 
-        let sdk_id = project_xml.sdk_id();
-        let project_type = sdk_id.map_or(ProjectType::Unknown, |sdk| {
+        let project_type = project_xml.sdk_id().map_or(ProjectType::Unknown, |sdk| {
             infer_project_type(sdk, output_type)
         });
 
