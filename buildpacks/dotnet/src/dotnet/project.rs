@@ -36,7 +36,13 @@ impl Project {
         let target_framework = target_framework
             .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?;
 
-        let project_type = project_xml.sdk_id().map_or(ProjectType::Unknown, |sdk| {
+        let sdk_id = project_xml
+            .sdk_element
+            .as_ref()
+            .map(|element| element.name.as_str())
+            .or(project_xml.sdk.as_deref());
+
+        let project_type = sdk_id.map_or(ProjectType::Unknown, |sdk| {
             infer_project_type(sdk, output_type)
         });
 
@@ -82,15 +88,6 @@ struct SdkElement {
     name: String,
 }
 
-impl ProjectXml {
-    fn sdk_id(&self) -> Option<&str> {
-        self.sdk_element
-            .as_ref()
-            .map(|element| element.name.as_str())
-            .or(self.sdk.as_deref())
-    }
-}
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub(crate) enum ProjectType {
     ConsoleApplication,
@@ -124,17 +121,7 @@ mod tests {
     use std::fs;
 
     #[test]
-    fn test_parse_default_project_no_sdk() {
-        let project_xml = r"
-<Project>
-</Project>
-";
-        let project_xml: ProjectXml = from_str(project_xml).unwrap();
-        assert_eq!(project_xml.sdk_id(), None);
-    }
-
-    #[test]
-    fn test_parse_web_application_with_sdk_attribute() {
+    fn test_sdk_attribute_resolution() {
         let project_xml = r#"
 <Project Sdk="Microsoft.NET.Sdk.Web">
     <PropertyGroup>
@@ -142,12 +129,16 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project_xml: ProjectXml = from_str(project_xml).unwrap();
-        assert_eq!(project_xml.sdk_id(), Some("Microsoft.NET.Sdk.Web"));
+        let temp_dir = tempfile::tempdir().unwrap();
+        let project_path = temp_dir.path().join("WebApp.csproj");
+        fs::write(&project_path, project_xml).unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        assert_eq!(project.project_type, ProjectType::WebApplication);
     }
 
     #[test]
-    fn test_parse_razor_application_with_sdk_element() {
+    fn test_sdk_element_resolution() {
         let project_xml = r#"
 <Project>
     <Sdk Name="Microsoft.NET.Sdk.Razor" />
@@ -156,8 +147,29 @@ mod tests {
     </PropertyGroup>
 </Project>
 "#;
-        let project_xml: ProjectXml = from_str(project_xml).unwrap();
-        assert_eq!(project_xml.sdk_id(), Some("Microsoft.NET.Sdk.Razor"));
+        let temp_dir = tempfile::tempdir().unwrap();
+        let project_path = temp_dir.path().join("RazorApp.csproj");
+        fs::write(&project_path, project_xml).unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        assert_eq!(project.project_type, ProjectType::WebApplication);
+    }
+
+    #[test]
+    fn test_no_sdk_resolution() {
+        let project_xml = r"
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
+</Project>
+";
+        let temp_dir = tempfile::tempdir().unwrap();
+        let project_path = temp_dir.path().join("NoSdk.csproj");
+        fs::write(&project_path, project_xml).unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        assert_eq!(project.project_type, ProjectType::Unknown);
     }
 
     #[test]
