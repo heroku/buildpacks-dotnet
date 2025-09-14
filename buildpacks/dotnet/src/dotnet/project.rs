@@ -125,6 +125,16 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_default_project_no_sdk() {
+        let project_xml = r"
+<Project>
+</Project>
+";
+        let project_xml: ProjectXml = from_str(project_xml).unwrap();
+        assert_eq!(project_xml.sdk_id(), None);
+    }
+
+    #[test]
     fn test_parse_console_application_with_sdk_element() {
         let project_xml = r"
 <Project>
