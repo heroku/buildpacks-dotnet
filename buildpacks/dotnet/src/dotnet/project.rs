@@ -208,6 +208,14 @@ mod tests {
     }
 
     #[test]
+    fn test_worker_service_inference() {
+        assert_eq!(
+            infer_project_type("Microsoft.NET.Sdk.Worker", None),
+            ProjectType::WorkerService
+        );
+    }
+
+    #[test]
     fn test_web_application_inference() {
         assert_eq!(
             infer_project_type("Microsoft.NET.Sdk.Web", None),
@@ -216,14 +224,6 @@ mod tests {
         assert_eq!(
             infer_project_type("Microsoft.NET.Sdk.Razor", None),
             ProjectType::WebApplication
-        );
-    }
-
-    #[test]
-    fn test_worker_service_inference() {
-        assert_eq!(
-            infer_project_type("Microsoft.NET.Sdk.Worker", None),
-            ProjectType::WorkerService
         );
     }
 
