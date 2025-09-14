@@ -34,12 +34,14 @@ impl Project {
         let sdk_id = project_xml.sdk_id();
         let project_type = infer_project_type(sdk_id, output_type);
 
-        let assembly_name = assembly_name.unwrap_or_else(|| {
-            path.file_stem()
-                .expect("path to have a file name")
-                .to_string_lossy()
-                .to_string()
-        });
+        let assembly_name = assembly_name
+            .filter(|name| !name.trim().is_empty())
+            .unwrap_or_else(|| {
+                path.file_stem()
+                    .expect("path to have a file name")
+                    .to_string_lossy()
+                    .to_string()
+            });
 
         Ok(Self {
             path: path.to_path_buf(),
@@ -185,7 +187,7 @@ mod tests {
     </PropertyGroup>
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
-        <AssemblyName>LastName</AssemblyName>
+        <AssemblyName>  </AssemblyName>
     </PropertyGroup>
 </Project>
 "#;
@@ -195,7 +197,7 @@ mod tests {
 
         let project = Project::load_from_path(&project_path).unwrap();
         assert_eq!(project.target_framework, "net6.0"); // Last value wins
-        assert_eq!(project.assembly_name, "LastName"); // Last value wins
+        assert_eq!(project.assembly_name, "test"); // Falls back to filename when whitespace
         assert_eq!(project.project_type, ProjectType::Unknown); // Library + net sdk = Unknown
     }
 
@@ -296,5 +298,4 @@ mod tests {
         );
         assert_eq!(project.path, project_path);
     }
-
 }
