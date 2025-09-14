@@ -32,7 +32,9 @@ impl Project {
             .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?;
 
         let sdk_id = project_xml.sdk_id();
-        let project_type = infer_project_type(sdk_id, output_type);
+        let project_type = sdk_id
+            .map(|sdk| infer_project_type(sdk, output_type))
+            .unwrap_or(ProjectType::Unknown);
 
         let assembly_name = assembly_name
             .filter(|name| !name.trim().is_empty())
@@ -103,14 +105,14 @@ pub(crate) enum LoadError {
     MissingTargetFramework(PathBuf),
 }
 
-fn infer_project_type(sdk_id: Option<&str>, output_type: Option<&str>) -> ProjectType {
+fn infer_project_type(sdk_id: &str, output_type: Option<&str>) -> ProjectType {
     match sdk_id {
-        Some("Microsoft.NET.Sdk") => match output_type {
+        "Microsoft.NET.Sdk" => match output_type {
             Some("Exe") => ProjectType::ConsoleApplication,
             _ => ProjectType::Unknown,
         },
-        Some("Microsoft.NET.Sdk.Web" | "Microsoft.NET.Sdk.Razor") => ProjectType::WebApplication,
-        Some("Microsoft.NET.Sdk.Worker") => ProjectType::WorkerService,
+        "Microsoft.NET.Sdk.Web" | "Microsoft.NET.Sdk.Razor" => ProjectType::WebApplication,
+        "Microsoft.NET.Sdk.Worker" => ProjectType::WorkerService,
         _ => ProjectType::Unknown,
     }
 }
@@ -119,10 +121,6 @@ fn infer_project_type(sdk_id: Option<&str>, output_type: Option<&str>) -> Projec
 mod tests {
     use super::*;
     use std::fs;
-
-    fn assert_project_type(sdk: &str, output_type: Option<&str>, expected: ProjectType) {
-        assert_eq!(infer_project_type(Some(sdk), output_type), expected);
-    }
 
     #[test]
     fn test_parse_default_project_no_sdk() {
@@ -203,34 +201,48 @@ mod tests {
 
     #[test]
     fn test_console_application_inference() {
-        assert_project_type(
-            "Microsoft.NET.Sdk",
-            Some("Exe"),
-            ProjectType::ConsoleApplication,
+        assert_eq!(
+            infer_project_type("Microsoft.NET.Sdk", Some("Exe")),
+            ProjectType::ConsoleApplication
         );
     }
 
     #[test]
     fn test_web_application_inference() {
-        assert_project_type("Microsoft.NET.Sdk.Web", None, ProjectType::WebApplication);
-        assert_project_type("Microsoft.NET.Sdk.Razor", None, ProjectType::WebApplication);
+        assert_eq!(
+            infer_project_type("Microsoft.NET.Sdk.Web", None),
+            ProjectType::WebApplication
+        );
+        assert_eq!(
+            infer_project_type("Microsoft.NET.Sdk.Razor", None),
+            ProjectType::WebApplication
+        );
     }
 
     #[test]
     fn test_worker_service_inference() {
-        assert_project_type("Microsoft.NET.Sdk.Worker", None, ProjectType::WorkerService);
+        assert_eq!(
+            infer_project_type("Microsoft.NET.Sdk.Worker", None),
+            ProjectType::WorkerService
+        );
     }
 
     #[test]
     fn test_unknown_project_types() {
-        assert_project_type("Unknown.Sdk", None, ProjectType::Unknown);
-        assert_project_type("Unknown.Sdk", Some("Exe"), ProjectType::Unknown);
-        assert_project_type("Microsoft.NET.Sdk", Some("Library"), ProjectType::Unknown);
+        assert_eq!(
+            infer_project_type("Unknown.Sdk", None),
+            ProjectType::Unknown
+        );
+        assert_eq!(
+            infer_project_type("Unknown.Sdk", Some("Exe")),
+            ProjectType::Unknown
+        );
+        assert_eq!(
+            infer_project_type("Microsoft.NET.Sdk", Some("Library")),
+            ProjectType::Unknown
+        );
 
-        // No SDK case
-        let no_sdk = None;
-        let exe_output = Some("Exe");
-        assert_eq!(infer_project_type(no_sdk, exe_output), ProjectType::Unknown);
+        // No SDK case is now handled at call site
     }
 
     #[test]
