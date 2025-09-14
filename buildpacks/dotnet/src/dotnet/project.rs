@@ -17,16 +17,21 @@ impl Project {
         let content = fs_err::read_to_string(path).map_err(LoadError::ReadProjectFile)?;
         let project_xml: ProjectXml = from_str(&content).map_err(LoadError::XmlParseError)?;
 
-        let (target_framework, output_type, assembly_name) = project_xml
-            .property_groups
-            .iter()
-            .fold((None, None, None), |(tf, ot, an), pg| {
-                (
-                    pg.target_framework.clone().or(tf),
-                    pg.output_type.as_deref().or(ot),
-                    pg.assembly_name.clone().or(an),
-                )
-            });
+        let mut target_framework = None;
+        let mut output_type = None;
+        let mut assembly_name = None;
+
+        for pg in &project_xml.property_groups {
+            if pg.target_framework.is_some() {
+                target_framework.clone_from(&pg.target_framework);
+            }
+            if pg.output_type.is_some() {
+                output_type = pg.output_type.as_deref();
+            }
+            if pg.assembly_name.is_some() {
+                assembly_name.clone_from(&pg.assembly_name);
+            }
+        }
 
         let target_framework = target_framework
             .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?;
