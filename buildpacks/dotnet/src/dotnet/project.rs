@@ -184,23 +184,19 @@ mod tests {
     <PropertyGroup>
         <OutputType>Library</OutputType>
     </PropertyGroup>
+    <PropertyGroup>
+        <AssemblyName>MyLibrary</AssemblyName>
+    </PropertyGroup>
 </Project>
 "#;
-        let project_xml: ProjectXml = from_str(project_xml).unwrap();
-        assert_eq!(
-            project_xml
-                .property_groups
-                .iter()
-                .find_map(|pg| pg.target_framework.clone()),
-            Some("net6.0".to_string())
-        );
-        assert_eq!(
-            project_xml
-                .property_groups
-                .iter()
-                .find_map(|pg| pg.output_type.clone()),
-            Some("Library".to_string())
-        );
+        let temp_dir = tempfile::tempdir().unwrap();
+        let project_path = temp_dir.path().join("Library.csproj");
+        fs::write(&project_path, project_xml).unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        assert_eq!(project.target_framework, "net6.0");
+        assert_eq!(project.assembly_name, "MyLibrary");
+        assert_eq!(project.project_type, ProjectType::Unknown); // Library type
     }
 
     #[test]
