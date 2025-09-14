@@ -205,23 +205,12 @@ mod tests {
     }
 
     #[test]
-    fn test_infer_project_type_console_application() {
+    fn test_project_type_inference() {
         assert_eq!(
             infer_project_type("Microsoft.NET.Sdk", Some("Exe")),
             ProjectType::ConsoleApplication
         );
-    }
 
-    #[test]
-    fn test_infer_project_type_worker() {
-        assert_eq!(
-            infer_project_type("Microsoft.NET.Sdk.Worker", None),
-            ProjectType::WorkerService
-        );
-    }
-
-    #[test]
-    fn test_infer_project_type_web_application() {
         assert_eq!(
             infer_project_type("Microsoft.NET.Sdk.Web", None),
             ProjectType::WebApplication
@@ -230,10 +219,12 @@ mod tests {
             infer_project_type("Microsoft.NET.Sdk.Razor", None),
             ProjectType::WebApplication
         );
-    }
 
-    #[test]
-    fn test_infer_project_type_unknown() {
+        assert_eq!(
+            infer_project_type("Microsoft.NET.Sdk.Worker", None),
+            ProjectType::WorkerService
+        );
+
         assert_eq!(
             infer_project_type("Unknown.Sdk", None),
             ProjectType::Unknown
@@ -246,8 +237,6 @@ mod tests {
             infer_project_type("Microsoft.NET.Sdk", Some("Library")),
             ProjectType::Unknown
         );
-
-        // No SDK case is now handled at call site
     }
 
     #[test]
