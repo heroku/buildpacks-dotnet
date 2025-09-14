@@ -21,15 +21,15 @@ impl Project {
         let mut output_type = None;
         let mut assembly_name = None;
 
-        for pg in &project_xml.property_groups {
-            if pg.target_framework.is_some() {
-                target_framework.clone_from(&pg.target_framework);
+        for property_group in &project_xml.property_groups {
+            if property_group.target_framework.is_some() {
+                target_framework.clone_from(&property_group.target_framework);
             }
-            if pg.output_type.is_some() {
-                output_type = pg.output_type.as_deref();
+            if property_group.output_type.is_some() {
+                output_type = property_group.output_type.as_deref();
             }
-            if pg.assembly_name.is_some() {
-                assembly_name.clone_from(&pg.assembly_name);
+            if property_group.assembly_name.is_some() {
+                assembly_name.clone_from(&property_group.assembly_name);
             }
         }
 
@@ -201,7 +201,7 @@ mod tests {
         let project = Project::load_from_path(&project_path).unwrap();
         assert_eq!(project.target_framework, "net6.0"); // Last value wins
         assert_eq!(project.assembly_name, "test"); // Falls back to filename when whitespace
-        assert_eq!(project.project_type, ProjectType::Unknown); // Library + net sdk = Unknown
+        assert_eq!(project.project_type, ProjectType::Unknown);
     }
 
     #[test]
