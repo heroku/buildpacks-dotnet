@@ -59,6 +59,14 @@ impl Project {
     }
 }
 
+#[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "PascalCase")]
+struct PropertyGroup {
+    target_framework: Option<String>,
+    output_type: Option<String>,
+    assembly_name: Option<String>,
+}
+
 #[derive(Debug, Deserialize)]
 struct ProjectXml {
     #[serde(rename = "@Sdk")]
@@ -75,14 +83,6 @@ struct SdkElement {
     name: Option<String>,
     #[serde(rename = "$text")]
     text: Option<String>,
-}
-
-#[derive(Debug, Deserialize, Default)]
-#[serde(rename_all = "PascalCase")]
-struct PropertyGroup {
-    target_framework: Option<String>,
-    output_type: Option<String>,
-    assembly_name: Option<String>,
 }
 
 impl ProjectXml {
