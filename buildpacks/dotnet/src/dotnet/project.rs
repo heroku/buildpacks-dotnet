@@ -200,7 +200,7 @@ mod tests {
     }
 
     #[test]
-    fn test_console_application_inference() {
+    fn test_infer_project_type_console_application() {
         assert_eq!(
             infer_project_type("Microsoft.NET.Sdk", Some("Exe")),
             ProjectType::ConsoleApplication
@@ -216,7 +216,7 @@ mod tests {
     }
 
     #[test]
-    fn test_web_application_inference() {
+    fn test_infer_project_type_web_application() {
         assert_eq!(
             infer_project_type("Microsoft.NET.Sdk.Web", None),
             ProjectType::WebApplication
@@ -228,7 +228,7 @@ mod tests {
     }
 
     #[test]
-    fn test_unknown_project_types() {
+    fn test_infer_project_type_unknown() {
         assert_eq!(
             infer_project_type("Unknown.Sdk", None),
             ProjectType::Unknown
