@@ -80,16 +80,15 @@ struct ProjectXml {
 #[derive(Debug, Deserialize)]
 struct SdkElement {
     #[serde(rename = "@Name")]
-    name: Option<String>,
+    name: String,
 }
 
 impl ProjectXml {
     fn sdk_id(&self) -> Option<&str> {
-        self.sdk.as_deref().or_else(|| {
-            self.sdk_element
-                .as_ref()
-                .and_then(|sdk| sdk.name.as_deref())
-        })
+        self.sdk_element
+            .as_ref()
+            .map(|element| element.name.as_str())
+            .or(self.sdk.as_deref())
     }
 }
 
