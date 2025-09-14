@@ -17,14 +17,14 @@ impl Project {
         let content = fs_err::read_to_string(path).map_err(LoadError::ReadProjectFile)?;
         let project_xml: ProjectXml = from_str(&content).map_err(LoadError::XmlParseError)?;
 
-        let target_framework = project_xml.find_property("TargetFramework")
+        let target_framework = project_xml.target_framework()
             .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?;
 
         let sdk_id = project_xml.sdk_id();
-        let output_type = project_xml.find_property("OutputType");
+        let output_type = project_xml.output_type();
         let project_type = infer_project_type(&sdk_id, &output_type);
 
-        let assembly_name = project_xml.find_property("AssemblyName")
+        let assembly_name = project_xml.assembly_name()
             .unwrap_or_else(|| {
                 path.file_stem()
                     .expect("path to have a file name")
@@ -78,15 +78,22 @@ impl ProjectXml {
         })
     }
 
-    fn find_property(&self, property_name: &str) -> Option<String> {
+    fn target_framework(&self) -> Option<String> {
         self.property_groups
             .iter()
-            .find_map(|pg| match property_name {
-                "TargetFramework" => pg.target_framework.clone(),
-                "OutputType" => pg.output_type.clone(),
-                "AssemblyName" => pg.assembly_name.clone(),
-                _ => None,
-            })
+            .find_map(|pg| pg.target_framework.clone())
+    }
+
+    fn output_type(&self) -> Option<String> {
+        self.property_groups
+            .iter()
+            .find_map(|pg| pg.output_type.clone())
+    }
+
+    fn assembly_name(&self) -> Option<String> {
+        self.property_groups
+            .iter()
+            .find_map(|pg| pg.assembly_name.clone())
     }
 }
 
@@ -139,9 +146,9 @@ mod tests {
     ) {
         let project_xml: ProjectXml = from_str(project_xml).unwrap();
         assert_eq!(project_xml.sdk_id(), expected_sdk_id.map(String::from));
-        assert_eq!(project_xml.find_property("TargetFramework"), expected_target_framework.map(String::from));
-        assert_eq!(project_xml.find_property("OutputType"), expected_output_type.map(String::from));
-        assert_eq!(project_xml.find_property("AssemblyName"), expected_assembly_name.map(String::from));
+        assert_eq!(project_xml.target_framework(), expected_target_framework.map(String::from));
+        assert_eq!(project_xml.output_type(), expected_output_type.map(String::from));
+        assert_eq!(project_xml.assembly_name(), expected_assembly_name.map(String::from));
     }
 
     #[test]
