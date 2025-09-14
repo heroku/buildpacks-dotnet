@@ -22,9 +22,9 @@ impl Project {
             .iter()
             .fold((None, None, None), |(tf, ot, an), pg| {
                 (
-                    tf.or(pg.target_framework.clone()),
-                    ot.or(pg.output_type.as_deref()),
-                    an.or_else(|| pg.assembly_name.clone()),
+                    pg.target_framework.clone().or(tf),
+                    pg.output_type.as_deref().or(ot),
+                    pg.assembly_name.clone().or(an),
                 )
             });
 
@@ -299,5 +299,32 @@ mod tests {
             project_path.file_stem().unwrap().to_string_lossy()
         );
         assert_eq!(project.path, project_path);
+    }
+
+    #[test]
+    fn test_last_property_group_wins() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let project_path = temp_dir.path().join("test.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <OutputType>Library</OutputType>
+        <AssemblyName>FirstName</AssemblyName>
+    </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <AssemblyName>LastName</AssemblyName>
+    </PropertyGroup>
+</Project>"#,
+        )
+        .unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        assert_eq!(project.target_framework, "net9.0");
+        assert_eq!(project.assembly_name, "LastName");
+        assert_eq!(project.project_type, ProjectType::Unknown);
     }
 }
