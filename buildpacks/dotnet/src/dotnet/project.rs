@@ -69,12 +69,10 @@ struct SdkElement {
 }
 
 #[derive(Debug, Deserialize, Default)]
+#[serde(rename_all = "PascalCase")]
 struct PropertyGroup {
-    #[serde(rename = "TargetFramework")]
     target_framework: Option<String>,
-    #[serde(rename = "OutputType")]
     output_type: Option<String>,
-    #[serde(rename = "AssemblyName")]
     assembly_name: Option<String>,
 }
 
