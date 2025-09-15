@@ -17,47 +17,46 @@ impl Project {
         let content = fs_err::read_to_string(path).map_err(LoadError::ReadProjectFile)?;
         let project_xml: ProjectXml = from_str(&content).map_err(LoadError::XmlParseError)?;
 
-        let mut target_framework = None;
-        let mut output_type = None;
-        let mut assembly_name = None;
+        let property_groups = &project_xml.property_groups;
 
-        for property_group in &project_xml.property_groups {
-            if property_group.target_framework.is_some() {
-                target_framework.clone_from(&property_group.target_framework);
-            }
-            if property_group.output_type.is_some() {
-                output_type = property_group.output_type.as_deref();
-            }
-            if property_group.assembly_name.is_some() {
-                assembly_name.clone_from(&property_group.assembly_name);
-            }
-        }
-
-        let target_framework = target_framework
+        // Find the last one; it's an error if it's missing.
+        let target_framework = property_groups
+            .iter()
+            .filter_map(|pg| pg.target_framework.as_ref())
+            .next_back()
+            .cloned()
             .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?;
 
-        let sdk_id = if let Some(sdk_element) = project_xml.sdk_element {
-            Some(sdk_element.name)
-        } else {
-            project_xml.sdk
-        };
+        // Find the last one, it's optional.
+        let output_type = property_groups
+            .iter()
+            .filter_map(|pg| pg.output_type.as_deref())
+            .next_back();
 
-        let project_type = if let Some(sdk_id) = sdk_id {
-            infer_project_type(&sdk_id, output_type)
-        } else {
-            ProjectType::Unknown
-        };
+        // Find the last one, but if it's blank, fall back to the file name
+        // (even if an earlier, non-empty/whitespace assembly name is set).
+        // This is consistent with MSBuild's own behavior
+        let assembly_name = property_groups
+            .iter()
+            .filter_map(|pg| pg.assembly_name.as_ref())
+            .next_back()
+            .cloned()
+            .filter(|name| !name.trim().is_empty())
+            .unwrap_or_else(|| {
+                path.file_stem()
+                    // This expect is safe because the file was successfully read previously
+                    .expect("A path that can be read must have a file stem")
+                    .to_string_lossy()
+                    .to_string()
+            });
 
-        let assembly_name = if let Some(assembly_name) = assembly_name
-            && !assembly_name.trim().is_empty()
-        {
-            assembly_name
-        } else {
-            path.file_stem()
-                .expect("project path should have a file name")
-                .to_string_lossy()
-                .to_string()
-        };
+        let project_type = project_xml
+            .sdk_element
+            .map(|sdk_element| sdk_element.name)
+            .or(project_xml.sdk)
+            .map_or(ProjectType::Unknown, |sdk_id| {
+                infer_project_type(&sdk_id, output_type)
+            });
 
         Ok(Self {
             path: path.to_path_buf(),
