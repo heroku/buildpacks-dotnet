@@ -34,8 +34,8 @@ impl Project {
             .iter()
             .filter_map(|pg| pg.assembly_name.as_ref())
             .next_back()
-            .cloned()
             .filter(|name| !name.trim().is_empty())
+            .cloned()
             .unwrap_or_else(|| {
                 path.file_stem()
                     // This expect is safe because the file was successfully read previously
