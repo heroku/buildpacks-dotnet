@@ -36,15 +36,17 @@ impl Project {
         let target_framework = target_framework
             .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?;
 
-        let sdk_id = project_xml
-            .sdk_element
-            .as_ref()
-            .map(|element| element.name.as_str())
-            .or(project_xml.sdk.as_deref());
+        let sdk_id = if let Some(sdk_element) = project_xml.sdk_element {
+            Some(sdk_element.name)
+        } else {
+            project_xml.sdk
+        };
 
-        let project_type = sdk_id.map_or(ProjectType::Unknown, |sdk| {
-            infer_project_type(sdk, output_type)
-        });
+        let project_type = if let Some(sdk_id) = sdk_id {
+            infer_project_type(&sdk_id, output_type)
+        } else {
+            ProjectType::Unknown
+        };
 
         let assembly_name = assembly_name
             .filter(|name| !name.trim().is_empty())
