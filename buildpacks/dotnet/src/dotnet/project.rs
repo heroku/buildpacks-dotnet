@@ -38,13 +38,11 @@ impl Project {
             .cloned()
             .unwrap_or_else(|| {
                 path.file_stem()
-                    // This expect is safe because the file was successfully read previously
                     .expect("A path that can be read must have a file stem")
                     .to_string_lossy()
                     .to_string()
             });
 
-        // Find the last one, it's optional.
         let output_type = property_groups
             .iter()
             .filter_map(|pg| pg.output_type.as_deref())
