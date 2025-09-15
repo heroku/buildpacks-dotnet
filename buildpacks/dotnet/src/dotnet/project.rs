@@ -54,7 +54,7 @@ impl Project {
             assembly_name
         } else {
             path.file_stem()
-                .expect("path to have a file name")
+                .expect("project path should have a file name")
                 .to_string_lossy()
                 .to_string()
         };
