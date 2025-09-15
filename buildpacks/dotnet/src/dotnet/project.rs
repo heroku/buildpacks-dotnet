@@ -27,12 +27,6 @@ impl Project {
             .cloned()
             .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?;
 
-        // Find the last one, it's optional.
-        let output_type = property_groups
-            .iter()
-            .filter_map(|pg| pg.output_type.as_deref())
-            .next_back();
-
         // Find the last one, but if it's blank, fall back to the file name
         // (even if an earlier, non-empty/whitespace assembly name is set).
         // This is consistent with MSBuild's own behavior
@@ -49,6 +43,12 @@ impl Project {
                     .to_string_lossy()
                     .to_string()
             });
+
+        // Find the last one, it's optional.
+        let output_type = property_groups
+            .iter()
+            .filter_map(|pg| pg.output_type.as_deref())
+            .next_back();
 
         let project_type = project_xml
             .sdk_element
