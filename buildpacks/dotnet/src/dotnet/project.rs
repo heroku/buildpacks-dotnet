@@ -48,14 +48,16 @@ impl Project {
             ProjectType::Unknown
         };
 
-        let assembly_name = assembly_name
-            .filter(|name| !name.trim().is_empty())
-            .unwrap_or_else(|| {
-                path.file_stem()
-                    .expect("path to have a file name")
-                    .to_string_lossy()
-                    .to_string()
-            });
+        let assembly_name = if let Some(assembly_name) = assembly_name
+            && !assembly_name.trim().is_empty()
+        {
+            assembly_name
+        } else {
+            path.file_stem()
+                .expect("path to have a file name")
+                .to_string_lossy()
+                .to_string()
+        };
 
         Ok(Self {
             path: path.to_path_buf(),
