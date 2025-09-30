@@ -349,16 +349,16 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 &mut writer,
                 "Unable to restore .NET tools",
                 formatdoc! {"
-                    The `dotnet tool restore` command exited unsuccessfully ({exit_status}).
+                    The `dotnet tool restore` command failed ({exit_status}).
 
-                    This error usually happens due to configuration errors. Use the command output
-                    above to troubleshoot and retry your build.
+                    The most common cause is a configuration error in your tool manifest. Review
+                    the command output above to find and fix the issue.
 
-                    Restoring .NET tools can also fail for a number of other reasons, such as
-                    intermittent network issues, unavailability of the NuGet package feed and/or
-                    other external dependencies, etc.
+                    The failure may also be temporary due to a network or service outage. Retrying
+                    your build often resolves this.
 
-                    Try again to see if the error resolves itself.
+                    If the log suggests a NuGet issue, check the service status before retrying:
+                    https://status.nuget.org
                 ", exit_status = output.status()},
                 None,
             ),
@@ -375,16 +375,16 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 &mut writer,
                 "Unable to publish",
                 formatdoc! {"
-                    The `dotnet publish` command exited unsuccessfully ({exit_status}).
+                    The `dotnet publish` command failed ({exit_status}).
 
-                    This error usually happens due to compilation errors. Use the command output
-                    above to troubleshoot and retry your build.
+                    The most common cause is a compilation error. Review the command output above
+                    to find and fix the issue.
 
-                    The publish process can also fail for a number of other reasons, such as
-                    intermittent network issues, unavailability of the NuGet package feed and/or
-                    other external dependencies, etc.
+                    The failure may also be temporary due to a network or service outage. Retrying
+                    your build often resolves this.
 
-                    Try again to see if the error resolves itself.
+                    If the log suggests a NuGet issue, check the service status before retrying:
+                    https://status.nuget.org
                 ", exit_status = output.status()},
                 None,
             ),
