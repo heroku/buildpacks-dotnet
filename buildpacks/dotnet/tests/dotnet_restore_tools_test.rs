@@ -47,16 +47,16 @@ fn test_dotnet_restore_dotnet_tool_with_configuration_error() {
                 &indoc! {r"
                     ! Unable to restore .NET tools
                     !
-                    ! The `dotnet tool restore` command exited unsuccessfully (exit status: 1).
+                    ! The `dotnet tool restore` command failed (exit status: 1).
                     !
-                    ! This error usually happens due to configuration errors. Use the command output
-                    ! above to troubleshoot and retry your build.
+                    ! The most common cause is a configuration error in your tool manifest. Review
+                    ! the command output above to find and fix the issue.
                     !
-                    ! Restoring .NET tools can also fail for a number of other reasons, such as
-                    ! intermittent network issues, unavailability of the NuGet package feed and/or
-                    ! other external dependencies, etc.
+                    ! The failure may also be temporary due to a network or service outage. Retrying
+                    ! your build often resolves this.
                     !
-                    ! Try again to see if the error resolves itself."}
+                    ! If the log suggests a NuGet issue, check the service status before retrying:
+                    ! https://status.nuget.org"}
             );
         },
     );
