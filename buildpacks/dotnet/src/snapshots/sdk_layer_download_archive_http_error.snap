@@ -2,7 +2,7 @@
 source: buildpacks/dotnet/src/errors.rs
 ---
 - [1;36mDebug info[0m
-  - HTTP error while downloading file: connection failed
+  - HTTP error while downloading file: builder error
 
 [0;31m! Failed to download .NET SDK[0m
 [0;31m![0m

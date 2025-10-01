@@ -658,7 +658,7 @@ mod tests {
     fn test_sdk_layer_download_archive_http_error() {
         assert_error_snapshot(DotnetBuildpackError::SdkLayer(
             SdkLayerError::DownloadArchive(libherokubuildpack::download::DownloadError::HttpError(
-                Box::new(ureq::Error::ConnectionFailed),
+                reqwest::blocking::get("").unwrap_err(), // An empty URL will return a "builder error" (without making any requests).
             )),
         ));
     }

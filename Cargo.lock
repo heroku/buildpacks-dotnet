@@ -150,6 +150,7 @@ dependencies = [
  "libcnb-test",
  "libherokubuildpack",
  "regex",
+ "reqwest",
  "retry",
  "roxmltree",
  "semver",
@@ -160,7 +161,6 @@ dependencies = [
  "tempfile",
  "toml 0.9.7",
  "tracing",
- "ureq",
 ]
 
 [[package]]
