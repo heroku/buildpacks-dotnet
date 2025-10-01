@@ -22,7 +22,7 @@ jobs:
       - name: Update Rust toolchain
         run: rustup update
       - name: Rust Cache
-        uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
       - name: Clippy
         run: cargo clippy --all-targets --locked -- --deny warnings
       - name: rustfmt
@@ -36,9 +36,9 @@ jobs:
     - name: Update Rust toolchain
       run: rustup update
     - name: Rust Cache
-      uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
+      uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
     - name: Install cargo-llvm-cov
-      uses: taiki-e/install-action@133a13585eb96b576726757d256e9531cd6dddf2 # v2.58.32
+      uses: taiki-e/install-action@d6d752794628f1e1fffa3c4d3c8874e06f043d50 # v2.62.15
       with:
         tool: cargo-llvm-cov
     - name: Run tests and generate coverage report
@@ -74,7 +74,7 @@ jobs:
       - name: Install Rust linux-musl target
         run: rustup target add ${{ matrix.arch == 'arm64' && 'aarch64-unknown-linux-musl' || 'x86_64-unknown-linux-musl' }}
       - name: Rust Cache
-        uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
       - name: Install Pack CLI
         uses: buildpacks/github-actions/setup-pack@f6d0ae15b2e1f021664bf3ee3fc4f9105c1ee4c7 # v5.9.4
       # The images are pulled up front to prevent duplicate pulls due to the tests being run concurrently.
@@ -107,7 +107,7 @@ jobs:
       - name: Install Rust linux-musl target
         run: rustup target add aarch64-unknown-linux-musl
       - name: Rust Cache
-        uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
       - name: Install Pack CLI
         uses: buildpacks/github-actions/setup-pack@f6d0ae15b2e1f021664bf3ee3fc4f9105c1ee4c7 # v5.9.4
       - name: Clone getting started guide
