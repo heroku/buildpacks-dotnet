@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2025-10-03
+
 ### Changed
 
 - Enhanced dotnet command failure error messages with clearer guidance and NuGet status link for troubleshooting. ([#323](https://github.com/heroku/buildpacks-dotnet/pull/323))
@@ -282,7 +284,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.9.0...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/heroku/buildpacks-dotnet/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.8.1...v0.9.0
 [0.8.1]: https://github.com/heroku/buildpacks-dotnet/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.7.0...v0.8.0
