@@ -149,6 +149,7 @@ dependencies = [
  "libcnb",
  "libcnb-test",
  "libherokubuildpack",
+ "quick-xml",
  "regex",
  "reqwest",
  "retry",
@@ -1481,6 +1482,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-xml"
+version = "0.38.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42a232e7487fc2ef313d96dde7948e7a3c05101870d8985e4fd8d26aedd27b89"
+dependencies = [
+ "memchr",
+ "serde",
+]
+
+[[package]]
 name = "quinn"
 version = "0.11.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2075,7 +2086,7 @@ dependencies = [
  "getrandom 0.3.3",
  "once_cell",
  "rustix",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.1",
 ]
 
 [[package]]
