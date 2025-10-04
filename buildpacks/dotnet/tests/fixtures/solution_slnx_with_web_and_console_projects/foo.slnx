@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/Worker App/">
+    <Project Path="worker/worker.csproj" />
+  </Folder>
+  <Project Path="web/web.csproj" />
+</Solution>

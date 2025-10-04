@@ -54,13 +54,13 @@ impl Buildpack for DotnetBuildpack {
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
         let paths = detect::get_files_with_extensions(
             &context.app_dir,
-            &["sln", "csproj", "vbproj", "fsproj"],
+            &["sln", "slnx", "csproj", "vbproj", "fsproj"],
         )
         .map_err(DotnetBuildpackError::BuildpackDetection)?;
 
         if paths.is_empty() {
             printdoc! {"
-                No .NET application found. This buildpack requires solution (`.sln`)
+                No .NET application found. This buildpack requires solution (`.sln`, `.slnx`)
                 or project (`.csproj`, `.vbproj`, `.fsproj`) files in the root directory.
                 
                 For more information, see: https://github.com/heroku/buildpacks-dotnet#application-requirements
