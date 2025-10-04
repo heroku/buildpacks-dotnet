@@ -1,4 +1,5 @@
 use crate::dotnet::project::{self, Project};
+use crate::dotnet::slnx;
 use regex::Regex;
 use std::io::{self};
 use std::path::{Path, PathBuf};
@@ -10,15 +11,24 @@ pub(crate) struct Solution {
 
 impl Solution {
     pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadError> {
+        let contents = fs_err::read_to_string(path).map_err(LoadError::ReadSolutionFile)?;
+        let project_paths = if path
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .is_some_and(|ext| ext == "slnx")
+        {
+            slnx::extract_project_paths(&contents).map_err(LoadError::SlnxParseError)?
+        } else {
+            extract_project_references(&contents)
+        };
+
         Ok(Self {
             path: path.to_path_buf(),
-            projects: extract_project_references(
-                &fs_err::read_to_string(path).map_err(LoadError::ReadSolutionFile)?,
-            )
-            .into_iter()
-            .filter_map(|project_path| path.parent().map(|dir| dir.join(&project_path)))
-            .map(try_load_project)
-            .collect::<Result<Vec<_>, _>>()?,
+            projects: project_paths
+                .into_iter()
+                .filter_map(|project_path| path.parent().map(|dir| dir.join(&project_path)))
+                .map(try_load_project)
+                .collect::<Result<Vec<_>, _>>()?,
         })
     }
 
@@ -47,6 +57,7 @@ pub(crate) enum LoadError {
     ReadSolutionFile(io::Error),
     ProjectNotFound(PathBuf),
     LoadProject(project::LoadError),
+    SlnxParseError(quick_xml::DeError),
 }
 
 fn extract_project_references(contents: &str) -> Vec<String> {
@@ -260,5 +271,43 @@ mod tests {
         assert_eq!(solution.path, project_path);
         assert_eq!(solution.projects.len(), 1);
         assert_eq!(solution.projects[0].path, project_path);
+    }
+
+    #[test]
+    fn test_load_from_path_should_load_all_projects_in_slnx_solution() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let solution_path = temp_dir.path().join("test.slnx");
+
+        let slnx_content = r#"
+        <Solution>
+          <Project Path="Project1\Project1.csproj" />
+          <Project Path="Project2\Project2.csproj" />
+        </Solution>
+        "#;
+        fs::write(&solution_path, slnx_content).unwrap();
+        let project1_path = create_test_project(&temp_dir, "Project1");
+        let project2_path = create_test_project(&temp_dir, "Project2");
+
+        let solution = Solution::load_from_path(&solution_path).unwrap();
+
+        assert_eq!(solution.path, solution_path);
+        assert_eq!(solution.projects.len(), 2);
+        assert_eq!(solution.projects[0].path, project1_path);
+        assert_eq!(solution.projects[1].path, project2_path);
+    }
+
+    #[test]
+    fn test_load_from_path_should_return_error_when_slnx_file_has_malformed_xml() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let solution_path = temp_dir.path().join("test.slnx");
+
+        let malformed_slnx = r#"
+        <Solution>
+          <Project Path="Project1\Project1.csproj" />
+        "#;
+        fs::write(&solution_path, malformed_slnx).unwrap();
+
+        let result = Solution::load_from_path(&solution_path);
+        assert!(matches!(result, Err(LoadError::SlnxParseError(_))));
     }
 }
