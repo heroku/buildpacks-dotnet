@@ -1,0 +1,11 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+- [1;36mDebug info[0m
+  - XML parsing error
+
+[0;31m! Error parsing solution file[0m
+[0;31m![0m
+[0;31m! We can't parse the solution file because it contains invalid XML.[0m
+[0;31m![0m
+[0;31m! Use the debug information above to troubleshoot and retry your build.[0m
