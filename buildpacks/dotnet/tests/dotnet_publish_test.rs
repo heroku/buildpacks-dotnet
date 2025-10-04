@@ -151,12 +151,12 @@ fn test_solution_detection_with_multiple_workspace_root_solutions_and_solution_f
 fn test_solution_file_env_var_takes_precedence_over_project_toml() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/multiple_solutions_with_project_toml")
-            .env("SOLUTION_FILE", "bar.sln"),
+            .env("SOLUTION_FILE", "baz.slnx"),
         |context| {
             assert_empty!(context.pack_stderr);
             assert_contains!(
                 context.pack_stdout,
-                "- Using configured solution file: `bar.sln`"
+                "- Using configured solution file: `baz.slnx`"
             );
         },
     );
