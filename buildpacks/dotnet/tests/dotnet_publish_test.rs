@@ -310,6 +310,30 @@ fn test_dotnet_publish_with_updated_process_type_name_heroku_warning() {
     );
 }
 
+#[test]
+#[ignore = "integration test"]
+fn test_dotnet_publish_slnx_with_web_and_console_projects() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/solution_slnx_with_web_and_console_projects")
+            .env("STACK", "heroku-24"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            assert_contains!(
+                context.pack_stdout,
+                &formatdoc! {r"
+                  - Process types
+                    - Detecting process types from published artifacts
+                    - Found `web`: bash -c cd web/bin/publish; ./web --urls http://*:$PORT
+                    - Found `worker`: bash -c cd worker/bin/publish; ./worker
+                    - No Procfile detected
+                    - Registering detected process types as launch processes
+                  - Done"}
+            );
+            assert_contains!(context.pack_stdout, "web -> /workspace/web/bin/publish/");
+        },
+    );
+}
+
 fn get_rid() -> String {
     format!("linux-{}", get_dotnet_arch())
 }
