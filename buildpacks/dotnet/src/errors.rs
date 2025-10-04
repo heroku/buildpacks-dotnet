@@ -151,6 +151,18 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     None,
                 );
             }
+            solution::LoadError::SlnxParseError(error) => {
+                log_error_to(
+                    &mut writer,
+                    "Error parsing solution file",
+                    formatdoc! {"
+                        We can't parse the solution file because it contains invalid XML.
+
+                        Use the debug information above to troubleshoot and retry your build.
+                    "},
+                    Some(error.to_string()),
+                );
+            }
         },
         DotnetBuildpackError::LoadProjectFile(error) => {
             on_load_dotnet_project_error_with_writer(
