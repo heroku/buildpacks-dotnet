@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support for the SLNX (`.slnx`) solution file format. ([#329](https://github.com/heroku/buildpacks-dotnet/pull/329))
+
 ## [0.9.2] - 2025-10-14
 
 ### Added
