@@ -151,6 +151,18 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     None,
                 );
             }
+            solution::LoadError::SlnxParseError(error) => {
+                log_error_to(
+                    &mut writer,
+                    "Error parsing solution file",
+                    formatdoc! {"
+                        We can't parse the solution file because it contains invalid XML.
+
+                        Use the debug information above to troubleshoot and retry your build.
+                    "},
+                    Some(error.to_string()),
+                );
+            }
         },
         DotnetBuildpackError::LoadProjectFile(error) => {
             on_load_dotnet_project_error_with_writer(
@@ -546,6 +558,15 @@ mod tests {
         assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
             solution::LoadError::ProjectNotFound(std::path::PathBuf::from(
                 "src/MyProject/MyProject.csproj",
+            )),
+        ));
+    }
+
+    #[test]
+    fn test_load_solution_file_slnx_parse_error() {
+        assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
+            solution::LoadError::SlnxParseError(quick_xml::DeError::Custom(
+                "XML parsing error".to_string(),
             )),
         ));
     }

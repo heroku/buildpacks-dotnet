@@ -151,12 +151,12 @@ fn test_solution_detection_with_multiple_workspace_root_solutions_and_solution_f
 fn test_solution_file_env_var_takes_precedence_over_project_toml() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/multiple_solutions_with_project_toml")
-            .env("SOLUTION_FILE", "bar.sln"),
+            .env("SOLUTION_FILE", "baz.slnx"),
         |context| {
             assert_empty!(context.pack_stderr);
             assert_contains!(
                 context.pack_stdout,
-                "- Using configured solution file: `bar.sln`"
+                "- Using configured solution file: `baz.slnx`"
             );
         },
     );
@@ -291,6 +291,30 @@ fn test_dotnet_publish_with_space_in_project_filename() {
 fn test_dotnet_publish_with_updated_process_type_name_heroku_warning() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/solution_with_web_and_console_projects")
+            .env("STACK", "heroku-24"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            assert_contains!(
+                context.pack_stdout,
+                &formatdoc! {r"
+                  - Process types
+                    - Detecting process types from published artifacts
+                    - Found `web`: bash -c cd web/bin/publish; ./web --urls http://*:$PORT
+                    - Found `worker`: bash -c cd worker/bin/publish; ./worker
+                    - No Procfile detected
+                    - Registering detected process types as launch processes
+                  - Done"}
+            );
+            assert_contains!(context.pack_stdout, "web -> /workspace/web/bin/publish/");
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
+fn test_dotnet_publish_slnx_with_web_and_console_projects() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/solution_slnx_with_web_and_console_projects")
             .env("STACK", "heroku-24"),
         |context| {
             assert_empty!(context.pack_stderr);

@@ -6,7 +6,7 @@ pub(crate) fn project_file_paths<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathB
 }
 
 pub(crate) fn solution_file_paths<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
-    get_files_with_extensions(dir.as_ref(), &["sln"])
+    get_files_with_extensions(dir.as_ref(), &["sln", "slnx"])
 }
 
 pub(crate) fn get_files_with_extensions(
@@ -72,11 +72,12 @@ mod tests {
 
         File::create(base_path.join("test1.sln")).unwrap();
         File::create(base_path.join("test2.sln")).unwrap();
+        File::create(base_path.join("test3.slnx")).unwrap();
         File::create(base_path.join("README.md")).unwrap();
 
         let solution_files = solution_file_paths(&temp_dir).unwrap();
 
-        assert_eq!(2, solution_files.len());
+        assert_eq!(3, solution_files.len());
     }
 
     #[test]

@@ -31,7 +31,7 @@ docker run --rm -it -e "PORT=8080" -p 8080:8080 sample-app
 
 ## Application Requirements
 
-A solution file (e.g. `MySolution.sln`) or .NET project file (e.g. `*.csproj`, `*.vbproj` or `*.fsproj`) must be present in the application’s root directory. If the root directory contains both solution and project files, the solution file will be preferred for the build and publish process.
+A solution file (e.g. `MySolution.sln` or `MySolution.slnx`) or .NET project file (e.g. `*.csproj`, `*.vbproj` or `*.fsproj`) must be present in the application’s root directory. If the root directory contains both solution and project files, the solution file will be preferred for the build and publish process.
 
 The buildpack support C#, Visual Basic and F# projects using the .NET and ASP.NET Core frameworks (version 8.0 and up).
 
