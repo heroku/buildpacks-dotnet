@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Refactored .NET project file parsing to allign with MSBuild behavior and project file semantics. ([#335](https://github.com/heroku/buildpacks-dotnet/pull/335))
+
 ## [0.10.0] - 2025-10-21
 
 ### Added
