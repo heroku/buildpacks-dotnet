@@ -2,7 +2,7 @@
 source: buildpacks/dotnet/src/errors.rs
 ---
 - [1;36mDebug info[0m
-  - Simulated XML parsing error
+  - XML parsing error
 
 [0;31m! Error parsing the project file[0m
 [0;31m![0m
