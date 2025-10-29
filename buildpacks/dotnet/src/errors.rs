@@ -565,9 +565,7 @@ mod tests {
     #[test]
     fn test_load_solution_file_slnx_parse_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
-            solution::LoadError::SlnxParseError(quick_xml::DeError::Custom(
-                "XML parsing error".to_string(),
-            )),
+            solution::LoadError::SlnxParseError(create_xml_parse_error()),
         ));
     }
 
