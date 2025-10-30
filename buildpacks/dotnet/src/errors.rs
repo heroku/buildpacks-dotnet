@@ -565,9 +565,7 @@ mod tests {
     #[test]
     fn test_load_solution_file_slnx_parse_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
-            solution::LoadError::SlnxParseError(quick_xml::DeError::Custom(
-                "XML parsing error".to_string(),
-            )),
+            solution::LoadError::SlnxParseError(create_xml_parse_error()),
         ));
     }
 
@@ -812,11 +810,8 @@ mod tests {
         std::io::Error::other("foo bar baz")
     }
 
-    fn create_xml_parse_error() -> roxmltree::Error {
-        roxmltree::Error::InvalidString(
-            "Simulated XML parsing error at line 1",
-            roxmltree::TextPos::new(1, 2),
-        )
+    fn create_xml_parse_error() -> quick_xml::de::DeError {
+        quick_xml::de::DeError::Custom("XML parsing error".to_string())
     }
 
     fn create_cmd_error(exit_code: i32) -> fun_run::CmdError {
