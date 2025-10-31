@@ -579,6 +579,16 @@ mod tests {
     }
 
     #[test]
+    fn test_multiple_root_directory_file_based_app_files_error() {
+        assert_error_snapshot(
+            DotnetBuildpackError::MultipleRootDirectoryFileBasedAppFiles(vec![
+                PathBuf::from("foo.cs"),
+                PathBuf::from("bar.cs"),
+            ]),
+        );
+    }
+
+    #[test]
     fn test_load_solution_file_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
             solution::LoadError::ReadSolutionFile(create_io_error()),
@@ -661,6 +671,11 @@ mod tests {
         assert_error_snapshot(DotnetBuildpackError::ParseTargetFrameworkMoniker(
             ParseTargetFrameworkError::UnsupportedOSTfm("net8.0-windows".to_string()),
         ));
+    }
+
+    #[test]
+    fn test_load_file_based_app_file_read_error() {
+        assert_error_snapshot(DotnetBuildpackError::LoadFileBasedAppFile(create_io_error()));
     }
 
     #[test]
