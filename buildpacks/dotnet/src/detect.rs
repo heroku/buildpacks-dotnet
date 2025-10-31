@@ -1,12 +1,16 @@
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub(crate) fn project_file_paths<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
-    get_files_with_extensions(dir.as_ref(), &["csproj", "vbproj", "fsproj"])
+pub(crate) fn project_file_paths(dir: &Path) -> io::Result<Vec<PathBuf>> {
+    get_files_with_extensions(dir, &["csproj", "vbproj", "fsproj"])
 }
 
-pub(crate) fn solution_file_paths<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
-    get_files_with_extensions(dir.as_ref(), &["sln", "slnx"])
+pub(crate) fn solution_file_paths(dir: &Path) -> io::Result<Vec<PathBuf>> {
+    get_files_with_extensions(dir, &["sln", "slnx"])
+}
+
+pub(crate) fn file_based_app_paths(dir: &Path) -> io::Result<Vec<PathBuf>> {
+    get_files_with_extensions(dir, &["cs"])
 }
 
 pub(crate) fn get_files_with_extensions(
@@ -60,7 +64,7 @@ mod tests {
         File::create(base_path.join("test3.fsproj")).unwrap();
         File::create(base_path.join("README.md")).unwrap();
 
-        let project_files = project_file_paths(&temp_dir).unwrap();
+        let project_files = project_file_paths(temp_dir.path()).unwrap();
 
         assert_eq!(3, project_files.len());
     }
@@ -75,7 +79,7 @@ mod tests {
         File::create(base_path.join("test3.slnx")).unwrap();
         File::create(base_path.join("README.md")).unwrap();
 
-        let solution_files = solution_file_paths(&temp_dir).unwrap();
+        let solution_files = solution_file_paths(temp_dir.path()).unwrap();
 
         assert_eq!(3, solution_files.len());
     }

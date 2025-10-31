@@ -1,0 +1,14 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Invalid configured application path[0m
+[0;31m![0m
+[0;31m! The configured application path `MyApp.txt` is not a valid .NET application file.[0m
+[0;31m![0m
+[0;31m! Supported file types:[0m
+[0;31m! * Solution files: `.sln`, `.slnx`[0m
+[0;31m! * Project files: `.csproj`, `.vbproj`, `.fsproj`[0m
+[0;31m! * File-based apps: `.cs`[0m
+[0;31m![0m
+[0;31m! For more information, see:[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet#solution-file[0m
