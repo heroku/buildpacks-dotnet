@@ -116,6 +116,30 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             },
             None,
         ),
+        DotnetBuildpackError::MultipleRootDirectoryFileBasedAppFiles(paths) => log_error_to(
+            &mut writer,
+            "Multiple .NET file-based apps",
+            formatdoc! {"
+                The root directory contains multiple C# files: `{}`.
+
+                When no solution or project files are detected, `.cs` files in the root
+                directory are treated as 'file-based apps' (introduced in .NET 10).
+
+                We currently don’t support having multiple file-based apps in the root
+                directory to prevent unexpected results. Use solution and project files
+                to build multiple apps from the same codebase. For more information, see:
+                https://github.com/heroku/buildpacks-dotnet#application-requirements
+
+                If you did not intend to build and deploy the `*.cs` files as file-based apps,
+                and you think you found a bug in the buildpack, please file an issue here:
+                https://github.com/heroku/buildpacks-dotnet/issues/new
+                ", paths.iter()
+                    .map(|f| f.to_string_lossy().to_string())
+                    .collect::<Vec<String>>()
+                    .join("`, `"),
+            },
+            None,
+        ),
         DotnetBuildpackError::LoadSolutionFile(error) => match error {
             solution::LoadError::ReadSolutionFile(io_error) => log_io_error_to(
                 &mut writer,
@@ -169,6 +193,14 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 &mut writer,
                 error,
                 "reading root project file",
+            );
+        }
+        DotnetBuildpackError::LoadFileBasedAppFile(error) => {
+            log_io_error_to(
+                &mut writer,
+                "Error loading file-based app",
+                "reading file-based app file",
+                error,
             );
         }
         DotnetBuildpackError::ParseTargetFrameworkMoniker(error) => match error {

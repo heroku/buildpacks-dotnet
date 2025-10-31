@@ -366,6 +366,28 @@ fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackEr
                             ));
                         })?,
                 )),
+                // No solution or project files were found, so we look for file-based apps (*.cs files).
+                [] => {
+                    let cs_file_paths = detect::get_files_with_extensions(app_dir, &["cs"])
+                        .expect("function to pass after detection");
+                    match cs_file_paths.as_slice() {
+                        [single_cs_file] => Ok(Solution::ephemeral(
+                            Project::load_from_file_based_app(single_cs_file)
+                                .map_err(DotnetBuildpackError::LoadFileBasedAppFile)
+                                .inspect(|ephemeral_project| {
+                                    print::sub_bullet(format!(
+                                        "Detected .NET file-based app: {}",
+                                        style::value(ephemeral_project.path.to_string_lossy())
+                                    ));
+                                })?,
+                        )),
+                        _ => Err(
+                            DotnetBuildpackError::MultipleRootDirectoryFileBasedAppFiles(
+                                cs_file_paths,
+                            ),
+                        ),
+                    }
+                }
                 _ => Err(DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
                     project_file_paths,
                 )),
@@ -427,8 +449,10 @@ enum DotnetBuildpackError {
     NoSolutionProjects(PathBuf),
     MultipleRootDirectorySolutionFiles(Vec<PathBuf>),
     MultipleRootDirectoryProjectFiles(Vec<PathBuf>),
+    MultipleRootDirectoryFileBasedAppFiles(Vec<PathBuf>),
     LoadSolutionFile(dotnet::solution::LoadError),
     LoadProjectFile(dotnet::project::LoadError),
+    LoadFileBasedAppFile(io::Error),
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     ReadGlobalJsonFile(io::Error),
     ParseGlobalJson(serde_json::Error),
