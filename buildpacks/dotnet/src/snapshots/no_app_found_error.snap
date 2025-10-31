@@ -1,0 +1,9 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! No .NET application found[0m
+[0;31m![0m
+[0;31m! No .NET application found. This buildpack requires solution (`.sln`, `.slnx`),[0m
+[0;31m! project (`.csproj`, `.vbproj`, `.fsproj`) or C# (`.cs`) files in the root directory.[0m
+[0;31m![0m
+[0;31m! For more information, see: https://github.com/heroku/buildpacks-dotnet#application-requirements[0m

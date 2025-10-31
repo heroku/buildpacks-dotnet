@@ -1,4 +1,5 @@
 use crate::DotnetBuildpackError;
+use crate::app_source;
 use crate::dotnet::target_framework_moniker::ParseTargetFrameworkError;
 use crate::dotnet::{project, solution};
 use crate::dotnet_buildpack_configuration::{
@@ -78,10 +79,22 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 None,
             );
         }
-        DotnetBuildpackError::MultipleRootDirectorySolutionFiles(paths) => log_error_to(
-            &mut writer,
-            "Multiple .NET solution files",
-            formatdoc! {"
+        DotnetBuildpackError::DiscoverAppSource(error) => match error {
+            app_source::DiscoveryError::NoAppFound => log_error_to(
+                &mut writer,
+                "No .NET application found",
+                formatdoc! {"
+                    No .NET application found. This buildpack requires solution (`.sln`, `.slnx`),
+                    project (`.csproj`, `.vbproj`, `.fsproj`) or C# (`.cs`) files in the root directory.
+
+                    For more information, see: https://github.com/heroku/buildpacks-dotnet#application-requirements
+                "},
+                None,
+            ),
+            app_source::DiscoveryError::MultipleSolutionFiles(paths) => log_error_to(
+                &mut writer,
+                "Multiple .NET solution files",
+                formatdoc! {"
                 The root directory contains multiple .NET solution files: `{}`.
 
                 When there are multiple solution files in the root directory, you must specify
@@ -90,16 +103,16 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 For more information, see:
                 https://github.com/heroku/buildpacks-dotnet#solution-file
                 ", paths.iter()
-                    .map(|f| f.to_string_lossy().to_string())
-                    .collect::<Vec<String>>()
-                    .join("`, `"),
-            },
-            None,
-        ),
-        DotnetBuildpackError::MultipleRootDirectoryProjectFiles(paths) => log_error_to(
-            &mut writer,
-            "Multiple .NET project files",
-            formatdoc! {"
+                        .map(|f| f.to_string_lossy().to_string())
+                        .collect::<Vec<String>>()
+                        .join("`, `"),
+                },
+                None,
+            ),
+            app_source::DiscoveryError::MultipleProjectFiles(paths) => log_error_to(
+                &mut writer,
+                "Multiple .NET project files",
+                formatdoc! {"
                 The root directory contains multiple .NET project files: `{}`.
 
                 We don’t support having multiple project files in the root directory to prevent
@@ -110,16 +123,16 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 side-by-side, see Microsoft’s documentation for project organization guidance:
                 https://learn.microsoft.com/en-us/dotnet/core/porting/project-structure
                 ", paths.iter()
-                    .map(|f| f.to_string_lossy().to_string())
-                    .collect::<Vec<String>>()
-                    .join("`, `"),
-            },
-            None,
-        ),
-        DotnetBuildpackError::MultipleRootDirectoryFileBasedAppFiles(paths) => log_error_to(
-            &mut writer,
-            "Multiple .NET file-based apps",
-            formatdoc! {"
+                        .map(|f| f.to_string_lossy().to_string())
+                        .collect::<Vec<String>>()
+                        .join("`, `"),
+                },
+                None,
+            ),
+            app_source::DiscoveryError::MultipleFileBasedApps(paths) => log_error_to(
+                &mut writer,
+                "Multiple .NET file-based apps",
+                formatdoc! {"
                 The root directory contains multiple C# files: `{}`.
 
                 When no solution or project files are detected, `.cs` files in the root
@@ -134,31 +147,73 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 and you think you found a bug in the buildpack, please file an issue here:
                 https://github.com/heroku/buildpacks-dotnet/issues/new
                 ", paths.iter()
-                    .map(|f| f.to_string_lossy().to_string())
-                    .collect::<Vec<String>>()
-                    .join("`, `"),
-            },
-            None,
-        ),
-        DotnetBuildpackError::LoadSolutionFile(error) => match error {
-            solution::LoadError::ReadSolutionFile(io_error) => log_io_error_to(
+                        .map(|f| f.to_string_lossy().to_string())
+                        .collect::<Vec<String>>()
+                        .join("`, `"),
+                },
+                None,
+            ),
+            app_source::DiscoveryError::UnrecognizedAppExtension(path) => log_error_to(
                 &mut writer,
-                "Error loading solution file",
-                "reading the solution file",
+                "Invalid configured application path",
+                formatdoc! {"
+                    The configured application path `{}` is not a valid .NET application file.
+
+                    Supported file types:
+                    * Solution files: `.sln`, `.slnx`
+                    * Project files: `.csproj`, `.vbproj`, `.fsproj`
+                    * File-based apps: `.cs`
+
+                    For more information, see:
+                    https://github.com/heroku/buildpacks-dotnet#solution-file
+                    ", path.to_string_lossy()
+                },
+                None,
+            ),
+            app_source::DiscoveryError::DetectionIoError(io_error) => log_io_error_to(
+                &mut writer,
+                "App discovery error",
+                "detecting application files",
                 io_error,
             ),
-            solution::LoadError::LoadProject(load_project_error) => {
-                on_load_dotnet_project_error_with_writer(
+            app_source::DiscoveryError::InvalidPath(path) => log_error_to(
+                &mut writer,
+                "Invalid configured application path",
+                formatdoc! {"
+                    The configured application path `{}` does not exist or is not accessible.
+
+                    This error occurs when the specified path:
+                    * Does not exist
+                    * Is not a file or directory
+                    * Cannot be accessed due to permissions
+
+                    For more information, see:
+                    https://github.com/heroku/buildpacks-dotnet#solution-file
+                    ", path.to_string_lossy()
+                },
+                None,
+            ),
+        },
+        DotnetBuildpackError::LoadAppSource(error) => match error {
+            app_source::LoadError::LoadSolution(error) => match error {
+                solution::LoadError::ReadSolutionFile(io_error) => log_io_error_to(
                     &mut writer,
-                    load_project_error,
-                    "reading solution project files",
-                );
-            }
-            solution::LoadError::ProjectNotFound(project_path) => {
-                log_error_to(
-                    &mut writer,
-                    "Missing project referenced in solution",
-                    formatdoc! {"
+                    "Error loading solution file",
+                    "reading the solution file",
+                    io_error,
+                ),
+                solution::LoadError::LoadProject(load_project_error) => {
+                    on_load_dotnet_project_error_with_writer(
+                        &mut writer,
+                        load_project_error,
+                        "reading solution project files",
+                    );
+                }
+                solution::LoadError::ProjectNotFound(project_path) => {
+                    log_error_to(
+                        &mut writer,
+                        "Missing project referenced in solution",
+                        formatdoc! {"
                     The solution references a project file that does not exist: `{}`.
 
                     This error occurs when a project referenced in the solution file cannot be found at
@@ -172,37 +227,38 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     * Update the project reference path in the solution file.
                     * Or remove the project reference from the solution if it's no longer needed.
                     ", project_path.to_string_lossy()},
-                    None,
-                );
-            }
-            solution::LoadError::SlnxParseError(error) => {
-                log_error_to(
-                    &mut writer,
-                    "Error parsing solution file",
-                    formatdoc! {"
+                        None,
+                    );
+                }
+                solution::LoadError::SlnxParseError(error) => {
+                    log_error_to(
+                        &mut writer,
+                        "Error parsing solution file",
+                        formatdoc! {"
                         We can't parse the solution file because it contains invalid XML.
 
                         Use the debug information above to troubleshoot and retry your build.
                     "},
-                    Some(error.to_string()),
+                        Some(error.to_string()),
+                    );
+                }
+            },
+            app_source::LoadError::LoadProject(error) => {
+                on_load_dotnet_project_error_with_writer(
+                    &mut writer,
+                    error,
+                    "reading root project file",
+                );
+            }
+            app_source::LoadError::LoadFileBasedApp(error) => {
+                log_io_error_to(
+                    &mut writer,
+                    "Error loading file-based app",
+                    "reading file-based app file",
+                    error,
                 );
             }
         },
-        DotnetBuildpackError::LoadProjectFile(error) => {
-            on_load_dotnet_project_error_with_writer(
-                &mut writer,
-                error,
-                "reading root project file",
-            );
-        }
-        DotnetBuildpackError::LoadFileBasedAppFile(error) => {
-            log_io_error_to(
-                &mut writer,
-                "Error loading file-based app",
-                "reading file-based app file",
-                error,
-            );
-        }
         DotnetBuildpackError::ParseTargetFrameworkMoniker(error) => match error {
             ParseTargetFrameworkError::InvalidFormat(tfm)
             | ParseTargetFrameworkError::UnsupportedOSTfm(tfm) => {
@@ -565,97 +621,141 @@ mod tests {
     }
 
     #[test]
+    fn test_no_app_found_error() {
+        assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
+            app_source::DiscoveryError::NoAppFound,
+        ));
+    }
+
+    #[test]
+    fn test_app_discovery_detection_io_error() {
+        assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
+            app_source::DiscoveryError::DetectionIoError(create_io_error()),
+        ));
+    }
+
+    #[test]
     fn test_multiple_root_directory_solution_files_error() {
-        assert_error_snapshot(DotnetBuildpackError::MultipleRootDirectorySolutionFiles(
-            vec![PathBuf::from("foo.sln"), PathBuf::from("bar.sln")],
+        assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
+            app_source::DiscoveryError::MultipleSolutionFiles(vec![
+                PathBuf::from("foo.sln"),
+                PathBuf::from("bar.sln"),
+            ]),
         ));
     }
 
     #[test]
     fn test_multiple_root_directory_project_files_error() {
-        assert_error_snapshot(DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
-            vec![PathBuf::from("foo.csproj"), PathBuf::from("bar.fsproj")],
+        assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
+            app_source::DiscoveryError::MultipleProjectFiles(vec![
+                PathBuf::from("foo.csproj"),
+                PathBuf::from("bar.fsproj"),
+            ]),
+        ));
+    }
+
+    #[test]
+    fn test_invalid_configured_path_error() {
+        assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
+            app_source::DiscoveryError::UnrecognizedAppExtension(PathBuf::from("MyApp.txt")),
+        ));
+    }
+
+    #[test]
+    fn test_invalid_path_error() {
+        assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
+            app_source::DiscoveryError::InvalidPath(PathBuf::from("/nonexistent/path/MyApp.sln")),
         ));
     }
 
     #[test]
     fn test_multiple_root_directory_file_based_app_files_error() {
-        assert_error_snapshot(
-            DotnetBuildpackError::MultipleRootDirectoryFileBasedAppFiles(vec![
+        assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
+            app_source::DiscoveryError::MultipleFileBasedApps(vec![
                 PathBuf::from("foo.cs"),
                 PathBuf::from("bar.cs"),
             ]),
-        );
+        ));
     }
 
     #[test]
     fn test_load_solution_file_read_error() {
-        assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
-            solution::LoadError::ReadSolutionFile(create_io_error()),
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::LoadSolution(solution::LoadError::ReadSolutionFile(
+                create_io_error(),
+            )),
         ));
     }
 
     #[test]
     fn test_load_solution_file_project_not_found_error() {
-        assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
-            solution::LoadError::ProjectNotFound(std::path::PathBuf::from(
-                "src/MyProject/MyProject.csproj",
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::LoadSolution(solution::LoadError::ProjectNotFound(
+                std::path::PathBuf::from("src/MyProject/MyProject.csproj"),
             )),
         ));
     }
 
     #[test]
     fn test_load_solution_file_slnx_parse_error() {
-        assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
-            solution::LoadError::SlnxParseError(create_xml_parse_error()),
-        ));
-    }
-
-    #[test]
-    fn test_load_solution_file_load_project_read_error() {
-        assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
-            solution::LoadError::LoadProject(
-                project::LoadError::ReadProjectFile(create_io_error()),
-            ),
-        ));
-    }
-
-    #[test]
-    fn test_load_solution_file_load_project_xml_parse_error() {
-        assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
-            solution::LoadError::LoadProject(project::LoadError::XmlParseError(
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::LoadSolution(solution::LoadError::SlnxParseError(
                 create_xml_parse_error(),
             )),
         ));
     }
 
     #[test]
+    fn test_load_solution_file_load_project_read_error() {
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::LoadSolution(solution::LoadError::LoadProject(
+                project::LoadError::ReadProjectFile(create_io_error()),
+            )),
+        ));
+    }
+
+    #[test]
+    fn test_load_solution_file_load_project_xml_parse_error() {
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::LoadSolution(solution::LoadError::LoadProject(
+                project::LoadError::XmlParseError(create_xml_parse_error()),
+            )),
+        ));
+    }
+
+    #[test]
     fn test_load_project_file_read_error() {
-        assert_error_snapshot(DotnetBuildpackError::LoadProjectFile(
-            project::LoadError::ReadProjectFile(create_io_error()),
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::LoadProject(project::LoadError::ReadProjectFile(
+                create_io_error(),
+            )),
         ));
     }
 
     #[test]
     fn test_load_solution_file_load_project_missing_target_framework_error() {
-        assert_error_snapshot(DotnetBuildpackError::LoadSolutionFile(
-            solution::LoadError::LoadProject(project::LoadError::MissingTargetFramework(
-                PathBuf::from("foo.csproj"),
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::LoadSolution(solution::LoadError::LoadProject(
+                project::LoadError::MissingTargetFramework(PathBuf::from("foo.csproj")),
             )),
         ));
     }
 
     #[test]
     fn test_load_project_file_xml_parse_error() {
-        assert_error_snapshot(DotnetBuildpackError::LoadProjectFile(
-            project::LoadError::XmlParseError(create_xml_parse_error()),
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::LoadProject(project::LoadError::XmlParseError(
+                create_xml_parse_error(),
+            )),
         ));
     }
 
     #[test]
     fn test_load_project_file_missing_target_framework_error() {
-        assert_error_snapshot(DotnetBuildpackError::LoadProjectFile(
-            project::LoadError::MissingTargetFramework(PathBuf::from("fpp.csproj")),
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::LoadProject(project::LoadError::MissingTargetFramework(
+                PathBuf::from("fpp.csproj"),
+            )),
         ));
     }
 
@@ -675,7 +775,9 @@ mod tests {
 
     #[test]
     fn test_load_file_based_app_file_read_error() {
-        assert_error_snapshot(DotnetBuildpackError::LoadFileBasedAppFile(create_io_error()));
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::LoadFileBasedApp(create_io_error()),
+        ));
     }
 
     #[test]
