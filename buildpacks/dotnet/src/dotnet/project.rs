@@ -63,6 +63,59 @@ impl Project {
             assembly_name,
         })
     }
+
+    pub(crate) fn load_from_file_based_app(path: &Path) -> Result<Self, io::Error> {
+        let content = fs_err::read_to_string(path)?;
+
+        let mut sdk_id: Option<&str> = None;
+        let mut target_framework: Option<&str> = None;
+
+        for line in content.lines() {
+            let trimmed_line = line.trim();
+
+            // Find the first SDK then stop looking for it (only the first sdk directive maps to the project SDK)
+            if sdk_id.is_none()
+                && let Some(sdk_val) = trimmed_line.strip_prefix("#:sdk ")
+            {
+                sdk_id = Some(sdk_val);
+            }
+
+            // Find the *first* TargetFramework. Specifying duplicate properties will cause an error during
+            // publish, but for now we let the `dotnet` CLI provide that error feedback later.
+            if target_framework.is_none()
+                && let Some(tfm_val) = trimmed_line.strip_prefix("#:property TargetFramework=")
+            {
+                target_framework = Some(tfm_val);
+            }
+
+            if sdk_id.is_some() && target_framework.is_some() {
+                break;
+            }
+        }
+
+        // Apply defaults if values were not found in the file
+        let final_sdk_id = sdk_id.unwrap_or("Microsoft.NET.Sdk");
+        let final_target_framework = target_framework.unwrap_or("net10.0").to_string();
+
+        // File-based apps are executables, so pass 'Exe' as the output type when
+        // when inferring project type (e.g. default to ConsoleApplication).
+        let project_type = infer_project_type(final_sdk_id, Some("Exe"));
+
+        // File-based apps use the file stem as the assembly name, just like project file defaults.
+        // Unlike project files, setting the AssemblyName property doesn't change the output.
+        let assembly_name = path
+            .file_stem()
+            .expect("A path that can be read must have a file stem")
+            .to_string_lossy()
+            .to_string();
+
+        Ok(Self {
+            path: path.to_path_buf(),
+            target_framework: final_target_framework,
+            project_type,
+            assembly_name,
+        })
+    }
 }
 
 #[derive(Debug, Deserialize, Default)]
@@ -297,5 +350,66 @@ mod tests {
             project_path.file_stem().unwrap().to_string_lossy()
         );
         assert_eq!(project.path, project_path);
+    }
+
+    #[test]
+    fn test_load_file_based_app_defaults() {
+        let project_cs = r#"
+Console.WriteLine("foobar");
+"#;
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_path = temp_dir.path().join("DefaultApp.cs");
+        fs::write(&app_path, project_cs).unwrap();
+
+        let project = Project::load_from_file_based_app(&app_path).unwrap();
+
+        // Should default to "Microsoft.NET.Sdk" and "Exe" output, so we expect ConsoleApplication
+        assert_eq!(project.project_type, ProjectType::ConsoleApplication);
+        // Should default to "net10.0"
+        assert_eq!(project.target_framework, "net10.0");
+        assert_eq!(project.assembly_name, "DefaultApp");
+    }
+
+    #[test]
+    fn test_load_file_based_app_explicit_configuration() {
+        let project_cs = r#"
+#:sdk Microsoft.NET.Sdk.Web
+#:sdk Aspire.AppHost.Sdk@9.4.1
+#:property TargetFramework=net11.0
+#:property LangVersion=preview
+
+Console.WriteLine("foobar");
+"#;
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_path = temp_dir.path().join("MyApp.cs");
+        fs::write(&app_path, project_cs).unwrap();
+
+        let project = Project::load_from_file_based_app(&app_path).unwrap();
+
+        // It should find the *first* SDK
+        assert_eq!(project.project_type, ProjectType::WebApplication);
+        // It should find the TargetFramework
+        assert_eq!(project.target_framework, "net11.0");
+        // Assembly name should be file stem
+        assert_eq!(project.assembly_name, "MyApp");
+        assert_eq!(project.path, app_path);
+    }
+
+    #[test]
+    fn test_load_file_based_app_mixed_defaults() {
+        let project_cs = r#"
+#:sdk Microsoft.NET.Sdk.Worker
+
+Console.WriteLine("foobar");
+"#;
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_path = temp_dir.path().join("WorkerApp.cs");
+        fs::write(&app_path, project_cs).unwrap();
+
+        let project = Project::load_from_file_based_app(&app_path).unwrap();
+
+        assert_eq!(project.project_type, ProjectType::WorkerService);
+        assert_eq!(project.target_framework, "net10.0");
+        assert_eq!(project.assembly_name, "WorkerApp");
     }
 }

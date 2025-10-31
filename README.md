@@ -31,9 +31,13 @@ docker run --rm -it -e "PORT=8080" -p 8080:8080 sample-app
 
 ## Application Requirements
 
-A solution file (e.g. `MySolution.sln` or `MySolution.slnx`) or .NET project file (e.g. `*.csproj`, `*.vbproj` or `*.fsproj`) must be present in the application’s root directory. If the root directory contains both solution and project files, the solution file will be preferred for the build and publish process.
+A .NET solution (e.g. `MySolution.sln` or `MySolution.slnx`), project (e.g. `*.csproj`, `*.vbproj` or `*.fsproj`) or C# (e.g. `MyApp.cs`) file must be present in the application’s root directory.
 
-The buildpack support C#, Visual Basic and F# projects using the .NET and ASP.NET Core frameworks (version 8.0 and up).
+If the root directory contains both solution and project files, the solution file will be preferred for the build and publish process.
+
+If the root directory contains neither solution or project files, the C# file will be published as a [.NET 10 file-based app][file-based-apps].
+
+The buildpack support C#, Visual Basic and F# apps using the .NET and ASP.NET Core frameworks (version 8.0 and up).
 
 ## Configuration
 
@@ -56,7 +60,7 @@ A complete inventory of supported .NET SDK versions and platforms [is available 
 
 ### Solution File
 
-By default, the buildpack automatically detects the solution or project file to build and publish. However, if your codebase contains multiple solution files in the root directory, you must specify which one to use.
+By default, the buildpack automatically detects the solution, project or file-based app file to build and publish. However, if your codebase contains multiple solution files in the root directory, you must specify which one to use.
 
 You can configure the solution file using either an environment variable or a `project.toml` file.
 
@@ -120,6 +124,7 @@ Issues and pull requests are welcome. See our [contributing guidelines](./CONTRI
 [ci-url]: https://github.com/heroku/buildpacks-dotnet/actions/workflows/ci.yml
 [classic-buildpack]: https://github.com/heroku/heroku-buildpack-dotnet
 [cnb]: https://buildpacks.io
+[file-based-apps]: https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-10/sdk#file-based-apps-enhancements
 [heroku-buildpacks]: https://github.com/heroku/buildpacks
 [pack-install]: https://buildpacks.io/docs/for-platform-operators/how-to/integrate-ci/pack/
 [target-framework]: https://learn.microsoft.com/en-us/dotnet/core/project-sdk/msbuild-props#targetframework

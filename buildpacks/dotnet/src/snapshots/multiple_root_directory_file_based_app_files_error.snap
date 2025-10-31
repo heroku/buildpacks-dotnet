@@ -1,0 +1,18 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Multiple .NET file-based apps[0m
+[0;31m![0m
+[0;31m! The root directory contains multiple C# files: `foo.cs`, `bar.cs`.[0m
+[0;31m![0m
+[0;31m! When no solution or project files are detected, `.cs` files in the root[0m
+[0;31m! directory are treated as 'file-based apps' (introduced in .NET 10).[0m
+[0;31m![0m
+[0;31m! We currently don’t support having multiple file-based apps in the root[0m
+[0;31m! directory to prevent unexpected results. Use solution and project files[0m
+[0;31m! to build multiple apps from the same codebase. For more information, see:[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet#application-requirements[0m
+[0;31m![0m
+[0;31m! If you did not intend to build and deploy the `*.cs` files as file-based apps,[0m
+[0;31m! and you think you found a bug in the buildpack, please file an issue here:[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet/issues/new[0m
