@@ -164,6 +164,62 @@ fn test_solution_file_env_var_takes_precedence_over_project_toml() {
 
 #[test]
 #[ignore = "integration test"]
+fn test_dotnet_publish_file_based_app_basic_console() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/file_based_app_basic_console"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            assert_contains!(
+                context.pack_stdout,
+                "- Detected .NET file-based app: `/workspace/foo.cs`"
+            );
+            assert_contains!(
+                context.pack_stdout,
+                "- Detected version requirement: `^10.0`"
+            );
+            assert_contains!(
+                context.pack_stdout,
+                "- Running `dotnet publish /workspace/foo.cs"
+            );
+            assert_contains!(context.pack_stdout, "foo -> /workspace/bin/publish/");
+            assert_contains!(
+                context.pack_stdout,
+                "- Found `foo`: bash -c cd bin/publish; ./foo"
+            );
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
+fn test_dotnet_publish_file_based_app_basic_web() {
+    TestRunner::default().build(
+        default_build_config("tests/fixtures/file_based_app_basic_web"),
+        |context| {
+            assert_empty!(context.pack_stderr);
+            assert_contains!(
+                context.pack_stdout,
+                "- Detected .NET file-based app: `/workspace/foo.cs`"
+            );
+            assert_contains!(
+                context.pack_stdout,
+                "- Detected version requirement: `^10.0`"
+            );
+            assert_contains!(
+                context.pack_stdout,
+                "- Running `dotnet publish /workspace/foo.cs"
+            );
+            assert_contains!(context.pack_stdout, "foo -> /workspace/bin/publish/");
+            assert_contains!(
+                context.pack_stdout,
+                "- Found `web`: bash -c cd bin/publish; ./foo --urls http://*:$PORT"
+            );
+        },
+    );
+}
+
+#[test]
+#[ignore = "integration test"]
 fn test_dotnet_publish_process_registration_with_procfile() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/basic_web_9.0_with_procfile"),
