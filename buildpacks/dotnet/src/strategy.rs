@@ -98,7 +98,7 @@ mod tests {
 
     impl From<MyFindError> for TestError {
         fn from(fe: MyFindError) -> Self {
-            TestError::FinderFailed(fe.0.to_string())
+            TestError::FinderFailed(fe.0)
         }
     }
 
