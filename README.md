@@ -37,7 +37,7 @@ If the root directory contains both solution and project files, the solution fil
 
 If the root directory contains neither solution or project files, the C# file will be published as a [.NET 10 file-based app][file-based-apps].
 
-The buildpack support C#, Visual Basic and F# apps using the .NET and ASP.NET Core frameworks (version 8.0 and up).
+The buildpack supports C#, Visual Basic and F# apps using the .NET and ASP.NET Core frameworks (version 8.0 and up).
 
 ## Configuration
 
