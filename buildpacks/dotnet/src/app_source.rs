@@ -56,18 +56,17 @@ impl AppSource {
     }
 
     fn from_file(file_path: &Path) -> Result<Self, DiscoveryError> {
+        let file_path_buf = file_path.to_path_buf();
         let extension = file_path
             .extension()
             .and_then(|ext| ext.to_str())
-            .ok_or_else(|| DiscoveryError::UnrecognizedAppExtension(file_path.to_path_buf()))?;
+            .ok_or_else(|| DiscoveryError::UnrecognizedAppExtension(file_path_buf.clone()))?;
 
         match extension.to_lowercase().as_str() {
-            "sln" | "slnx" => Ok(Self::Solution(file_path.to_path_buf())),
-            "csproj" | "vbproj" | "fsproj" => Ok(Self::Project(file_path.to_path_buf())),
-            "cs" => Ok(Self::FileBasedApp(file_path.to_path_buf())),
-            _ => Err(DiscoveryError::UnrecognizedAppExtension(
-                file_path.to_path_buf(),
-            )),
+            "sln" | "slnx" => Ok(Self::Solution(file_path_buf)),
+            "csproj" | "vbproj" | "fsproj" => Ok(Self::Project(file_path_buf)),
+            "cs" => Ok(Self::FileBasedApp(file_path_buf)),
+            _ => Err(DiscoveryError::UnrecognizedAppExtension(file_path_buf)),
         }
     }
 
