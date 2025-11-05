@@ -42,7 +42,6 @@
 /// * `not_found_error_fn`: A function/closure that returns the error value
 ///   to use if all strategies are exhausted without finding a match.
 ///   This is called at most once.
-#[allow(dead_code)]
 pub(crate) fn find_first_match<T, E, I, Item, FE, F, B, M, FNE>(
     input: &I,
     strategies: &[(F, B, M)],
