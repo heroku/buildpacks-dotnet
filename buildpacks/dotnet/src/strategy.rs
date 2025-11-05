@@ -58,14 +58,14 @@ where
     for (finder, builder, on_multiple) in strategies {
         let mut items = finder(input).map_err(Into::into)?;
 
-        match items.len() {
-            0 => {} // Try next strategy
-            1 => {
+        match items.as_slice() {
+            [] => {} // Try next strategy
+            [_] => {
                 // We found a single match
                 return Ok(builder(
                     items
                         .pop()
-                        .expect("Infallible: `items.len()` is 1 in this match arm"),
+                        .expect("Infallible: slice pattern matched single item"),
                 ));
             }
             _ => {
