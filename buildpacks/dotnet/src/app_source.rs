@@ -1,6 +1,6 @@
-use crate::detect;
 use crate::dotnet::project::{LoadError as ProjectLoadError, Project};
 use crate::dotnet::solution::{LoadError as SolutionLoadError, Solution};
+use crate::{detect, strategy};
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -30,31 +30,29 @@ impl From<io::Error> for DiscoveryError {
 
 impl AppSource {
     fn from_dir(dir_path: &Path) -> Result<Self, DiscoveryError> {
-        let solution_paths = detect::solution_file_paths(dir_path)?;
+        type Finder = fn(&Path) -> io::Result<Vec<PathBuf>>;
+        type Builder = fn(PathBuf) -> AppSource;
+        type OnMultipleHandler = fn(Vec<PathBuf>) -> DiscoveryError;
 
-        match solution_paths.as_slice() {
-            [] => {}
-            [single] => return Ok(AppSource::Solution(single.clone())),
-            _ => return Err(DiscoveryError::MultipleSolutionFiles(solution_paths)),
-        }
+        let strategies: &[(Finder, Builder, OnMultipleHandler)] = &[
+            (
+                detect::solution_file_paths,
+                AppSource::Solution,
+                |solution_paths| DiscoveryError::MultipleSolutionFiles(solution_paths),
+            ),
+            (
+                detect::project_file_paths,
+                AppSource::Project,
+                |project_paths| DiscoveryError::MultipleProjectFiles(project_paths),
+            ),
+            (
+                detect::file_based_app_paths,
+                AppSource::FileBasedApp,
+                |file_based_app_paths| DiscoveryError::MultipleFileBasedApps(file_based_app_paths),
+            ),
+        ];
 
-        let project_paths = detect::project_file_paths(dir_path)?;
-
-        match project_paths.as_slice() {
-            [] => {}
-            [single] => return Ok(AppSource::Project(single.clone())),
-            _ => return Err(DiscoveryError::MultipleProjectFiles(project_paths)),
-        }
-
-        let file_based_paths = detect::file_based_app_paths(dir_path)?;
-
-        match file_based_paths.as_slice() {
-            [] => {}
-            [single] => return Ok(AppSource::FileBasedApp(single.clone())),
-            _ => return Err(DiscoveryError::MultipleFileBasedApps(file_based_paths)),
-        }
-
-        Err(DiscoveryError::NoAppFound)
+        strategy::find_first_match(dir_path, strategies, || DiscoveryError::NoAppFound)
     }
 
     fn from_file(file_path: &Path) -> Result<Self, DiscoveryError> {
