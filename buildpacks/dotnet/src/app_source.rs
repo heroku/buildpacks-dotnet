@@ -52,7 +52,7 @@ impl AppSource {
             ),
         ];
 
-        strategy::find_first_match(dir_path, strategies, || DiscoveryError::NoAppFound)
+        strategy::find_first_match(dir_path, strategies, DiscoveryError::NoAppFound)
     }
 
     fn from_file(file_path: &Path) -> Result<Self, DiscoveryError> {
