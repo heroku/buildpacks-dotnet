@@ -56,16 +56,14 @@ where
     FNE: FnOnce() -> E,
 {
     for (finder, builder, on_multiple) in strategies {
-        let mut items = finder(input).map_err(Into::into)?;
+        let items = finder(input).map_err(Into::into)?;
 
         match items.len() {
             0 => {} // Try next strategy
             1 => {
                 // We found a single match
                 return Ok(builder(
-                    items
-                        .pop()
-                        .expect("Infallible: `items.len()` is 1 in this match arm"),
+                    items.into_iter().next().expect("item should exist"),
                 ));
             }
             _ => {
