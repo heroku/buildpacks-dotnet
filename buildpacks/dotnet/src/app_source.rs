@@ -1,6 +1,6 @@
+use crate::detect;
 use crate::dotnet::project::{LoadError as ProjectLoadError, Project};
 use crate::dotnet::solution::{LoadError as SolutionLoadError, Solution};
-use crate::{detect, strategy};
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -20,12 +20,6 @@ pub(crate) enum AppSource {
     Solution(PathBuf),
     Project(PathBuf),
     FileBasedApp(PathBuf),
-}
-
-impl From<io::Error> for DiscoveryError {
-    fn from(err: io::Error) -> Self {
-        DiscoveryError::DetectionIoError(err)
-    }
 }
 
 impl AppSource {
@@ -51,8 +45,16 @@ impl AppSource {
                 |file_based_app_paths| DiscoveryError::MultipleFileBasedApps(file_based_app_paths),
             ),
         ];
+        for (finder, builder, on_multiple) in strategies {
+            let paths = finder(dir_path).map_err(DiscoveryError::DetectionIoError)?;
+            match paths.as_slice() {
+                [] => {}
+                [single] => return Ok(builder(single.clone())),
+                _ => return Err(on_multiple(paths)),
+            }
+        }
 
-        strategy::find_first_match(dir_path, strategies, DiscoveryError::NoAppFound)
+        Err(DiscoveryError::NoAppFound)
     }
 
     fn from_file(file_path: &Path) -> Result<Self, DiscoveryError> {
@@ -467,16 +469,5 @@ mod tests {
         assert_eq!(solution.path(), solution_path.as_path());
         assert_eq!(project.path(), project_path.as_path());
         assert_eq!(file_based.path(), cs_path.as_path());
-    }
-
-    #[test]
-    fn test_from_io_error_converts_to_discovery_error() {
-        let io_error = io::Error::new(io::ErrorKind::NotFound, "file not found");
-        let discovery_error: DiscoveryError = io_error.into();
-
-        assert!(matches!(
-            discovery_error,
-            DiscoveryError::DetectionIoError(ref err) if err.kind() == io::ErrorKind::NotFound
-        ));
     }
 }
