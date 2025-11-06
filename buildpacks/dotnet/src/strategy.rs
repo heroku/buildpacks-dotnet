@@ -59,21 +59,18 @@ where
         let items = finder(input).map_err(Into::into)?;
 
         match items.len() {
-            0 => {} // Try next strategy
+            0 => {}
             1 => {
-                // We found a single match
                 return Ok(builder(
                     items.into_iter().next().expect("item should exist"),
                 ));
             }
             _ => {
-                // More than one item found, call the error handler
                 return Err(on_multiple(items));
             }
         }
     }
 
-    // All strategies exhausted, call the factory to create the error
     Err(not_found_error_fn())
 }
 
