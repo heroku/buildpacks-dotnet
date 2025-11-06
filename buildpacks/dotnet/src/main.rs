@@ -8,7 +8,6 @@ mod errors;
 mod launch_process;
 mod layers;
 mod project_toml;
-mod strategy;
 mod utils;
 
 use crate::app_source::{AppSource, DiscoveryError, LoadError};
