@@ -20,7 +20,7 @@
 ///    No further strategies are tried.
 ///
 /// If all strategies are exhausted and all return `Ok(vec![])`, the provided
-/// `not_found_error_fn` is called to generate and return an error.
+/// `not_found_error` is returned.
 ///
 /// # Type Parameters
 ///
@@ -33,20 +33,18 @@
 /// * `F`: The finder closure: `Fn(&I) -> Result<Vec<Item>, FE>`.
 /// * `B`: The builder closure: `Fn(Item) -> T`.
 /// * `M`: The handler for multiple matches: `Fn(Vec<Item>) -> E`.
-/// * `FNE`: The "not found" error factory: `FnOnce() -> E`.
 ///
 /// # Arguments
 ///
 /// * `input`: A reference to the input data to be processed.
 /// * `strategies`: An iterable (such as a slice or `Vec`) of tuples, where
 ///   each tuple contains a `(finder, builder, on_multiple_handler)`.
-/// * `not_found_error_fn`: A function/closure that returns the error value
-///   to use if all strategies are exhausted without finding a match.
-///   This is called at most once.
-pub(crate) fn find_first_match<'a, T, E, I, Item, FE, F, B, M, FNE>(
+/// * `not_found_error`: The error value to return if all strategies are
+///   exhausted without finding a match. This value is created eagerly.
+pub(crate) fn find_first_match<'a, T, E, I, Item, FE, F, B, M>(
     input: &I,
     strategies: impl IntoIterator<Item = &'a (F, B, M)>,
-    not_found_error_fn: FNE,
+    not_found_error: E,
 ) -> Result<T, E>
 where
     I: ?Sized,
@@ -54,7 +52,6 @@ where
     B: Fn(Item) -> T + 'a,
     M: Fn(Vec<Item>) -> E + 'a,
     FE: Into<E>,
-    FNE: FnOnce() -> E,
 {
     for (finder, builder, on_multiple) in strategies {
         let items = finder(input).map_err(Into::into)?;
@@ -72,7 +69,7 @@ where
         }
     }
 
-    Err(not_found_error_fn())
+    Err(not_found_error)
 }
 
 #[cfg(test)]
@@ -151,7 +148,7 @@ mod tests {
             (finder_empty, builder_prefix, handle_multiple),
         ];
 
-        let result = find_first_match(input, strategies, || TestError::NotFound);
+        let result = find_first_match(input, strategies, TestError::NotFound);
         assert_eq!(result, Ok(ITEM_FOO.to_uppercase()));
     }
 
@@ -163,7 +160,7 @@ mod tests {
             (finder_bar, builder_prefix, handle_multiple),
         ];
 
-        let result = find_first_match(input, strategies, || TestError::NotFound);
+        let result = find_first_match(input, strategies, TestError::NotFound);
         assert_eq!(result, Ok(format!("prefix:{ITEM_BAR}")));
     }
 
@@ -175,7 +172,7 @@ mod tests {
             (finder_empty, builder_prefix, handle_multiple),
         ];
 
-        let result = find_first_match(input, strategies, || TestError::SpecificNotFound);
+        let result = find_first_match(input, strategies, TestError::SpecificNotFound);
         assert_eq!(result, Err(TestError::SpecificNotFound));
     }
 
@@ -187,7 +184,7 @@ mod tests {
             (finder_bar, builder_prefix, handle_multiple),
         ];
 
-        let result = find_first_match(input, strategies, || TestError::NotFound);
+        let result = find_first_match(input, strategies, TestError::NotFound);
         let expected_err = TestError::TooMany(vec![ITEM_FOO.to_string(), ITEM_BAR.to_string()]);
         assert_eq!(result, Err(expected_err));
     }
@@ -200,7 +197,7 @@ mod tests {
             (finder_bar, builder_prefix, handle_multiple),
         ];
 
-        let result = find_first_match(input, strategies, || TestError::NotFound);
+        let result = find_first_match(input, strategies, TestError::NotFound);
         let expected_err = TestError::FinderFailed(FINDER_ERR_MSG.to_string());
         assert_eq!(result, Err(expected_err));
     }
@@ -209,7 +206,7 @@ mod tests {
     fn test_empty_strategies_list() {
         let input = "anything";
         let strategies: &[(TestFinder, TestBuilder, TestMultiHandler)] = &[];
-        let result = find_first_match(input, strategies, || TestError::NotFound);
+        let result = find_first_match(input, strategies, TestError::NotFound);
         assert_eq!(result, Err(TestError::NotFound));
     }
 }
