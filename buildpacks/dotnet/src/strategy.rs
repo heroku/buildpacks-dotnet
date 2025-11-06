@@ -24,6 +24,7 @@
 ///
 /// # Type Parameters
 ///
+/// * `'a`: The lifetime of the references in the `strategies` iterator.
 /// * `T`: The output type to be built.
 /// * `E`: The error type for this function.
 /// * `I`: The input type to be searched.
@@ -37,21 +38,21 @@
 /// # Arguments
 ///
 /// * `input`: A reference to the input data to be processed.
-/// * `strategies`: A slice of tuples, where each tuple contains a
-///   `(finder, builder, on_multiple_handler)`.
+/// * `strategies`: An iterable (such as a slice or `Vec`) of tuples, where
+///   each tuple contains a `(finder, builder, on_multiple_handler)`.
 /// * `not_found_error_fn`: A function/closure that returns the error value
 ///   to use if all strategies are exhausted without finding a match.
 ///   This is called at most once.
-pub(crate) fn find_first_match<T, E, I, Item, FE, F, B, M, FNE>(
+pub(crate) fn find_first_match<'a, T, E, I, Item, FE, F, B, M, FNE>(
     input: &I,
-    strategies: &[(F, B, M)],
+    strategies: impl IntoIterator<Item = &'a (F, B, M)>,
     not_found_error_fn: FNE,
 ) -> Result<T, E>
 where
     I: ?Sized,
-    F: Fn(&I) -> Result<Vec<Item>, FE>,
-    B: Fn(Item) -> T,
-    M: Fn(Vec<Item>) -> E,
+    F: Fn(&I) -> Result<Vec<Item>, FE> + 'a,
+    B: Fn(Item) -> T + 'a,
+    M: Fn(Vec<Item>) -> E + 'a,
     FE: Into<E>,
     FNE: FnOnce() -> E,
 {
