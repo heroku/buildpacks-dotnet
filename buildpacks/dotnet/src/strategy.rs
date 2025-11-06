@@ -41,6 +41,7 @@
 ///   each tuple contains a `(finder, builder, on_multiple_handler)`.
 /// * `not_found_error`: The error value to return if all strategies are
 ///   exhausted without finding a match. This value is created eagerly.
+#[allow(dead_code)]
 pub(crate) fn find_first_match<'a, T, E, I, Item, FE, F, B, M>(
     input: &I,
     strategies: impl IntoIterator<Item = &'a (F, B, M)>,
