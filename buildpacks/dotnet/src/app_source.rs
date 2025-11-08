@@ -32,17 +32,17 @@ impl AppSource {
             (
                 detect::solution_file_paths,
                 AppSource::Solution,
-                |solution_paths| DiscoveryError::MultipleSolutionFiles(solution_paths),
+                DiscoveryError::MultipleSolutionFiles,
             ),
             (
                 detect::project_file_paths,
                 AppSource::Project,
-                |project_paths| DiscoveryError::MultipleProjectFiles(project_paths),
+                DiscoveryError::MultipleProjectFiles,
             ),
             (
                 detect::file_based_app_paths,
                 AppSource::FileBasedApp,
-                |file_based_app_paths| DiscoveryError::MultipleFileBasedApps(file_based_app_paths),
+                DiscoveryError::MultipleFileBasedApps,
             ),
         ];
         for (finder, builder, on_multiple) in strategies {
