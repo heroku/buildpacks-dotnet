@@ -99,7 +99,7 @@ jobs:
       # only those and not the unit tests, via the `--ignored` option. On the latest stack
       # we run all integration tests, but on older stacks we only run stack-specific tests.
       - name: Run integration tests (all tests)
-        run: cargo test --locked -- --ignored --test-threads 10
+        run: cargo test --locked -- --ignored --test-threads 20
 
   print-output:
     runs-on: 'ubuntu-24.04-arm'
