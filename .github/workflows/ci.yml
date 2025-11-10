@@ -61,7 +61,7 @@ jobs:
         exclude:
           - builder: "builder:22"
             arch: "arm64"
-    runs-on: ${{ matrix.arch == 'arm64' && 'pub-hk-ubuntu-24.04-arm-medium' || 'pub-hk-ubuntu-24.04-medium' }}
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     env:
       INTEGRATION_TEST_BUILDER: heroku/${{ matrix.builder }}
     steps:
