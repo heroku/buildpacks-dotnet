@@ -51,11 +51,6 @@ fn test_sdk_resolution_with_target_framework_10_0() {
         default_build_config("tests/fixtures/basic_web_10.0"),
         |context| {
             assert_empty!(context.pack_stderr);
-            // The assertion below will fail when stable .NET 10.0 releases are
-            // added to the inventory.
-            // TODO: Remove pre-release logic in main::resolve_sdk_artifact
-            // and adjust the last line in the assertion to:
-            // - Resolved .NET SDK version `10.0
             assert_contains!(
                 context.pack_stdout,
                 &indoc! {r"
@@ -63,7 +58,7 @@ fn test_sdk_resolution_with_target_framework_10_0() {
                       - Detected .NET project: `/workspace/foo.csproj`
                       - Inferring version requirement from `/workspace/foo.csproj`
                       - Detected version requirement: `^10.0`
-                      - Resolved .NET SDK version `10.0.100-"}
+                      - Resolved .NET SDK version `10.0"}
             );
         },
     );
