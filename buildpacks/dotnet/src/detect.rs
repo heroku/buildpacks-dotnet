@@ -18,7 +18,7 @@ pub(crate) fn find_files_with_extensions(
     dir: &Path,
     extensions: &[&str],
 ) -> Result<Vec<PathBuf>, io::Error> {
-    let project_files = fs_err::read_dir(dir)?
+    let files = fs_err::read_dir(dir)?
         .filter_map(Result::ok)
         .map(|entry| entry.path())
         .filter(|path| path.is_file())
@@ -28,7 +28,7 @@ pub(crate) fn find_files_with_extensions(
                 .is_some_and(|ext| extensions.contains(&ext))
         })
         .collect();
-    Ok(project_files)
+    Ok(files)
 }
 
 /// Returns the path to `global.json` if it exists in the given directory.
