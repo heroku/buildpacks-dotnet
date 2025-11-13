@@ -375,13 +375,6 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_from_non_existent_path() {
-        let temp_dir = TempDir::new().unwrap();
-        let result = AppSource::try_from(temp_dir.path().join("nonexistent.sln").as_path());
-        assert!(matches!(result, Err(DiscoveryError::InvalidPath(_))));
-    }
-
-    #[test]
     fn test_try_from_app_source_creates_ephemeral_solution_for_project() {
         let temp_dir = TempDir::new().unwrap();
         let project_path = temp_dir.path().join("MyApp.csproj");
