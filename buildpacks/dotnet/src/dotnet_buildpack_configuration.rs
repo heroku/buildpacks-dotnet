@@ -275,6 +275,19 @@ mod tests {
     }
 
     #[test]
+    fn test_invalid_solution_file_extension() {
+        let env = create_env(&[("SOLUTION_FILE", "MyApp.txt")]);
+        let result = DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env, None);
+
+        assert_eq!(
+            result,
+            Err(DotnetBuildpackConfigurationError::InvalidSolutionFile(
+                "MyApp.txt".to_string()
+            ))
+        );
+    }
+
+    #[test]
     fn test_verbosity_level_display() {
         let cases = [
             (VerbosityLevel::Quiet, "quiet"),
