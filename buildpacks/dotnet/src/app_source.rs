@@ -283,9 +283,9 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_from_file_path_solution() {
+    fn test_from_file_discovers_solution() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.sln"]);
-        let app_source = AppSource::try_from(temp_dir.path().join("MyApp.sln").as_path()).unwrap();
+        let app_source = AppSource::from_file(temp_dir.path().join("MyApp.sln").as_path()).unwrap();
         assert!(matches!(
             app_source,
             AppSource::Solution(ref path) if path.file_name().unwrap() == "MyApp.sln"
@@ -293,9 +293,9 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_from_file_path_slnx() {
+    fn test_from_file_discovers_slnx() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.slnx"]);
-        let app_source = AppSource::try_from(temp_dir.path().join("MyApp.slnx").as_path()).unwrap();
+        let app_source = AppSource::from_file(temp_dir.path().join("MyApp.slnx").as_path()).unwrap();
         assert!(matches!(
             app_source,
             AppSource::Solution(ref path) if path.file_name().unwrap() == "MyApp.slnx"
@@ -303,10 +303,10 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_from_file_path_csproj() {
+    fn test_from_file_discovers_csproj() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.csproj"]);
         let app_source =
-            AppSource::try_from(temp_dir.path().join("MyApp.csproj").as_path()).unwrap();
+            AppSource::from_file(temp_dir.path().join("MyApp.csproj").as_path()).unwrap();
         assert!(matches!(
             app_source,
             AppSource::Project(ref path) if path.file_name().unwrap() == "MyApp.csproj"
@@ -314,10 +314,10 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_from_file_path_vbproj() {
+    fn test_from_file_discovers_vbproj() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.vbproj"]);
         let app_source =
-            AppSource::try_from(temp_dir.path().join("MyApp.vbproj").as_path()).unwrap();
+            AppSource::from_file(temp_dir.path().join("MyApp.vbproj").as_path()).unwrap();
         assert!(matches!(
             app_source,
             AppSource::Project(ref path) if path.file_name().unwrap() == "MyApp.vbproj"
@@ -325,10 +325,10 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_from_file_path_fsproj() {
+    fn test_from_file_discovers_fsproj() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.fsproj"]);
         let app_source =
-            AppSource::try_from(temp_dir.path().join("MyApp.fsproj").as_path()).unwrap();
+            AppSource::from_file(temp_dir.path().join("MyApp.fsproj").as_path()).unwrap();
         assert!(matches!(
             app_source,
             AppSource::Project(ref path) if path.file_name().unwrap() == "MyApp.fsproj"
@@ -336,9 +336,9 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_from_file_path_cs_file() {
+    fn test_from_file_discovers_cs_file() {
         let temp_dir = create_temp_dir_with_files(&["app.cs"]);
-        let app_source = AppSource::try_from(temp_dir.path().join("app.cs").as_path()).unwrap();
+        let app_source = AppSource::from_file(temp_dir.path().join("app.cs").as_path()).unwrap();
         assert!(matches!(
             app_source,
             AppSource::FileBasedApp(ref path) if path.file_name().unwrap() == "app.cs"
@@ -346,17 +346,17 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_from_file_path_with_directory_path() {
+    fn test_from_file_with_nested_path() {
         let temp_dir = create_temp_dir_with_files(&["src/MyApp/MyApp.csproj"]);
         let app_source =
-            AppSource::try_from(temp_dir.path().join("src/MyApp/MyApp.csproj").as_path()).unwrap();
+            AppSource::from_file(temp_dir.path().join("src/MyApp/MyApp.csproj").as_path()).unwrap();
         assert!(matches!(app_source, AppSource::Project(_)));
     }
 
     #[test]
-    fn test_discover_from_file_path_invalid_extension() {
+    fn test_from_file_invalid_extension() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.txt"]);
-        let result = AppSource::try_from(temp_dir.path().join("MyApp.txt").as_path());
+        let result = AppSource::from_file(temp_dir.path().join("MyApp.txt").as_path());
         assert!(matches!(
             result,
             Err(DiscoveryError::UnrecognizedAppExtension(_))
@@ -364,9 +364,9 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_from_file_path_no_extension() {
+    fn test_from_file_no_extension() {
         let temp_dir = create_temp_dir_with_files(&["MyApp"]);
-        let result = AppSource::try_from(temp_dir.path().join("MyApp").as_path());
+        let result = AppSource::from_file(temp_dir.path().join("MyApp").as_path());
         assert!(matches!(
             result,
             Err(DiscoveryError::UnrecognizedAppExtension(_))
