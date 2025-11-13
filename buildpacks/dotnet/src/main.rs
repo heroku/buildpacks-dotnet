@@ -99,8 +99,16 @@ impl Buildpack for DotnetBuildpack {
             &context.app_dir
         };
 
-        let app_source = AppSource::try_from(app_source_path.as_path())
-            .map_err(DotnetBuildpackError::DiscoverAppSource)?;
+        let app_source = if app_source_path.is_dir() {
+            AppSource::from_dir(app_source_path.as_path())
+        } else if app_source_path.is_file() {
+            AppSource::from_file(app_source_path.as_path())
+        } else {
+            Err(app_source::DiscoveryError::InvalidPath(
+                app_source_path.clone(),
+            ))
+        }
+        .map_err(DotnetBuildpackError::DiscoverAppSource)?;
 
         print::sub_bullet(format!(
             "Detected .NET {}: {}",

@@ -23,7 +23,7 @@ pub(crate) enum AppSource {
 }
 
 impl AppSource {
-    fn from_dir(dir_path: &Path) -> Result<Self, DiscoveryError> {
+    pub(crate) fn from_dir(dir_path: &Path) -> Result<Self, DiscoveryError> {
         type Finder = fn(&Path) -> io::Result<Vec<PathBuf>>;
         type Builder = fn(PathBuf) -> AppSource;
         type OnMultipleHandler = fn(Vec<PathBuf>) -> DiscoveryError;
@@ -57,7 +57,7 @@ impl AppSource {
         Err(DiscoveryError::NoAppFound)
     }
 
-    fn from_file(file_path: &Path) -> Result<Self, DiscoveryError> {
+    pub(crate) fn from_file(file_path: &Path) -> Result<Self, DiscoveryError> {
         let file_path_buf = file_path.to_path_buf();
         let extension = file_path
             .extension()
@@ -83,20 +83,6 @@ impl AppSource {
     pub(crate) fn path(&self) -> &Path {
         match self {
             Self::Solution(path) | Self::Project(path) | Self::FileBasedApp(path) => path,
-        }
-    }
-}
-
-impl TryFrom<&Path> for AppSource {
-    type Error = DiscoveryError;
-
-    fn try_from(path: &Path) -> Result<Self, Self::Error> {
-        if path.is_dir() {
-            Self::from_dir(path)
-        } else if path.is_file() {
-            Self::from_file(path)
-        } else {
-            Err(DiscoveryError::InvalidPath(path.to_path_buf()))
         }
     }
 }
