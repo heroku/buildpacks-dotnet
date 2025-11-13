@@ -1,16 +1,17 @@
+use crate::app_source::{FILE_BASED_APP_EXTENSIONS, PROJECT_EXTENSIONS, SOLUTION_EXTENSIONS};
 use std::io;
 use std::path::{Path, PathBuf};
 
 pub(crate) fn solution_file(dir: &Path) -> io::Result<Result<Option<PathBuf>, Vec<PathBuf>>> {
-    find_single_file_with_extensions(dir, &["sln", "slnx"])
+    find_single_file_with_extensions(dir, SOLUTION_EXTENSIONS)
 }
 
 pub(crate) fn project_file(dir: &Path) -> io::Result<Result<Option<PathBuf>, Vec<PathBuf>>> {
-    find_single_file_with_extensions(dir, &["csproj", "vbproj", "fsproj"])
+    find_single_file_with_extensions(dir, PROJECT_EXTENSIONS)
 }
 
 pub(crate) fn file_based_app(dir: &Path) -> io::Result<Result<Option<PathBuf>, Vec<PathBuf>>> {
-    find_single_file_with_extensions(dir, &["cs"])
+    find_single_file_with_extensions(dir, FILE_BASED_APP_EXTENSIONS)
 }
 
 fn find_single_file_with_extensions(

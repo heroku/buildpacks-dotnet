@@ -4,6 +4,10 @@ use crate::dotnet::solution::{LoadError as SolutionLoadError, Solution};
 use std::io;
 use std::path::{Path, PathBuf};
 
+pub(crate) const SOLUTION_EXTENSIONS: &[&str] = &["sln", "slnx"];
+pub(crate) const PROJECT_EXTENSIONS: &[&str] = &["csproj", "vbproj", "fsproj"];
+pub(crate) const FILE_BASED_APP_EXTENSIONS: &[&str] = &["cs"];
+
 #[derive(Debug)]
 pub(crate) enum DiscoveryError {
     DetectionIoError(io::Error),
@@ -57,11 +61,17 @@ impl AppSource {
             .and_then(|ext| ext.to_str())
             .ok_or_else(|| DiscoveryError::UnrecognizedAppExtension(file_path_buf.clone()))?;
 
-        match extension.to_lowercase().as_str() {
-            "sln" | "slnx" => Ok(Self::Solution(file_path_buf)),
-            "csproj" | "vbproj" | "fsproj" => Ok(Self::Project(file_path_buf)),
-            "cs" => Ok(Self::FileBasedApp(file_path_buf)),
-            _ => Err(DiscoveryError::UnrecognizedAppExtension(file_path_buf)),
+        let extension_lower = extension.to_lowercase();
+        let extension_str = extension_lower.as_str();
+
+        if SOLUTION_EXTENSIONS.contains(&extension_str) {
+            Ok(Self::Solution(file_path_buf))
+        } else if PROJECT_EXTENSIONS.contains(&extension_str) {
+            Ok(Self::Project(file_path_buf))
+        } else if FILE_BASED_APP_EXTENSIONS.contains(&extension_str) {
+            Ok(Self::FileBasedApp(file_path_buf))
+        } else {
+            Err(DiscoveryError::UnrecognizedAppExtension(file_path_buf))
         }
     }
 

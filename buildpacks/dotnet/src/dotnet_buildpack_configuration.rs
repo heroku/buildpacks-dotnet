@@ -1,3 +1,4 @@
+use crate::app_source::SOLUTION_EXTENSIONS;
 use crate::project_toml::DotnetConfig;
 use std::fmt;
 use std::path::PathBuf;
@@ -32,7 +33,7 @@ impl DotnetBuildpackConfiguration {
 
         if let Some(ref path) = solution_file {
             let extension = path.extension().and_then(|ext| ext.to_str());
-            if !matches!(extension, Some("sln" | "slnx")) {
+            if !extension.is_some_and(|ext| SOLUTION_EXTENSIONS.contains(&ext)) {
                 return Err(DotnetBuildpackConfigurationError::InvalidSolutionFile(
                     path.to_string_lossy().to_string(),
                 ));
