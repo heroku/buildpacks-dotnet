@@ -1,3 +1,4 @@
+use crate::app_source::SOLUTION_EXTENSIONS;
 use crate::project_toml::DotnetConfig;
 use std::fmt;
 use std::path::PathBuf;
@@ -15,6 +16,7 @@ pub(crate) struct DotnetBuildpackConfiguration {
 pub(crate) enum DotnetBuildpackConfigurationError {
     ExecutionEnvironment(ExecutionEnvironmentError),
     VerbosityLevel(ParseVerbosityLevelError),
+    InvalidSolutionFile(PathBuf),
 }
 
 impl DotnetBuildpackConfiguration {
@@ -23,6 +25,21 @@ impl DotnetBuildpackConfiguration {
         project_toml_config: Option<&DotnetConfig>,
     ) -> Result<Self, DotnetBuildpackConfigurationError> {
         let msbuild_config = project_toml_config.and_then(|config| config.msbuild.as_ref());
+
+        let solution_file = env
+            .get_string_lossy("SOLUTION_FILE")
+            .map(PathBuf::from)
+            .or_else(|| project_toml_config.and_then(|config| config.solution_file.clone()));
+
+        if let Some(ref path) = solution_file {
+            let extension = path.extension().and_then(|ext| ext.to_str());
+            if !extension.is_some_and(|ext| SOLUTION_EXTENSIONS.contains(&ext)) {
+                Err(DotnetBuildpackConfigurationError::InvalidSolutionFile(
+                    path.clone(),
+                ))?;
+            }
+        }
+
         Ok(Self {
             build_configuration: env
                 .get_string_lossy("BUILD_CONFIGURATION")
@@ -42,10 +59,7 @@ impl DotnetBuildpackConfiguration {
                 .map(str::parse)
                 .transpose()
                 .map_err(DotnetBuildpackConfigurationError::VerbosityLevel)?,
-            solution_file: env
-                .get_string_lossy("SOLUTION_FILE")
-                .map(PathBuf::from)
-                .or_else(|| project_toml_config.and_then(|config| config.solution_file.clone())),
+            solution_file,
         })
     }
 }
@@ -259,6 +273,32 @@ mod tests {
             result,
             Err(ParseVerbosityLevelError(s)) if s == "invalid"
         ));
+    }
+
+    #[test]
+    fn test_invalid_solution_file_extension() {
+        let env = create_env(&[("SOLUTION_FILE", "MyApp.txt")]);
+        let result = DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env, None);
+
+        assert_eq!(
+            result,
+            Err(DotnetBuildpackConfigurationError::InvalidSolutionFile(
+                PathBuf::from("MyApp.txt")
+            ))
+        );
+    }
+
+    #[test]
+    fn test_valid_solution_file_extensions() {
+        let env_sln = create_env(&[("SOLUTION_FILE", "MyApp.sln")]);
+        let result_sln =
+            DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env_sln, None).unwrap();
+        assert_eq!(result_sln.solution_file, Some(PathBuf::from("MyApp.sln")));
+
+        let env_slnx = create_env(&[("SOLUTION_FILE", "MyApp.slnx")]);
+        let result_slnx =
+            DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env_slnx, None).unwrap();
+        assert_eq!(result_slnx.solution_file, Some(PathBuf::from("MyApp.slnx")));
     }
 
     #[test]

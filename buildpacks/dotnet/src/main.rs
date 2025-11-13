@@ -1,3 +1,4 @@
+mod app_source;
 mod detect;
 mod dotnet;
 mod dotnet_buildpack_configuration;
@@ -9,6 +10,10 @@ mod layers;
 mod project_toml;
 mod utils;
 
+use crate::app_source::{
+    AppSource, DiscoveryError, FILE_BASED_APP_EXTENSIONS, LoadError, PROJECT_EXTENSIONS,
+    SOLUTION_EXTENSIONS,
+};
 use crate::dotnet::global_json::{GlobalJson, SdkConfig};
 use crate::dotnet::project::Project;
 use crate::dotnet::runtime_identifier;
@@ -52,11 +57,15 @@ impl Buildpack for DotnetBuildpack {
     type Error = DotnetBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
-        let paths = detect::get_files_with_extensions(
-            &context.app_dir,
-            &["sln", "slnx", "csproj", "vbproj", "fsproj", "cs"],
-        )
-        .map_err(DotnetBuildpackError::BuildpackDetection)?;
+        let supported_extensions = [
+            SOLUTION_EXTENSIONS,
+            PROJECT_EXTENSIONS,
+            FILE_BASED_APP_EXTENSIONS,
+        ]
+        .concat();
+
+        let paths = detect::find_files_with_extensions(&context.app_dir, &supported_extensions)
+            .map_err(DotnetBuildpackError::BuildpackDetection)?;
 
         if paths.is_empty() {
             printdoc! {"
@@ -87,16 +96,38 @@ impl Buildpack for DotnetBuildpack {
         let started = std::time::Instant::now();
         print::bullet("SDK version detection");
 
-        let solution = if let Some(path) = buildpack_configuration.solution_file {
+        let app_source = if let Some(path) = buildpack_configuration.solution_file {
             print::sub_bullet(format!(
                 "Using configured solution file: {}",
                 style::value(path.to_string_lossy())
             ));
-            Solution::load_from_path(&context.app_dir.join(path))
-                .map_err(DotnetBuildpackError::LoadSolutionFile)
+            let configured_path = context.app_dir.join(&path);
+            if configured_path.is_file() {
+                AppSource::from_file(&configured_path)
+                    .map_err(DotnetBuildpackError::DiscoverAppSource)?
+            } else {
+                Err(DotnetBuildpackError::ConfiguredSolutionFileNotFound(
+                    configured_path,
+                ))?
+            }
         } else {
-            get_solution_to_publish(&context.app_dir)
-        }?;
+            AppSource::from_dir(&context.app_dir)
+                .map_err(DotnetBuildpackError::DiscoverAppSource)?
+        };
+
+        let source_type = match &app_source {
+            AppSource::Solution(_) => "solution",
+            AppSource::Project(_) => "project",
+            AppSource::FileBasedApp(_) => "file-based app",
+        };
+        print::sub_bullet(format!(
+            "Detected .NET {}: {}",
+            source_type,
+            style::value(app_source.path().to_string_lossy())
+        ));
+
+        let solution =
+            Solution::try_from(app_source).map_err(DotnetBuildpackError::LoadAppSource)?;
 
         let sdk_version_requirement = detect_sdk_version_requirement(&context, &solution)?;
 
@@ -323,68 +354,6 @@ fn detect_sdk_version_requirement(
         })
 }
 
-fn get_solution_to_publish(app_dir: &Path) -> Result<Solution, DotnetBuildpackError> {
-    let solution_file_paths =
-        detect::solution_file_paths(app_dir).expect("function to pass after detection");
-    match solution_file_paths.as_slice() {
-        // A single solution file was found.
-        [solution_file] => {
-            print::sub_bullet(format!(
-                "Detected .NET solution: {}",
-                style::value(solution_file.to_string_lossy())
-            ));
-            Solution::load_from_path(solution_file).map_err(DotnetBuildpackError::LoadSolutionFile)
-        }
-        // No solution files were found, so we look for project files.
-        [] => {
-            let project_file_paths =
-                detect::project_file_paths(app_dir).expect("function to pass after detection");
-
-            match project_file_paths.as_slice() {
-                [single_project] => Ok(Solution::ephemeral(
-                    Project::load_from_path(single_project)
-                        .map_err(DotnetBuildpackError::LoadProjectFile)
-                        .inspect(|project| {
-                            print::sub_bullet(format!(
-                                "Detected .NET project: {}",
-                                style::value(project.path.to_string_lossy())
-                            ));
-                        })?,
-                )),
-                // No solution or project files were found, so we look for file-based apps (*.cs files).
-                [] => {
-                    let cs_file_paths = detect::get_files_with_extensions(app_dir, &["cs"])
-                        .expect("function to pass after detection");
-                    match cs_file_paths.as_slice() {
-                        [single_cs_file] => Ok(Solution::ephemeral(
-                            Project::load_from_file_based_app(single_cs_file)
-                                .map_err(DotnetBuildpackError::LoadFileBasedAppFile)
-                                .inspect(|ephemeral_project| {
-                                    print::sub_bullet(format!(
-                                        "Detected .NET file-based app: {}",
-                                        style::value(ephemeral_project.path.to_string_lossy())
-                                    ));
-                                })?,
-                        )),
-                        _ => Err(
-                            DotnetBuildpackError::MultipleRootDirectoryFileBasedAppFiles(
-                                cs_file_paths,
-                            ),
-                        ),
-                    }
-                }
-                _ => Err(DotnetBuildpackError::MultipleRootDirectoryProjectFiles(
-                    project_file_paths,
-                )),
-            }
-        }
-        // Multiple solution files were found, so we return an error.
-        _ => Err(DotnetBuildpackError::MultipleRootDirectorySolutionFiles(
-            solution_file_paths,
-        )),
-    }
-}
-
 fn get_solution_sdk_version_requirement(
     solution: &Solution,
 ) -> Result<VersionReq, DotnetBuildpackError> {
@@ -432,12 +401,9 @@ enum DotnetBuildpackError {
     ReadProjectTomlFile(io::Error),
     ParseProjectToml(toml::de::Error),
     NoSolutionProjects(PathBuf),
-    MultipleRootDirectorySolutionFiles(Vec<PathBuf>),
-    MultipleRootDirectoryProjectFiles(Vec<PathBuf>),
-    MultipleRootDirectoryFileBasedAppFiles(Vec<PathBuf>),
-    LoadSolutionFile(dotnet::solution::LoadError),
-    LoadProjectFile(dotnet::project::LoadError),
-    LoadFileBasedAppFile(io::Error),
+    ConfiguredSolutionFileNotFound(PathBuf),
+    DiscoverAppSource(DiscoveryError),
+    LoadAppSource(LoadError),
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     ReadGlobalJsonFile(io::Error),
     ParseGlobalJson(serde_json::Error),

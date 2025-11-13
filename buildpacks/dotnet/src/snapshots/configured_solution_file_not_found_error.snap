@@ -1,0 +1,15 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Configured solution file not found[0m
+[0;31m![0m
+[0;31m! The configured solution file `/nonexistent/path/MyApp.sln` does not exist or is not accessible.[0m
+[0;31m![0m
+[0;31m! This error occurs when the solution file path specified via the `SOLUTION_FILE`[0m
+[0;31m! environment variable or in `project.toml`:[0m
+[0;31m! * Does not exist[0m
+[0;31m! * Is not a file[0m
+[0;31m! * Cannot be accessed due to permissions[0m
+[0;31m![0m
+[0;31m! For more information, see:[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet#solution-file[0m
