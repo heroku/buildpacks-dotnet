@@ -1,9 +1,9 @@
 ---
 source: buildpacks/dotnet/src/errors.rs
 ---
-[0;31m! Invalid configured application path[0m
+[0;31m! Configured solution file not found[0m
 [0;31m![0m
-[0;31m! The configured application path `/nonexistent/path/MyApp.sln` does not exist or is not accessible.[0m
+[0;31m! The configured solution file `/nonexistent/path/MyApp.sln` does not exist or is not accessible.[0m
 [0;31m![0m
 [0;31m! This error occurs when the specified path:[0m
 [0;31m! * Does not exist[0m
