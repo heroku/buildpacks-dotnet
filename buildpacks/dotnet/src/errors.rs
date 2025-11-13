@@ -1,5 +1,5 @@
 use crate::DotnetBuildpackError;
-use crate::app_source;
+use crate::app_source::{self, DiscoveryError};
 use crate::dotnet::target_framework_moniker::ParseTargetFrameworkError;
 use crate::dotnet::{project, solution};
 use crate::dotnet_buildpack_configuration::{
@@ -80,7 +80,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             );
         }
         DotnetBuildpackError::DiscoverAppSource(error) => match error {
-            app_source::DiscoveryError::NoAppFound => log_error_to(
+            DiscoveryError::NoAppFound => log_error_to(
                 &mut writer,
                 "No .NET application found",
                 formatdoc! {"
@@ -91,7 +91,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 "},
                 None,
             ),
-            app_source::DiscoveryError::MultipleSolutionFiles(paths) => log_error_to(
+            DiscoveryError::MultipleSolutionFiles(paths) => log_error_to(
                 &mut writer,
                 "Multiple .NET solution files",
                 formatdoc! {"
@@ -109,7 +109,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 },
                 None,
             ),
-            app_source::DiscoveryError::MultipleProjectFiles(paths) => log_error_to(
+            DiscoveryError::MultipleProjectFiles(paths) => log_error_to(
                 &mut writer,
                 "Multiple .NET project files",
                 formatdoc! {"
@@ -129,7 +129,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 },
                 None,
             ),
-            app_source::DiscoveryError::MultipleFileBasedApps(paths) => log_error_to(
+            DiscoveryError::MultipleFileBasedApps(paths) => log_error_to(
                 &mut writer,
                 "Multiple .NET file-based apps",
                 formatdoc! {"
@@ -153,7 +153,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 },
                 None,
             ),
-            app_source::DiscoveryError::UnrecognizedAppExtension(path) => log_error_to(
+            DiscoveryError::UnrecognizedAppExtension(path) => log_error_to(
                 &mut writer,
                 "Invalid configured application path",
                 formatdoc! {"
@@ -170,7 +170,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 },
                 None,
             ),
-            app_source::DiscoveryError::DetectionIoError(io_error) => log_io_error_to(
+            DiscoveryError::DetectionIoError(io_error) => log_io_error_to(
                 &mut writer,
                 "App discovery error",
                 "detecting application files",
@@ -636,21 +636,21 @@ mod tests {
     #[test]
     fn test_no_app_found_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
-            app_source::DiscoveryError::NoAppFound,
+            DiscoveryError::NoAppFound,
         ));
     }
 
     #[test]
     fn test_app_discovery_detection_io_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
-            app_source::DiscoveryError::DetectionIoError(create_io_error()),
+            DiscoveryError::DetectionIoError(create_io_error()),
         ));
     }
 
     #[test]
     fn test_multiple_root_directory_solution_files_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
-            app_source::DiscoveryError::MultipleSolutionFiles(vec![
+            DiscoveryError::MultipleSolutionFiles(vec![
                 PathBuf::from("foo.sln"),
                 PathBuf::from("bar.sln"),
             ]),
@@ -660,7 +660,7 @@ mod tests {
     #[test]
     fn test_multiple_root_directory_project_files_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
-            app_source::DiscoveryError::MultipleProjectFiles(vec![
+            DiscoveryError::MultipleProjectFiles(vec![
                 PathBuf::from("foo.csproj"),
                 PathBuf::from("bar.fsproj"),
             ]),
@@ -670,7 +670,7 @@ mod tests {
     #[test]
     fn test_invalid_configured_path_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
-            app_source::DiscoveryError::UnrecognizedAppExtension(PathBuf::from("MyApp.txt")),
+            DiscoveryError::UnrecognizedAppExtension(PathBuf::from("MyApp.txt")),
         ));
     }
 
@@ -684,7 +684,7 @@ mod tests {
     #[test]
     fn test_multiple_root_directory_file_based_app_files_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
-            app_source::DiscoveryError::MultipleFileBasedApps(vec![
+            DiscoveryError::MultipleFileBasedApps(vec![
                 PathBuf::from("foo.cs"),
                 PathBuf::from("bar.cs"),
             ]),
