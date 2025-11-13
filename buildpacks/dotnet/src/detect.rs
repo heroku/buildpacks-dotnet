@@ -1,20 +1,7 @@
-use crate::app_source::{FILE_BASED_APP_EXTENSIONS, PROJECT_EXTENSIONS, SOLUTION_EXTENSIONS};
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub(crate) fn solution_file(dir: &Path) -> io::Result<Result<Option<PathBuf>, Vec<PathBuf>>> {
-    find_single_file_with_extensions(dir, SOLUTION_EXTENSIONS)
-}
-
-pub(crate) fn project_file(dir: &Path) -> io::Result<Result<Option<PathBuf>, Vec<PathBuf>>> {
-    find_single_file_with_extensions(dir, PROJECT_EXTENSIONS)
-}
-
-pub(crate) fn file_based_app(dir: &Path) -> io::Result<Result<Option<PathBuf>, Vec<PathBuf>>> {
-    find_single_file_with_extensions(dir, FILE_BASED_APP_EXTENSIONS)
-}
-
-fn find_single_file_with_extensions(
+pub(crate) fn find_single_file_with_extensions(
     dir: &Path,
     extensions: &[&str],
 ) -> io::Result<Result<Option<PathBuf>, Vec<PathBuf>>> {
@@ -69,66 +56,39 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
-    fn test_project_file_returns_single() {
+    fn test_find_single_file_with_extensions_returns_single() {
         let temp_dir = TempDir::new().unwrap();
         let base_path = temp_dir.path();
 
         File::create(base_path.join("test.csproj")).unwrap();
         File::create(base_path.join("README.md")).unwrap();
 
-        let result = project_file(temp_dir.path()).unwrap().unwrap();
+        let result = find_single_file_with_extensions(temp_dir.path(), &["csproj"])
+            .unwrap()
+            .unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap().file_name().unwrap(), "test.csproj");
     }
 
     #[test]
-    fn test_project_file_returns_none_when_no_files() {
+    fn test_find_single_file_with_extensions_returns_none_when_no_files() {
         let temp_dir = TempDir::new().unwrap();
-        let result = project_file(temp_dir.path()).unwrap().unwrap();
+        let result = find_single_file_with_extensions(temp_dir.path(), &["csproj"])
+            .unwrap()
+            .unwrap();
         assert!(result.is_none());
     }
 
     #[test]
-    fn test_project_file_returns_error_on_multiple() {
+    fn test_find_single_file_with_extensions_returns_error_on_multiple() {
         let temp_dir = TempDir::new().unwrap();
         let base_path = temp_dir.path();
 
         File::create(base_path.join("test1.csproj")).unwrap();
         File::create(base_path.join("test2.vbproj")).unwrap();
 
-        let result = project_file(temp_dir.path()).unwrap();
-        assert!(matches!(result, Err(ref files) if files.len() == 2));
-    }
-
-    #[test]
-    fn test_solution_file_returns_single() {
-        let temp_dir = TempDir::new().unwrap();
-        let base_path = temp_dir.path();
-
-        File::create(base_path.join("test.sln")).unwrap();
-        File::create(base_path.join("README.md")).unwrap();
-
-        let result = solution_file(temp_dir.path()).unwrap().unwrap();
-        assert!(result.is_some());
-        assert_eq!(result.unwrap().file_name().unwrap(), "test.sln");
-    }
-
-    #[test]
-    fn test_solution_file_returns_none_when_no_files() {
-        let temp_dir = TempDir::new().unwrap();
-        let result = solution_file(temp_dir.path()).unwrap().unwrap();
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn test_solution_file_returns_error_on_multiple() {
-        let temp_dir = TempDir::new().unwrap();
-        let base_path = temp_dir.path();
-
-        File::create(base_path.join("test1.sln")).unwrap();
-        File::create(base_path.join("test2.sln")).unwrap();
-
-        let result = solution_file(temp_dir.path()).unwrap();
+        let result =
+            find_single_file_with_extensions(temp_dir.path(), &["csproj", "vbproj"]).unwrap();
         assert!(matches!(result, Err(ref files) if files.len() == 2));
     }
 
