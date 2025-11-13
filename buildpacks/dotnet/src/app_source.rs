@@ -24,31 +24,27 @@ pub(crate) enum AppSource {
 impl AppSource {
     pub(crate) fn from_dir(dir_path: &Path) -> Result<Self, DiscoveryError> {
         type Finder = fn(&Path) -> io::Result<Vec<PathBuf>>;
-        type Builder = fn(PathBuf) -> AppSource;
         type OnMultipleHandler = fn(Vec<PathBuf>) -> DiscoveryError;
 
-        let strategies: &[(Finder, Builder, OnMultipleHandler)] = &[
+        let strategies: &[(Finder, OnMultipleHandler)] = &[
             (
                 detect::solution_file_paths,
-                AppSource::Solution,
                 DiscoveryError::MultipleSolutionFiles,
             ),
             (
                 detect::project_file_paths,
-                AppSource::Project,
                 DiscoveryError::MultipleProjectFiles,
             ),
             (
                 detect::file_based_app_paths,
-                AppSource::FileBasedApp,
                 DiscoveryError::MultipleFileBasedApps,
             ),
         ];
-        for (finder, builder, on_multiple) in strategies {
+        for (finder, on_multiple) in strategies {
             let paths = finder(dir_path).map_err(DiscoveryError::DetectionIoError)?;
             match paths.as_slice() {
                 [] => {}
-                [single] => return Ok(builder(single.clone())),
+                [single] => return Self::from_file(single),
                 _ => return Err(on_multiple(paths)),
             }
         }
