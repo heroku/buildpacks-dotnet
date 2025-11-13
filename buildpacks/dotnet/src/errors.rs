@@ -184,7 +184,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
 
                     This error occurs when the specified path:
                     * Does not exist
-                    * Is not a file or directory
+                    * Is not a file
                     * Cannot be accessed due to permissions
 
                     For more information, see:
