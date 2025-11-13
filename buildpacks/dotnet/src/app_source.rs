@@ -56,7 +56,6 @@ impl AppSource {
         Err(DiscoveryError::NoAppFound)
     }
 
-    #[allow(dead_code)]
     pub(crate) fn from_file(file_path: &Path) -> Result<Self, DiscoveryError> {
         let file_path_buf = file_path.to_path_buf();
         let extension = file_path
