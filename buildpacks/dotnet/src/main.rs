@@ -10,7 +10,10 @@ mod layers;
 mod project_toml;
 mod utils;
 
-use crate::app_source::{AppSource, DiscoveryError, LoadError};
+use crate::app_source::{
+    AppSource, DiscoveryError, FILE_BASED_APP_EXTENSIONS, LoadError, PROJECT_EXTENSIONS,
+    SOLUTION_EXTENSIONS,
+};
 use crate::dotnet::global_json::{GlobalJson, SdkConfig};
 use crate::dotnet::project::Project;
 use crate::dotnet::runtime_identifier;
@@ -54,11 +57,15 @@ impl Buildpack for DotnetBuildpack {
     type Error = DotnetBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
-        let paths = detect::get_files_with_extensions(
-            &context.app_dir,
-            &["sln", "slnx", "csproj", "vbproj", "fsproj", "cs"],
-        )
-        .map_err(DotnetBuildpackError::BuildpackDetection)?;
+        let supported_extensions: Vec<&str> = SOLUTION_EXTENSIONS
+            .iter()
+            .chain(PROJECT_EXTENSIONS.iter())
+            .chain(FILE_BASED_APP_EXTENSIONS.iter())
+            .copied()
+            .collect();
+
+        let paths = detect::get_files_with_extensions(&context.app_dir, &supported_extensions)
+            .map_err(DotnetBuildpackError::BuildpackDetection)?;
 
         if paths.is_empty() {
             printdoc! {"
