@@ -146,9 +146,9 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_single_solution() {
+    fn test_from_dir_discovers_single_solution() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.sln"]);
-        let app_source = AppSource::try_from(temp_dir.path()).unwrap();
+        let app_source = AppSource::from_dir(temp_dir.path()).unwrap();
 
         assert!(matches!(
             app_source,
@@ -157,9 +157,9 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_single_slnx() {
+    fn test_from_dir_discovers_single_slnx() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.slnx"]);
-        let app_source = AppSource::try_from(temp_dir.path()).unwrap();
+        let app_source = AppSource::from_dir(temp_dir.path()).unwrap();
 
         assert!(matches!(
             app_source,
@@ -168,9 +168,9 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_single_project() {
+    fn test_from_dir_discovers_single_project() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.csproj"]);
-        let app_source = AppSource::try_from(temp_dir.path()).unwrap();
+        let app_source = AppSource::from_dir(temp_dir.path()).unwrap();
 
         assert!(matches!(
             app_source,
@@ -179,9 +179,9 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_vbproj() {
+    fn test_from_dir_discovers_vbproj() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.vbproj"]);
-        let app_source = AppSource::try_from(temp_dir.path()).unwrap();
+        let app_source = AppSource::from_dir(temp_dir.path()).unwrap();
 
         assert!(matches!(
             app_source,
@@ -190,9 +190,9 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_fsproj() {
+    fn test_from_dir_discovers_fsproj() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.fsproj"]);
-        let app_source = AppSource::try_from(temp_dir.path()).unwrap();
+        let app_source = AppSource::from_dir(temp_dir.path()).unwrap();
 
         assert!(matches!(
             app_source,
@@ -201,9 +201,9 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_single_file_based_app() {
+    fn test_from_dir_discovers_single_file_based_app() {
         let temp_dir = create_temp_dir_with_files(&["app.cs"]);
-        let app_source = AppSource::try_from(temp_dir.path()).unwrap();
+        let app_source = AppSource::from_dir(temp_dir.path()).unwrap();
 
         assert!(matches!(
             app_source,
@@ -212,9 +212,9 @@ mod tests {
     }
 
     #[test]
-    fn test_solution_takes_precedence_over_project() {
+    fn test_from_dir_solution_takes_precedence_over_project() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.sln", "MyApp.csproj"]);
-        let app_source = AppSource::try_from(temp_dir.path()).unwrap();
+        let app_source = AppSource::from_dir(temp_dir.path()).unwrap();
 
         assert!(matches!(
             app_source,
@@ -223,17 +223,17 @@ mod tests {
     }
 
     #[test]
-    fn test_solution_takes_precedence_over_file_based_app() {
+    fn test_from_dir_solution_takes_precedence_over_file_based_app() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.sln", "app.cs"]);
-        let app_source = AppSource::try_from(temp_dir.path()).unwrap();
+        let app_source = AppSource::from_dir(temp_dir.path()).unwrap();
 
         assert!(matches!(app_source, AppSource::Solution(_)));
     }
 
     #[test]
-    fn test_project_takes_precedence_over_file_based_app() {
+    fn test_from_dir_project_takes_precedence_over_file_based_app() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.csproj", "app.cs"]);
-        let app_source = AppSource::try_from(temp_dir.path()).unwrap();
+        let app_source = AppSource::from_dir(temp_dir.path()).unwrap();
 
         assert!(matches!(
             app_source,
@@ -242,17 +242,17 @@ mod tests {
     }
 
     #[test]
-    fn test_no_app_found_in_empty_directory() {
+    fn test_from_dir_no_app_found_in_empty_directory() {
         let temp_dir = TempDir::new().unwrap();
-        let result = AppSource::try_from(temp_dir.path());
+        let result = AppSource::from_dir(temp_dir.path());
 
         assert!(matches!(result, Err(DiscoveryError::NoAppFound)));
     }
 
     #[test]
-    fn test_multiple_solutions_error() {
+    fn test_from_dir_multiple_solutions_error() {
         let temp_dir = create_temp_dir_with_files(&["App1.sln", "App2.sln"]);
-        let result = AppSource::try_from(temp_dir.path());
+        let result = AppSource::from_dir(temp_dir.path());
 
         assert!(matches!(
             result,
@@ -261,9 +261,9 @@ mod tests {
     }
 
     #[test]
-    fn test_multiple_projects_error() {
+    fn test_from_dir_multiple_projects_error() {
         let temp_dir = create_temp_dir_with_files(&["App1.csproj", "App2.csproj"]);
-        let result = AppSource::try_from(temp_dir.path());
+        let result = AppSource::from_dir(temp_dir.path());
 
         assert!(matches!(
             result,
@@ -272,9 +272,9 @@ mod tests {
     }
 
     #[test]
-    fn test_multiple_file_based_apps_error() {
+    fn test_from_dir_multiple_file_based_apps_error() {
         let temp_dir = create_temp_dir_with_files(&["app1.cs", "app2.cs"]);
-        let result = AppSource::try_from(temp_dir.path());
+        let result = AppSource::from_dir(temp_dir.path());
 
         assert!(matches!(
             result,
