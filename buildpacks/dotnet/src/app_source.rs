@@ -435,4 +435,15 @@ mod tests {
         assert_eq!(project.path(), project_path.as_path());
         assert_eq!(file_based.path(), cs_path.as_path());
     }
+
+    #[test]
+    fn test_from_io_error_converts_to_detection_io_error() {
+        let io_error = io::Error::new(io::ErrorKind::NotFound, "file not found");
+        let discovery_error: DiscoveryError = io_error.into();
+
+        assert!(matches!(
+            discovery_error,
+            DiscoveryError::DetectionIoError(_)
+        ));
+    }
 }
