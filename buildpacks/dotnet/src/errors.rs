@@ -441,11 +441,11 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     &mut writer,
                     "Invalid solution file configuration",
                     formatdoc! {"
-                        The configured solution file `{solution_file}` must have a `.sln` or `.slnx` extension.
+                        The configured solution file `{}` must have a `.sln` or `.slnx` extension.
 
                         For more information, see:
                         https://github.com/heroku/buildpacks-dotnet#solution-file
-                    "},
+                    ", solution_file.display()},
                     None,
                 );
             }
@@ -905,7 +905,7 @@ mod tests {
     #[test]
     fn test_parse_buildpack_configuration_invalid_solution_file_error() {
         assert_error_snapshot(DotnetBuildpackError::ParseBuildpackConfiguration(
-            DotnetBuildpackConfigurationError::InvalidSolutionFile("MyApp.txt".to_string()),
+            DotnetBuildpackConfigurationError::InvalidSolutionFile(PathBuf::from("MyApp.txt")),
         ));
     }
 
