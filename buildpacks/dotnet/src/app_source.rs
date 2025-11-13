@@ -295,7 +295,8 @@ mod tests {
     #[test]
     fn test_from_file_discovers_slnx() {
         let temp_dir = create_temp_dir_with_files(&["MyApp.slnx"]);
-        let app_source = AppSource::from_file(temp_dir.path().join("MyApp.slnx").as_path()).unwrap();
+        let app_source =
+            AppSource::from_file(temp_dir.path().join("MyApp.slnx").as_path()).unwrap();
         assert!(matches!(
             app_source,
             AppSource::Solution(ref path) if path.file_name().unwrap() == "MyApp.slnx"
