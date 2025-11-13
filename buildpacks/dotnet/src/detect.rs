@@ -1,16 +1,38 @@
+use crate::app_source::DiscoveryError;
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub(crate) fn project_file_paths(dir: &Path) -> io::Result<Vec<PathBuf>> {
-    get_files_with_extensions(dir, &["csproj", "vbproj", "fsproj"])
+pub(crate) fn project_file(dir: &Path) -> Result<Option<PathBuf>, DiscoveryError> {
+    let files = get_files_with_extensions(dir, &["csproj", "vbproj", "fsproj"])
+        .map_err(DiscoveryError::DetectionIoError)?;
+
+    match files.as_slice() {
+        [] => Ok(None),
+        [single] => Ok(Some(single.clone())),
+        _ => Err(DiscoveryError::MultipleProjectFiles(files)),
+    }
 }
 
-pub(crate) fn solution_file_paths(dir: &Path) -> io::Result<Vec<PathBuf>> {
-    get_files_with_extensions(dir, &["sln", "slnx"])
+pub(crate) fn solution_file(dir: &Path) -> Result<Option<PathBuf>, DiscoveryError> {
+    let files = get_files_with_extensions(dir, &["sln", "slnx"])
+        .map_err(DiscoveryError::DetectionIoError)?;
+
+    match files.as_slice() {
+        [] => Ok(None),
+        [single] => Ok(Some(single.clone())),
+        _ => Err(DiscoveryError::MultipleSolutionFiles(files)),
+    }
 }
 
-pub(crate) fn file_based_app_paths(dir: &Path) -> io::Result<Vec<PathBuf>> {
-    get_files_with_extensions(dir, &["cs"])
+pub(crate) fn file_based_app(dir: &Path) -> Result<Option<PathBuf>, DiscoveryError> {
+    let files =
+        get_files_with_extensions(dir, &["cs"]).map_err(DiscoveryError::DetectionIoError)?;
+
+    match files.as_slice() {
+        [] => Ok(None),
+        [single] => Ok(Some(single.clone())),
+        _ => Err(DiscoveryError::MultipleFileBasedApps(files)),
+    }
 }
 
 pub(crate) fn get_files_with_extensions(
@@ -55,33 +77,73 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
-    fn test_find_project_files() {
+    fn test_project_file_returns_single() {
+        let temp_dir = TempDir::new().unwrap();
+        let base_path = temp_dir.path();
+
+        File::create(base_path.join("test.csproj")).unwrap();
+        File::create(base_path.join("README.md")).unwrap();
+
+        let result = project_file(temp_dir.path()).unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().file_name().unwrap(), "test.csproj");
+    }
+
+    #[test]
+    fn test_project_file_returns_none_when_no_files() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = project_file(temp_dir.path()).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_project_file_returns_error_on_multiple() {
         let temp_dir = TempDir::new().unwrap();
         let base_path = temp_dir.path();
 
         File::create(base_path.join("test1.csproj")).unwrap();
         File::create(base_path.join("test2.vbproj")).unwrap();
-        File::create(base_path.join("test3.fsproj")).unwrap();
-        File::create(base_path.join("README.md")).unwrap();
 
-        let project_files = project_file_paths(temp_dir.path()).unwrap();
-
-        assert_eq!(3, project_files.len());
+        let result = project_file(temp_dir.path());
+        assert!(matches!(
+            result,
+            Err(DiscoveryError::MultipleProjectFiles(_))
+        ));
     }
 
     #[test]
-    fn test_find_solution_files() {
+    fn test_solution_file_returns_single() {
+        let temp_dir = TempDir::new().unwrap();
+        let base_path = temp_dir.path();
+
+        File::create(base_path.join("test.sln")).unwrap();
+        File::create(base_path.join("README.md")).unwrap();
+
+        let result = solution_file(temp_dir.path()).unwrap();
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().file_name().unwrap(), "test.sln");
+    }
+
+    #[test]
+    fn test_solution_file_returns_none_when_no_files() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = solution_file(temp_dir.path()).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_solution_file_returns_error_on_multiple() {
         let temp_dir = TempDir::new().unwrap();
         let base_path = temp_dir.path();
 
         File::create(base_path.join("test1.sln")).unwrap();
         File::create(base_path.join("test2.sln")).unwrap();
-        File::create(base_path.join("test3.slnx")).unwrap();
-        File::create(base_path.join("README.md")).unwrap();
 
-        let solution_files = solution_file_paths(temp_dir.path()).unwrap();
-
-        assert_eq!(3, solution_files.len());
+        let result = solution_file(temp_dir.path());
+        assert!(matches!(
+            result,
+            Err(DiscoveryError::MultipleSolutionFiles(_))
+        ));
     }
 
     #[test]
