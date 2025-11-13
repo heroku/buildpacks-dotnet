@@ -5,7 +5,7 @@ pub(crate) fn find_single_file_with_extensions(
     dir: &Path,
     extensions: &[&str],
 ) -> io::Result<Result<Option<PathBuf>, Vec<PathBuf>>> {
-    let files = get_files_with_extensions(dir, extensions)?;
+    let files = find_files_with_extensions(dir, extensions)?;
 
     match files.as_slice() {
         [] => Ok(Ok(None)),
@@ -14,7 +14,7 @@ pub(crate) fn find_single_file_with_extensions(
     }
 }
 
-pub(crate) fn get_files_with_extensions(
+pub(crate) fn find_files_with_extensions(
     dir: &Path,
     extensions: &[&str],
 ) -> Result<Vec<PathBuf>, io::Error> {
