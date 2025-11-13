@@ -23,15 +23,24 @@ pub(crate) enum AppSource {
 
 impl AppSource {
     pub(crate) fn from_dir(dir_path: &Path) -> Result<Self, DiscoveryError> {
-        if let Some(path) = detect::solution_file(dir_path)? {
+        if let Some(path) = detect::solution_file(dir_path)
+            .map_err(DiscoveryError::DetectionIoError)?
+            .map_err(DiscoveryError::MultipleSolutionFiles)?
+        {
             return Self::from_file(&path);
         }
 
-        if let Some(path) = detect::project_file(dir_path)? {
+        if let Some(path) = detect::project_file(dir_path)
+            .map_err(DiscoveryError::DetectionIoError)?
+            .map_err(DiscoveryError::MultipleProjectFiles)?
+        {
             return Self::from_file(&path);
         }
 
-        if let Some(path) = detect::file_based_app(dir_path)? {
+        if let Some(path) = detect::file_based_app(dir_path)
+            .map_err(DiscoveryError::DetectionIoError)?
+            .map_err(DiscoveryError::MultipleFileBasedApps)?
+        {
             return Self::from_file(&path);
         }
 

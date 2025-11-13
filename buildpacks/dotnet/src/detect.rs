@@ -1,35 +1,28 @@
-use crate::app_source::DiscoveryError;
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub(crate) fn solution_file(dir: &Path) -> Result<Option<PathBuf>, DiscoveryError> {
-    find_single_file_with_extensions(dir, &["sln", "slnx"], DiscoveryError::MultipleSolutionFiles)
+pub(crate) fn solution_file(dir: &Path) -> io::Result<Result<Option<PathBuf>, Vec<PathBuf>>> {
+    find_single_file_with_extensions(dir, &["sln", "slnx"])
 }
 
-pub(crate) fn project_file(dir: &Path) -> Result<Option<PathBuf>, DiscoveryError> {
-    find_single_file_with_extensions(
-        dir,
-        &["csproj", "vbproj", "fsproj"],
-        DiscoveryError::MultipleProjectFiles,
-    )
+pub(crate) fn project_file(dir: &Path) -> io::Result<Result<Option<PathBuf>, Vec<PathBuf>>> {
+    find_single_file_with_extensions(dir, &["csproj", "vbproj", "fsproj"])
 }
 
-pub(crate) fn file_based_app(dir: &Path) -> Result<Option<PathBuf>, DiscoveryError> {
-    find_single_file_with_extensions(dir, &["cs"], DiscoveryError::MultipleFileBasedApps)
+pub(crate) fn file_based_app(dir: &Path) -> io::Result<Result<Option<PathBuf>, Vec<PathBuf>>> {
+    find_single_file_with_extensions(dir, &["cs"])
 }
 
 fn find_single_file_with_extensions(
     dir: &Path,
     extensions: &[&str],
-    on_multiple: fn(Vec<PathBuf>) -> DiscoveryError,
-) -> Result<Option<PathBuf>, DiscoveryError> {
-    let files = get_files_with_extensions(dir, extensions)
-        .map_err(DiscoveryError::DetectionIoError)?;
+) -> io::Result<Result<Option<PathBuf>, Vec<PathBuf>>> {
+    let files = get_files_with_extensions(dir, extensions)?;
 
     match files.as_slice() {
-        [] => Ok(None),
-        [single] => Ok(Some(single.clone())),
-        _ => Err(on_multiple(files)),
+        [] => Ok(Ok(None)),
+        [single] => Ok(Ok(Some(single.clone()))),
+        _ => Ok(Err(files)),
     }
 }
 
@@ -82,7 +75,7 @@ mod tests {
         File::create(base_path.join("test.csproj")).unwrap();
         File::create(base_path.join("README.md")).unwrap();
 
-        let result = project_file(temp_dir.path()).unwrap();
+        let result = project_file(temp_dir.path()).unwrap().unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap().file_name().unwrap(), "test.csproj");
     }
@@ -90,7 +83,7 @@ mod tests {
     #[test]
     fn test_project_file_returns_none_when_no_files() {
         let temp_dir = TempDir::new().unwrap();
-        let result = project_file(temp_dir.path()).unwrap();
+        let result = project_file(temp_dir.path()).unwrap().unwrap();
         assert!(result.is_none());
     }
 
@@ -102,11 +95,8 @@ mod tests {
         File::create(base_path.join("test1.csproj")).unwrap();
         File::create(base_path.join("test2.vbproj")).unwrap();
 
-        let result = project_file(temp_dir.path());
-        assert!(matches!(
-            result,
-            Err(DiscoveryError::MultipleProjectFiles(ref files)) if files.len() == 2
-        ));
+        let result = project_file(temp_dir.path()).unwrap();
+        assert!(matches!(result, Err(ref files) if files.len() == 2));
     }
 
     #[test]
@@ -117,7 +107,7 @@ mod tests {
         File::create(base_path.join("test.sln")).unwrap();
         File::create(base_path.join("README.md")).unwrap();
 
-        let result = solution_file(temp_dir.path()).unwrap();
+        let result = solution_file(temp_dir.path()).unwrap().unwrap();
         assert!(result.is_some());
         assert_eq!(result.unwrap().file_name().unwrap(), "test.sln");
     }
@@ -125,7 +115,7 @@ mod tests {
     #[test]
     fn test_solution_file_returns_none_when_no_files() {
         let temp_dir = TempDir::new().unwrap();
-        let result = solution_file(temp_dir.path()).unwrap();
+        let result = solution_file(temp_dir.path()).unwrap().unwrap();
         assert!(result.is_none());
     }
 
@@ -137,11 +127,8 @@ mod tests {
         File::create(base_path.join("test1.sln")).unwrap();
         File::create(base_path.join("test2.sln")).unwrap();
 
-        let result = solution_file(temp_dir.path());
-        assert!(matches!(
-            result,
-            Err(DiscoveryError::MultipleSolutionFiles(ref files)) if files.len() == 2
-        ));
+        let result = solution_file(temp_dir.path()).unwrap();
+        assert!(matches!(result, Err(ref files) if files.len() == 2));
     }
 
     #[test]
