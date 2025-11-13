@@ -436,6 +436,19 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     );
                 }
             },
+            DotnetBuildpackConfigurationError::InvalidSolutionFile(solution_file) => {
+                log_error_to(
+                    &mut writer,
+                    "Invalid solution file configuration",
+                    formatdoc! {"
+                        The configured solution file `{solution_file}` must have a `.sln` or `.slnx` extension.
+
+                        For more information, see:
+                        https://github.com/heroku/buildpacks-dotnet#solution-file
+                    "},
+                    None,
+                );
+            }
         },
         DotnetBuildpackError::RestoreDotnetToolsCommand(error) => match error {
             fun_run::CmdError::SystemError(_message, io_error) => log_io_error_to(

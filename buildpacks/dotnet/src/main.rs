@@ -94,16 +94,18 @@ impl Buildpack for DotnetBuildpack {
                 "Using configured solution file: {}",
                 style::value(path.to_string_lossy())
             ));
-            let configured_path = context.app_dir.join(path);
-            if configured_path.is_file() {
-                AppSource::from_file(&configured_path)
-            } else {
-                Err(app_source::DiscoveryError::InvalidPath(configured_path))
+            let configured_path = context.app_dir.join(&path);
+            if !configured_path.is_file() {
+                return Err(DotnetBuildpackError::DiscoverAppSource(
+                    app_source::DiscoveryError::InvalidPath(configured_path),
+                )
+                .into());
             }
+            AppSource::Solution(configured_path)
         } else {
             AppSource::from_dir(&context.app_dir)
-        }
-        .map_err(DotnetBuildpackError::DiscoverAppSource)?;
+                .map_err(DotnetBuildpackError::DiscoverAppSource)?
+        };
 
         print::sub_bullet(format!(
             "Detected .NET {}: {}",

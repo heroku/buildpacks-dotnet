@@ -15,6 +15,7 @@ pub(crate) struct DotnetBuildpackConfiguration {
 pub(crate) enum DotnetBuildpackConfigurationError {
     ExecutionEnvironment(ExecutionEnvironmentError),
     VerbosityLevel(ParseVerbosityLevelError),
+    InvalidSolutionFile(String),
 }
 
 impl DotnetBuildpackConfiguration {
@@ -23,6 +24,21 @@ impl DotnetBuildpackConfiguration {
         project_toml_config: Option<&DotnetConfig>,
     ) -> Result<Self, DotnetBuildpackConfigurationError> {
         let msbuild_config = project_toml_config.and_then(|config| config.msbuild.as_ref());
+
+        let solution_file = env
+            .get_string_lossy("SOLUTION_FILE")
+            .map(PathBuf::from)
+            .or_else(|| project_toml_config.and_then(|config| config.solution_file.clone()));
+
+        if let Some(ref path) = solution_file {
+            let extension = path.extension().and_then(|ext| ext.to_str());
+            if !matches!(extension, Some("sln" | "slnx")) {
+                return Err(DotnetBuildpackConfigurationError::InvalidSolutionFile(
+                    path.to_string_lossy().to_string(),
+                ));
+            }
+        }
+
         Ok(Self {
             build_configuration: env
                 .get_string_lossy("BUILD_CONFIGURATION")
@@ -42,10 +58,7 @@ impl DotnetBuildpackConfiguration {
                 .map(str::parse)
                 .transpose()
                 .map_err(DotnetBuildpackConfigurationError::VerbosityLevel)?,
-            solution_file: env
-                .get_string_lossy("SOLUTION_FILE")
-                .map(PathBuf::from)
-                .or_else(|| project_toml_config.and_then(|config| config.solution_file.clone())),
+            solution_file,
         })
     }
 }
