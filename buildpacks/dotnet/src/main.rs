@@ -64,7 +64,7 @@ impl Buildpack for DotnetBuildpack {
             .copied()
             .collect();
 
-        let paths = detect::get_files_with_extensions(&context.app_dir, &supported_extensions)
+        let paths = detect::find_files_with_extensions(&context.app_dir, &supported_extensions)
             .map_err(DotnetBuildpackError::BuildpackDetection)?;
 
         if paths.is_empty() {
