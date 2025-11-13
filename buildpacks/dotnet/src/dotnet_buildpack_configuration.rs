@@ -288,6 +288,19 @@ mod tests {
     }
 
     #[test]
+    fn test_valid_solution_file_extensions() {
+        let env_sln = create_env(&[("SOLUTION_FILE", "MyApp.sln")]);
+        let result_sln =
+            DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env_sln, None).unwrap();
+        assert_eq!(result_sln.solution_file, Some(PathBuf::from("MyApp.sln")));
+
+        let env_slnx = create_env(&[("SOLUTION_FILE", "MyApp.slnx")]);
+        let result_slnx =
+            DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env_slnx, None).unwrap();
+        assert_eq!(result_slnx.solution_file, Some(PathBuf::from("MyApp.slnx")));
+    }
+
+    #[test]
     fn test_verbosity_level_display() {
         let cases = [
             (VerbosityLevel::Quiet, "quiet"),
