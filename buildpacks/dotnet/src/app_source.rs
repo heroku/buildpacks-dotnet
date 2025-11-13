@@ -32,19 +32,19 @@ impl AppSource {
         if let Some(path) =
             detect::solution_file(dir_path)?.map_err(DiscoveryError::MultipleSolutionFiles)?
         {
-            return Self::from_file(&path);
+            return Ok(Self::Solution(path));
         }
 
         if let Some(path) =
             detect::project_file(dir_path)?.map_err(DiscoveryError::MultipleProjectFiles)?
         {
-            return Self::from_file(&path);
+            return Ok(Self::Project(path));
         }
 
         if let Some(path) =
             detect::file_based_app(dir_path)?.map_err(DiscoveryError::MultipleFileBasedApps)?
         {
-            return Self::from_file(&path);
+            return Ok(Self::FileBasedApp(path));
         }
 
         Err(DiscoveryError::NoAppFound)
