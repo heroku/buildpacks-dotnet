@@ -2,36 +2,34 @@ use crate::app_source::DiscoveryError;
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub(crate) fn project_file(dir: &Path) -> Result<Option<PathBuf>, DiscoveryError> {
-    let files = get_files_with_extensions(dir, &["csproj", "vbproj", "fsproj"])
-        .map_err(DiscoveryError::DetectionIoError)?;
-
-    match files.as_slice() {
-        [] => Ok(None),
-        [single] => Ok(Some(single.clone())),
-        _ => Err(DiscoveryError::MultipleProjectFiles(files)),
-    }
+pub(crate) fn solution_file(dir: &Path) -> Result<Option<PathBuf>, DiscoveryError> {
+    find_single_file_with_extensions(dir, &["sln", "slnx"], DiscoveryError::MultipleSolutionFiles)
 }
 
-pub(crate) fn solution_file(dir: &Path) -> Result<Option<PathBuf>, DiscoveryError> {
-    let files = get_files_with_extensions(dir, &["sln", "slnx"])
-        .map_err(DiscoveryError::DetectionIoError)?;
-
-    match files.as_slice() {
-        [] => Ok(None),
-        [single] => Ok(Some(single.clone())),
-        _ => Err(DiscoveryError::MultipleSolutionFiles(files)),
-    }
+pub(crate) fn project_file(dir: &Path) -> Result<Option<PathBuf>, DiscoveryError> {
+    find_single_file_with_extensions(
+        dir,
+        &["csproj", "vbproj", "fsproj"],
+        DiscoveryError::MultipleProjectFiles,
+    )
 }
 
 pub(crate) fn file_based_app(dir: &Path) -> Result<Option<PathBuf>, DiscoveryError> {
-    let files =
-        get_files_with_extensions(dir, &["cs"]).map_err(DiscoveryError::DetectionIoError)?;
+    find_single_file_with_extensions(dir, &["cs"], DiscoveryError::MultipleFileBasedApps)
+}
+
+fn find_single_file_with_extensions(
+    dir: &Path,
+    extensions: &[&str],
+    on_multiple: fn(Vec<PathBuf>) -> DiscoveryError,
+) -> Result<Option<PathBuf>, DiscoveryError> {
+    let files = get_files_with_extensions(dir, extensions)
+        .map_err(DiscoveryError::DetectionIoError)?;
 
     match files.as_slice() {
         [] => Ok(None),
         [single] => Ok(Some(single.clone())),
-        _ => Err(DiscoveryError::MultipleFileBasedApps(files)),
+        _ => Err(on_multiple(files)),
     }
 }
 
