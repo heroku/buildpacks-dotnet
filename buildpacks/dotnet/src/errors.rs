@@ -903,6 +903,13 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_buildpack_configuration_invalid_solution_file_error() {
+        assert_error_snapshot(DotnetBuildpackError::ParseBuildpackConfiguration(
+            DotnetBuildpackConfigurationError::InvalidSolutionFile("MyApp.txt".to_string()),
+        ));
+    }
+
+    #[test]
     fn test_restore_dotnet_tools_command_system_error() {
         assert_error_snapshot(DotnetBuildpackError::RestoreDotnetToolsCommand(
             fun_run::CmdError::SystemError(
