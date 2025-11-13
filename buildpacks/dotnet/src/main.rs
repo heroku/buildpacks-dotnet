@@ -95,10 +95,13 @@ impl Buildpack for DotnetBuildpack {
                 style::value(path.to_string_lossy())
             ));
             let configured_path = context.app_dir.join(&path);
-            if !configured_path.is_file() {
-                return Err(DotnetBuildpackError::ConfiguredSolutionFileNotFound(configured_path).into());
+            if configured_path.is_file() {
+                AppSource::Solution(configured_path)
+            } else {
+                Err(DotnetBuildpackError::ConfiguredSolutionFileNotFound(
+                    configured_path,
+                ))?
             }
-            AppSource::Solution(configured_path)
         } else {
             AppSource::from_dir(&context.app_dir)
                 .map_err(DotnetBuildpackError::DiscoverAppSource)?
