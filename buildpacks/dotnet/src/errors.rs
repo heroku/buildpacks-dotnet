@@ -84,10 +84,11 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 &mut writer,
                 "No .NET application found",
                 formatdoc! {"
-                    No .NET application found. This buildpack requires solution (`.sln`, `.slnx`),
-                    project (`.csproj`, `.vbproj`, `.fsproj`) or C# (`.cs`) files in the root directory.
+                No .NET application found. This buildpack requires solution (`.sln`, `.slnx`),
+                project (`.csproj`, `.vbproj`, `.fsproj`) or C# (`.cs`) files in the root directory.
 
-                    For more information, see: https://github.com/heroku/buildpacks-dotnet#application-requirements
+                For more information, see:
+                https://github.com/heroku/buildpacks-dotnet#application-requirements
                 "},
                 None,
             ),
@@ -157,16 +158,16 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 &mut writer,
                 "Invalid configured application path",
                 formatdoc! {"
-                    The configured application path `{}` is not a valid .NET application file.
+                The configured application path `{}` is not a valid .NET application file.
 
-                    Supported file types:
-                    * Solution files: `.sln`, `.slnx`
-                    * Project files: `.csproj`, `.vbproj`, `.fsproj`
-                    * File-based apps: `.cs`
+                Supported file types:
+                * Solution files: `.sln`, `.slnx`
+                * Project files: `.csproj`, `.vbproj`, `.fsproj`
+                * File-based apps: `.cs`
 
-                    For more information, see:
-                    https://github.com/heroku/buildpacks-dotnet#solution-file
-                    ", path.to_string_lossy()
+                For more information, see:
+                https://github.com/heroku/buildpacks-dotnet#solution-file
+                ", path.to_string_lossy()
                 },
                 None,
             ),
@@ -181,16 +182,17 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             &mut writer,
             "Configured solution file not found",
             formatdoc! {"
-                The configured solution file `{}` does not exist or is not accessible.
+            The configured solution file `{}` does not exist or is not accessible.
 
-                This error occurs when the specified path:
-                * Does not exist
-                * Is not a file
-                * Cannot be accessed due to permissions
+            This error occurs when the solution file path specified via the `SOLUTION_FILE`
+            environment variable or in `project.toml`:
+            * Does not exist
+            * Is not a file
+            * Cannot be accessed due to permissions
 
-                For more information, see:
-                https://github.com/heroku/buildpacks-dotnet#solution-file
-                ", path.to_string_lossy()
+            For more information, see:
+            https://github.com/heroku/buildpacks-dotnet#solution-file
+            ", path.to_string_lossy()
             },
             None,
         ),
@@ -441,10 +443,13 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     &mut writer,
                     "Invalid solution file configuration",
                     formatdoc! {"
-                        The configured solution file `{}` must have a `.sln` or `.slnx` extension.
+                    The configured solution file `{}` must have a `.sln` or `.slnx` extension.
 
-                        For more information, see:
-                        https://github.com/heroku/buildpacks-dotnet#solution-file
+                    This error occurs when you specify a solution file path via the `SOLUTION_FILE`
+                    environment variable or in `project.toml` that doesn't have a valid extension.
+
+                    For more information, see:
+                    https://github.com/heroku/buildpacks-dotnet#solution-file
                     ", solution_file.display()},
                     None,
                 );
