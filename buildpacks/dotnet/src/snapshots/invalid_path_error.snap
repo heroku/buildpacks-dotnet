@@ -7,7 +7,7 @@ source: buildpacks/dotnet/src/errors.rs
 [0;31m![0m
 [0;31m! This error occurs when the specified path:[0m
 [0;31m! * Does not exist[0m
-[0;31m! * Is not a file or directory[0m
+[0;31m! * Is not a file[0m
 [0;31m! * Cannot be accessed due to permissions[0m
 [0;31m![0m
 [0;31m! For more information, see:[0m
