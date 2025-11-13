@@ -176,24 +176,24 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 "detecting application files",
                 io_error,
             ),
-            app_source::DiscoveryError::InvalidPath(path) => log_error_to(
-                &mut writer,
-                "Invalid configured application path",
-                formatdoc! {"
-                    The configured application path `{}` does not exist or is not accessible.
-
-                    This error occurs when the specified path:
-                    * Does not exist
-                    * Is not a file
-                    * Cannot be accessed due to permissions
-
-                    For more information, see:
-                    https://github.com/heroku/buildpacks-dotnet#solution-file
-                    ", path.to_string_lossy()
-                },
-                None,
-            ),
         },
+        DotnetBuildpackError::ConfiguredSolutionFileNotFound(path) => log_error_to(
+            &mut writer,
+            "Configured solution file not found",
+            formatdoc! {"
+                The configured solution file `{}` does not exist or is not accessible.
+
+                This error occurs when the specified path:
+                * Does not exist
+                * Is not a file
+                * Cannot be accessed due to permissions
+
+                For more information, see:
+                https://github.com/heroku/buildpacks-dotnet#solution-file
+                ", path.to_string_lossy()
+            },
+            None,
+        ),
         DotnetBuildpackError::LoadAppSource(error) => match error {
             app_source::LoadError::LoadSolution(error) => match error {
                 solution::LoadError::ReadSolutionFile(io_error) => log_io_error_to(
@@ -675,9 +675,9 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_path_error() {
-        assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
-            app_source::DiscoveryError::InvalidPath(PathBuf::from("/nonexistent/path/MyApp.sln")),
+    fn test_configured_solution_file_not_found_error() {
+        assert_error_snapshot(DotnetBuildpackError::ConfiguredSolutionFileNotFound(
+            PathBuf::from("/nonexistent/path/MyApp.sln"),
         ));
     }
 

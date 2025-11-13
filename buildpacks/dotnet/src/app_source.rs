@@ -11,7 +11,6 @@ pub(crate) enum DiscoveryError {
     MultipleProjectFiles(Vec<PathBuf>),
     MultipleFileBasedApps(Vec<PathBuf>),
     UnrecognizedAppExtension(PathBuf),
-    InvalidPath(PathBuf),
     NoAppFound,
 }
 

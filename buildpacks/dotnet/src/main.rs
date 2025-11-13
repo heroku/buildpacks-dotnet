@@ -96,10 +96,7 @@ impl Buildpack for DotnetBuildpack {
             ));
             let configured_path = context.app_dir.join(&path);
             if !configured_path.is_file() {
-                return Err(DotnetBuildpackError::DiscoverAppSource(
-                    app_source::DiscoveryError::InvalidPath(configured_path),
-                )
-                .into());
+                return Err(DotnetBuildpackError::ConfiguredSolutionFileNotFound(configured_path).into());
             }
             AppSource::Solution(configured_path)
         } else {
@@ -388,6 +385,7 @@ enum DotnetBuildpackError {
     ReadProjectTomlFile(io::Error),
     ParseProjectToml(toml::de::Error),
     NoSolutionProjects(PathBuf),
+    ConfiguredSolutionFileNotFound(PathBuf),
     DiscoverAppSource(DiscoveryError),
     LoadAppSource(LoadError),
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
