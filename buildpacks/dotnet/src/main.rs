@@ -89,24 +89,19 @@ impl Buildpack for DotnetBuildpack {
         let started = std::time::Instant::now();
         print::bullet("SDK version detection");
 
-        let app_source_path = if let Some(path) = buildpack_configuration.solution_file {
+        let app_source = if let Some(path) = buildpack_configuration.solution_file {
             print::sub_bullet(format!(
                 "Using configured solution file: {}",
                 style::value(path.to_string_lossy())
             ));
-            &context.app_dir.join(path)
+            let configured_path = context.app_dir.join(path);
+            if configured_path.is_file() {
+                AppSource::from_file(&configured_path)
+            } else {
+                Err(app_source::DiscoveryError::InvalidPath(configured_path))
+            }
         } else {
-            &context.app_dir
-        };
-
-        let app_source = if app_source_path.is_dir() {
-            AppSource::from_dir(app_source_path.as_path())
-        } else if app_source_path.is_file() {
-            AppSource::from_file(app_source_path.as_path())
-        } else {
-            Err(app_source::DiscoveryError::InvalidPath(
-                app_source_path.clone(),
-            ))
+            AppSource::from_dir(&context.app_dir)
         }
         .map_err(DotnetBuildpackError::DiscoverAppSource)?;
 
