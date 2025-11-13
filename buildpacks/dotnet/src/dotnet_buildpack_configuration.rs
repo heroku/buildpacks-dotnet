@@ -34,9 +34,9 @@ impl DotnetBuildpackConfiguration {
         if let Some(ref path) = solution_file {
             let extension = path.extension().and_then(|ext| ext.to_str());
             if !extension.is_some_and(|ext| SOLUTION_EXTENSIONS.contains(&ext)) {
-                return Err(DotnetBuildpackConfigurationError::InvalidSolutionFile(
+                Err(DotnetBuildpackConfigurationError::InvalidSolutionFile(
                     path.clone(),
-                ));
+                ))?;
             }
         }
 
