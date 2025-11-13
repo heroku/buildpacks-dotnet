@@ -107,7 +107,7 @@ mod tests {
         let result = project_file(temp_dir.path());
         assert!(matches!(
             result,
-            Err(DiscoveryError::MultipleProjectFiles(_))
+            Err(DiscoveryError::MultipleProjectFiles(ref files)) if files.len() == 2
         ));
     }
 
@@ -142,7 +142,7 @@ mod tests {
         let result = solution_file(temp_dir.path());
         assert!(matches!(
             result,
-            Err(DiscoveryError::MultipleSolutionFiles(_))
+            Err(DiscoveryError::MultipleSolutionFiles(ref files)) if files.len() == 2
         ));
     }
 
