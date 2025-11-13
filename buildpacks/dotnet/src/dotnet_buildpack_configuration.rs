@@ -16,7 +16,7 @@ pub(crate) struct DotnetBuildpackConfiguration {
 pub(crate) enum DotnetBuildpackConfigurationError {
     ExecutionEnvironment(ExecutionEnvironmentError),
     VerbosityLevel(ParseVerbosityLevelError),
-    InvalidSolutionFile(String),
+    InvalidSolutionFile(PathBuf),
 }
 
 impl DotnetBuildpackConfiguration {
@@ -35,7 +35,7 @@ impl DotnetBuildpackConfiguration {
             let extension = path.extension().and_then(|ext| ext.to_str());
             if !extension.is_some_and(|ext| SOLUTION_EXTENSIONS.contains(&ext)) {
                 return Err(DotnetBuildpackConfigurationError::InvalidSolutionFile(
-                    path.to_string_lossy().to_string(),
+                    path.clone(),
                 ));
             }
         }
@@ -283,7 +283,7 @@ mod tests {
         assert_eq!(
             result,
             Err(DotnetBuildpackConfigurationError::InvalidSolutionFile(
-                "MyApp.txt".to_string()
+                PathBuf::from("MyApp.txt")
             ))
         );
     }
