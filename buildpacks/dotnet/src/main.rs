@@ -96,7 +96,8 @@ impl Buildpack for DotnetBuildpack {
             ));
             let configured_path = context.app_dir.join(&path);
             if configured_path.is_file() {
-                AppSource::Solution(configured_path)
+                AppSource::from_file(&configured_path)
+                    .map_err(DotnetBuildpackError::DiscoverAppSource)?
             } else {
                 Err(DotnetBuildpackError::ConfiguredSolutionFileNotFound(
                     configured_path,
