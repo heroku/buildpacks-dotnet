@@ -108,9 +108,14 @@ impl Buildpack for DotnetBuildpack {
                 .map_err(DotnetBuildpackError::DiscoverAppSource)?
         };
 
+        let source_type = match &app_source {
+            AppSource::Solution(_) => "solution",
+            AppSource::Project(_) => "project",
+            AppSource::FileBasedApp(_) => "file-based app",
+        };
         print::sub_bullet(format!(
             "Detected .NET {}: {}",
-            app_source.source_type(),
+            source_type,
             style::value(app_source.path().to_string_lossy())
         ));
 

@@ -71,14 +71,6 @@ impl AppSource {
         }
     }
 
-    pub(crate) fn source_type(&self) -> &str {
-        match self {
-            Self::Solution(_) => "solution",
-            Self::Project(_) => "project",
-            Self::FileBasedApp(_) => "file-based app",
-        }
-    }
-
     pub(crate) fn path(&self) -> &Path {
         match self {
             Self::Solution(path) | Self::Project(path) | Self::FileBasedApp(path) => path,
@@ -422,17 +414,6 @@ mod tests {
 
         assert_eq!(solution.projects.len(), 1);
         assert_eq!(solution.projects[0].assembly_name, "MyProject");
-    }
-
-    #[test]
-    fn test_source_type_returns_correct_description() {
-        let solution = AppSource::Solution(PathBuf::from("test.sln"));
-        let project = AppSource::Project(PathBuf::from("test.csproj"));
-        let file_based = AppSource::FileBasedApp(PathBuf::from("test.cs"));
-
-        assert_eq!(solution.source_type(), "solution");
-        assert_eq!(project.source_type(), "project");
-        assert_eq!(file_based.source_type(), "file-based app");
     }
 
     #[test]
