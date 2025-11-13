@@ -57,12 +57,12 @@ impl Buildpack for DotnetBuildpack {
     type Error = DotnetBuildpackError;
 
     fn detect(&self, context: DetectContext<Self>) -> libcnb::Result<DetectResult, Self::Error> {
-        let supported_extensions: Vec<&str> = SOLUTION_EXTENSIONS
-            .iter()
-            .chain(PROJECT_EXTENSIONS.iter())
-            .chain(FILE_BASED_APP_EXTENSIONS.iter())
-            .copied()
-            .collect();
+        let supported_extensions = [
+            SOLUTION_EXTENSIONS,
+            PROJECT_EXTENSIONS,
+            FILE_BASED_APP_EXTENSIONS,
+        ]
+        .concat();
 
         let paths = detect::find_files_with_extensions(&context.app_dir, &supported_extensions)
             .map_err(DotnetBuildpackError::BuildpackDetection)?;
