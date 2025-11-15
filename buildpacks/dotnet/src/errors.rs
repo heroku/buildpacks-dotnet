@@ -454,6 +454,22 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     None,
                 );
             }
+            DotnetBuildpackConfigurationError::SolutionFileContainsPath(solution_file) => {
+                log_error_to(
+                    &mut writer,
+                    "Solution file cannot contain path separators",
+                    formatdoc! {"
+                    The configured solution file `{}` contains path separators.
+
+                    The solution file must be a simple filename without any directory components.
+                    The buildpack will search for this file in the application directory.
+
+                    For more information, see:
+                    https://github.com/heroku/buildpacks-dotnet#solution-file
+                    ", solution_file.display()},
+                    None,
+                );
+            }
         },
         DotnetBuildpackError::RestoreDotnetToolsCommand(error) => match error {
             fun_run::CmdError::SystemError(_message, io_error) => log_io_error_to(
@@ -912,6 +928,15 @@ mod tests {
         assert_error_snapshot(DotnetBuildpackError::ParseBuildpackConfiguration(
             DotnetBuildpackConfigurationError::SolutionFileInvalidExtension(PathBuf::from(
                 "MyApp.txt",
+            )),
+        ));
+    }
+
+    #[test]
+    fn test_parse_buildpack_configuration_solution_file_contains_path_error() {
+        assert_error_snapshot(DotnetBuildpackError::ParseBuildpackConfiguration(
+            DotnetBuildpackConfigurationError::SolutionFileContainsPath(PathBuf::from(
+                "subdir/MyApp.sln",
             )),
         ));
     }
