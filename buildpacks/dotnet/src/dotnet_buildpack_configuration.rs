@@ -1,7 +1,7 @@
 use crate::app_source::SOLUTION_EXTENSIONS;
 use crate::project_toml::DotnetConfig;
 use std::fmt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq)]
@@ -17,6 +17,7 @@ pub(crate) enum DotnetBuildpackConfigurationError {
     ExecutionEnvironment(ExecutionEnvironmentError),
     VerbosityLevel(ParseVerbosityLevelError),
     SolutionFileInvalidExtension(PathBuf),
+    SolutionFileContainsPath(PathBuf),
 }
 
 impl DotnetBuildpackConfiguration {
@@ -32,6 +33,12 @@ impl DotnetBuildpackConfiguration {
             .or_else(|| project_toml_config.and_then(|config| config.solution_file.clone()));
 
         if let Some(ref path) = solution_file {
+            if path.parent().is_some_and(|p| p != Path::new("")) {
+                Err(DotnetBuildpackConfigurationError::SolutionFileContainsPath(
+                    path.clone(),
+                ))?;
+            }
+
             let extension = path.extension().and_then(|ext| ext.to_str());
             if !extension.is_some_and(|ext| SOLUTION_EXTENSIONS.contains(&ext)) {
                 Err(DotnetBuildpackConfigurationError::SolutionFileInvalidExtension(path.clone()))?;
@@ -314,5 +321,32 @@ mod tests {
         for (level, expected) in cases {
             assert_eq!(level.to_string(), expected);
         }
+    }
+
+    #[test]
+    fn test_solution_file_must_be_filename_only() {
+        let invalid_paths = [
+            "subdir/MyApp.sln",
+            "/absolute/path/MyApp.sln",
+            "a/b/c/MyApp.sln",
+            "../MyApp.sln",
+            "./MyApp.sln",
+        ];
+
+        for path in invalid_paths {
+            let env = create_env(&[("SOLUTION_FILE", path)]);
+            let result = DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env, None);
+            assert_eq!(
+                result,
+                Err(DotnetBuildpackConfigurationError::SolutionFileContainsPath(
+                    PathBuf::from(path)
+                ))
+            );
+        }
+
+        let env = create_env(&[("SOLUTION_FILE", "MyApp.sln")]);
+        let result =
+            DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env, None).unwrap();
+        assert_eq!(result.solution_file, Some(PathBuf::from("MyApp.sln")));
     }
 }

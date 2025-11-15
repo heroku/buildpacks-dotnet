@@ -1,0 +1,12 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Solution file cannot contain path separators[0m
+[0;31m![0m
+[0;31m! The configured solution file `subdir/MyApp.sln` contains path separators.[0m
+[0;31m![0m
+[0;31m! The solution file must be a simple filename without any directory components.[0m
+[0;31m! The buildpack will search for this file in the application directory.[0m
+[0;31m![0m
+[0;31m! For more information, see:[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet#solution-file[0m
