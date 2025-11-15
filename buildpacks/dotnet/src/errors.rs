@@ -438,14 +438,14 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     );
                 }
             },
-            DotnetBuildpackConfigurationError::InvalidSolutionFile(solution_file) => {
+            DotnetBuildpackConfigurationError::SolutionFileInvalidExtension(solution_file) => {
                 log_error_to(
                     &mut writer,
-                    "Invalid solution file configuration",
+                    "Invalid solution file extension",
                     formatdoc! {"
                     The configured solution file `{}` must have a `.sln` or `.slnx` extension.
 
-                    This error occurs when you specify a solution file path via the `SOLUTION_FILE`
+                    This error occurs when you specify a solution file via the `SOLUTION_FILE`
                     environment variable or in `project.toml` that doesn't have a valid extension.
 
                     For more information, see:
@@ -908,9 +908,11 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_buildpack_configuration_invalid_solution_file_error() {
+    fn test_parse_buildpack_configuration_solution_file_invalid_extension_error() {
         assert_error_snapshot(DotnetBuildpackError::ParseBuildpackConfiguration(
-            DotnetBuildpackConfigurationError::InvalidSolutionFile(PathBuf::from("MyApp.txt")),
+            DotnetBuildpackConfigurationError::SolutionFileInvalidExtension(PathBuf::from(
+                "MyApp.txt",
+            )),
         ));
     }
 
