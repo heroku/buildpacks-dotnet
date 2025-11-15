@@ -32,7 +32,7 @@ impl DotnetBuildpackConfiguration {
             .map(PathBuf::from)
             .or_else(|| project_toml_config.and_then(|config| config.solution_file.clone()));
 
-        if let Some(ref path) = solution_file {
+        if let Some(path) = solution_file.as_ref() {
             if path.parent().is_some_and(|p| p != Path::new("")) {
                 Err(DotnetBuildpackConfigurationError::SolutionFileContainsPath(
                     path.clone(),
