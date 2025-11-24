@@ -1,13 +1,6 @@
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub(crate) fn single_item<T>(items: Vec<T>) -> Result<Option<T>, Vec<T>> {
-    match items.len() {
-        0 | 1 => Ok(items.into_iter().next()),
-        _ => Err(items),
-    }
-}
-
 pub(crate) fn find_files_with_extensions(
     dir: &Path,
     extensions: &[&str],
@@ -48,28 +41,6 @@ mod tests {
     use super::*;
     use std::fs::{self, File, create_dir};
     use tempfile::TempDir;
-
-    #[test]
-    fn test_single_item_returns_single() {
-        let items = vec!["item"];
-        let result = single_item(items).unwrap();
-        assert!(result.is_some());
-        assert_eq!(result.unwrap(), "item");
-    }
-
-    #[test]
-    fn test_single_item_returns_none_when_empty() {
-        let items: Vec<&str> = vec![];
-        let result = single_item(items).unwrap();
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn test_single_item_returns_error_on_multiple() {
-        let items = vec!["item1", "item2", "item3"];
-        let result = single_item(items);
-        assert!(matches!(result, Err(ref items) if items.len() == 3));
-    }
 
     #[test]
     fn test_global_json_file_exists() {
