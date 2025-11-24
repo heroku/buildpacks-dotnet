@@ -1,16 +1,10 @@
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub(crate) fn find_single_file_with_extensions(
-    dir: &Path,
-    extensions: &[&str],
-) -> io::Result<Result<Option<PathBuf>, Vec<PathBuf>>> {
-    let files = find_files_with_extensions(dir, extensions)?;
-
-    match files.as_slice() {
-        [] => Ok(Ok(None)),
-        [single] => Ok(Ok(Some(single.clone()))),
-        _ => Ok(Err(files)),
+pub(crate) fn single_item<T>(items: Vec<T>) -> Result<Option<T>, Vec<T>> {
+    match items.len() {
+        0 | 1 => Ok(items.into_iter().next()),
+        _ => Err(items),
     }
 }
 
@@ -56,40 +50,25 @@ mod tests {
     use tempfile::TempDir;
 
     #[test]
-    fn test_find_single_file_with_extensions_returns_single() {
-        let temp_dir = TempDir::new().unwrap();
-        let base_path = temp_dir.path();
-
-        File::create(base_path.join("test.csproj")).unwrap();
-        File::create(base_path.join("README.md")).unwrap();
-
-        let result = find_single_file_with_extensions(temp_dir.path(), &["csproj"])
-            .unwrap()
-            .unwrap();
+    fn test_single_item_returns_single() {
+        let items = vec!["item"];
+        let result = single_item(items).unwrap();
         assert!(result.is_some());
-        assert_eq!(result.unwrap().file_name().unwrap(), "test.csproj");
+        assert_eq!(result.unwrap(), "item");
     }
 
     #[test]
-    fn test_find_single_file_with_extensions_returns_none_when_no_files() {
-        let temp_dir = TempDir::new().unwrap();
-        let result = find_single_file_with_extensions(temp_dir.path(), &["csproj"])
-            .unwrap()
-            .unwrap();
+    fn test_single_item_returns_none_when_empty() {
+        let items: Vec<&str> = vec![];
+        let result = single_item(items).unwrap();
         assert!(result.is_none());
     }
 
     #[test]
-    fn test_find_single_file_with_extensions_returns_error_on_multiple() {
-        let temp_dir = TempDir::new().unwrap();
-        let base_path = temp_dir.path();
-
-        File::create(base_path.join("test1.csproj")).unwrap();
-        File::create(base_path.join("test2.vbproj")).unwrap();
-
-        let result =
-            find_single_file_with_extensions(temp_dir.path(), &["csproj", "vbproj"]).unwrap();
-        assert!(matches!(result, Err(ref files) if files.len() == 2));
+    fn test_single_item_returns_error_on_multiple() {
+        let items = vec!["item1", "item2", "item3"];
+        let result = single_item(items);
+        assert!(matches!(result, Err(ref items) if items.len() == 3));
     }
 
     #[test]
