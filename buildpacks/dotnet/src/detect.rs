@@ -1,19 +1,11 @@
 use std::io;
 use std::path::{Path, PathBuf};
 
-pub(crate) fn project_file_paths<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
-    get_files_with_extensions(dir.as_ref(), &["csproj", "vbproj", "fsproj"])
-}
-
-pub(crate) fn solution_file_paths<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
-    get_files_with_extensions(dir.as_ref(), &["sln", "slnx"])
-}
-
-pub(crate) fn get_files_with_extensions(
+pub(crate) fn find_files_with_extensions(
     dir: &Path,
     extensions: &[&str],
 ) -> Result<Vec<PathBuf>, io::Error> {
-    let project_files = fs_err::read_dir(dir)?
+    let files = fs_err::read_dir(dir)?
         .filter_map(Result::ok)
         .map(|entry| entry.path())
         .filter(|path| path.is_file())
@@ -23,7 +15,7 @@ pub(crate) fn get_files_with_extensions(
                 .is_some_and(|ext| extensions.contains(&ext))
         })
         .collect();
-    Ok(project_files)
+    Ok(files)
 }
 
 /// Returns the path to `global.json` if it exists in the given directory.
@@ -49,36 +41,6 @@ mod tests {
     use super::*;
     use std::fs::{self, File, create_dir};
     use tempfile::TempDir;
-
-    #[test]
-    fn test_find_project_files() {
-        let temp_dir = TempDir::new().unwrap();
-        let base_path = temp_dir.path();
-
-        File::create(base_path.join("test1.csproj")).unwrap();
-        File::create(base_path.join("test2.vbproj")).unwrap();
-        File::create(base_path.join("test3.fsproj")).unwrap();
-        File::create(base_path.join("README.md")).unwrap();
-
-        let project_files = project_file_paths(&temp_dir).unwrap();
-
-        assert_eq!(3, project_files.len());
-    }
-
-    #[test]
-    fn test_find_solution_files() {
-        let temp_dir = TempDir::new().unwrap();
-        let base_path = temp_dir.path();
-
-        File::create(base_path.join("test1.sln")).unwrap();
-        File::create(base_path.join("test2.sln")).unwrap();
-        File::create(base_path.join("test3.slnx")).unwrap();
-        File::create(base_path.join("README.md")).unwrap();
-
-        let solution_files = solution_file_paths(&temp_dir).unwrap();
-
-        assert_eq!(3, solution_files.len());
-    }
 
     #[test]
     fn test_global_json_file_exists() {

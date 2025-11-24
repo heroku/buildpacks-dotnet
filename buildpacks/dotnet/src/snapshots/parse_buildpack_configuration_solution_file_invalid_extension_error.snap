@@ -1,0 +1,12 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Invalid solution file extension[0m
+[0;31m![0m
+[0;31m! The configured solution file `MyApp.txt` must have a `.sln` or `.slnx` extension.[0m
+[0;31m![0m
+[0;31m! This error occurs when you specify a solution file via the `SOLUTION_FILE`[0m
+[0;31m! environment variable or in `project.toml` that doesn't have a valid extension.[0m
+[0;31m![0m
+[0;31m! For more information, see:[0m
+[0;31m! https://github.com/heroku/buildpacks-dotnet#solution-file[0m

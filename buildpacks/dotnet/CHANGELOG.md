@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Improved error handling when configured solution file doesn't exist, has an invalid extension, or is not a simple filename. ([#340](https://github.com/heroku/buildpacks-dotnet/pull/340))
+
 ## [0.11.2] - 2025-11-20
 
 ### Added
