@@ -79,6 +79,24 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 None,
             );
         }
+        DotnetBuildpackError::ConfiguredSolutionFileNotFound(path) => log_error_to(
+            &mut writer,
+            "Configured solution file not found",
+            formatdoc! {"
+            The configured solution file `{}` does not exist or is not accessible.
+
+            This error occurs when the solution file path specified via the `SOLUTION_FILE`
+            environment variable or in `project.toml`:
+            * Does not exist
+            * Is not a file
+            * Cannot be accessed due to permissions
+
+            For more information, see:
+            https://github.com/heroku/buildpacks-dotnet#solution-file
+            ", path.to_string_lossy()
+            },
+            None,
+        ),
         DotnetBuildpackError::DiscoverAppSource(error) => match error {
             DiscoveryError::DetectionIoError(io_error) => log_io_error_to(
                 &mut writer,
@@ -178,24 +196,6 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 None,
             ),
         },
-        DotnetBuildpackError::ConfiguredSolutionFileNotFound(path) => log_error_to(
-            &mut writer,
-            "Configured solution file not found",
-            formatdoc! {"
-            The configured solution file `{}` does not exist or is not accessible.
-
-            This error occurs when the solution file path specified via the `SOLUTION_FILE`
-            environment variable or in `project.toml`:
-            * Does not exist
-            * Is not a file
-            * Cannot be accessed due to permissions
-
-            For more information, see:
-            https://github.com/heroku/buildpacks-dotnet#solution-file
-            ", path.to_string_lossy()
-            },
-            None,
-        ),
         DotnetBuildpackError::LoadAppSource(error) => match error {
             app_source::LoadError::Solution(error) => match error {
                 solution::LoadError::ReadSolutionFile(io_error) => log_io_error_to(
