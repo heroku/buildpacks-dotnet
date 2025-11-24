@@ -197,7 +197,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             None,
         ),
         DotnetBuildpackError::LoadAppSource(error) => match error {
-            app_source::LoadError::LoadSolution(error) => match error {
+            app_source::LoadError::Solution(error) => match error {
                 solution::LoadError::ReadSolutionFile(io_error) => log_io_error_to(
                     &mut writer,
                     "Error loading solution file",
@@ -245,14 +245,14 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     );
                 }
             },
-            app_source::LoadError::LoadProject(error) => {
+            app_source::LoadError::Project(error) => {
                 on_load_dotnet_project_error_with_writer(
                     &mut writer,
                     error,
                     "reading root project file",
                 );
             }
-            app_source::LoadError::LoadFileBasedApp(error) => {
+            app_source::LoadError::FileBasedApp(error) => {
                 log_io_error_to(
                     &mut writer,
                     "Error loading file-based app",
@@ -715,7 +715,7 @@ mod tests {
     #[test]
     fn test_load_solution_file_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::LoadSolution(solution::LoadError::ReadSolutionFile(
+            app_source::LoadError::Solution(solution::LoadError::ReadSolutionFile(
                 create_io_error(),
             )),
         ));
@@ -724,7 +724,7 @@ mod tests {
     #[test]
     fn test_load_solution_file_project_not_found_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::LoadSolution(solution::LoadError::ProjectNotFound(
+            app_source::LoadError::Solution(solution::LoadError::ProjectNotFound(
                 std::path::PathBuf::from("src/MyProject/MyProject.csproj"),
             )),
         ));
@@ -733,7 +733,7 @@ mod tests {
     #[test]
     fn test_load_solution_file_slnx_parse_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::LoadSolution(solution::LoadError::SlnxParseError(
+            app_source::LoadError::Solution(solution::LoadError::SlnxParseError(
                 create_xml_parse_error(),
             )),
         ));
@@ -742,7 +742,7 @@ mod tests {
     #[test]
     fn test_load_solution_file_load_project_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::LoadSolution(solution::LoadError::LoadProject(
+            app_source::LoadError::Solution(solution::LoadError::LoadProject(
                 project::LoadError::ReadProjectFile(create_io_error()),
             )),
         ));
@@ -751,7 +751,7 @@ mod tests {
     #[test]
     fn test_load_solution_file_load_project_xml_parse_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::LoadSolution(solution::LoadError::LoadProject(
+            app_source::LoadError::Solution(solution::LoadError::LoadProject(
                 project::LoadError::XmlParseError(create_xml_parse_error()),
             )),
         ));
@@ -760,7 +760,7 @@ mod tests {
     #[test]
     fn test_load_project_file_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::LoadProject(project::LoadError::ReadProjectFile(
+            app_source::LoadError::Project(project::LoadError::ReadProjectFile(
                 create_io_error(),
             )),
         ));
@@ -769,7 +769,7 @@ mod tests {
     #[test]
     fn test_load_solution_file_load_project_missing_target_framework_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::LoadSolution(solution::LoadError::LoadProject(
+            app_source::LoadError::Solution(solution::LoadError::LoadProject(
                 project::LoadError::MissingTargetFramework(PathBuf::from("foo.csproj")),
             )),
         ));
@@ -778,7 +778,7 @@ mod tests {
     #[test]
     fn test_load_project_file_xml_parse_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::LoadProject(project::LoadError::XmlParseError(
+            app_source::LoadError::Project(project::LoadError::XmlParseError(
                 create_xml_parse_error(),
             )),
         ));
@@ -787,7 +787,7 @@ mod tests {
     #[test]
     fn test_load_project_file_missing_target_framework_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::LoadProject(project::LoadError::MissingTargetFramework(
+            app_source::LoadError::Project(project::LoadError::MissingTargetFramework(
                 PathBuf::from("fpp.csproj"),
             )),
         ));
@@ -810,7 +810,7 @@ mod tests {
     #[test]
     fn test_load_file_based_app_file_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::LoadFileBasedApp(create_io_error()),
+            app_source::LoadError::FileBasedApp(create_io_error()),
         ));
     }
 

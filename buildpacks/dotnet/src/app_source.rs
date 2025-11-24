@@ -88,9 +88,9 @@ impl AppSource {
 
 #[derive(Debug)]
 pub(crate) enum LoadError {
-    LoadSolution(SolutionLoadError),
-    LoadProject(ProjectLoadError),
-    LoadFileBasedApp(io::Error),
+    Solution(SolutionLoadError),
+    Project(ProjectLoadError),
+    FileBasedApp(io::Error),
 }
 
 impl TryFrom<AppSource> for Solution {
@@ -99,13 +99,13 @@ impl TryFrom<AppSource> for Solution {
     fn try_from(app_source: AppSource) -> Result<Self, Self::Error> {
         match app_source {
             AppSource::Solution(path) => {
-                Solution::load_from_path(&path).map_err(LoadError::LoadSolution)
+                Solution::load_from_path(&path).map_err(LoadError::Solution)
             }
             AppSource::Project(path) => Project::load_from_path(&path)
-                .map_err(LoadError::LoadProject)
+                .map_err(LoadError::Project)
                 .map(Solution::ephemeral),
             AppSource::FileBasedApp(path) => Project::load_from_file_based_app(&path)
-                .map_err(LoadError::LoadFileBasedApp)
+                .map_err(LoadError::FileBasedApp)
                 .map(Solution::ephemeral),
         }
     }
