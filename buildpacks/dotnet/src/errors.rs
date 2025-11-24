@@ -769,9 +769,7 @@ mod tests {
     #[test]
     fn test_load_app_source_project_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::Project(project::LoadError::ReadProjectFile(
-                create_io_error(),
-            )),
+            app_source::LoadError::Project(project::LoadError::ReadProjectFile(create_io_error())),
         ));
     }
 
