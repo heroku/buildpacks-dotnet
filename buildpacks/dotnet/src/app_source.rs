@@ -15,8 +15,8 @@ pub(crate) enum DiscoveryError {
     MultipleSolutionFiles(Vec<PathBuf>),
     MultipleProjectFiles(Vec<PathBuf>),
     MultipleFileBasedApps(Vec<PathBuf>),
-    UnrecognizedAppExtension(PathBuf),
     NoAppFound,
+    UnrecognizedAppExtension(PathBuf),
 }
 
 impl From<io::Error> for DiscoveryError {

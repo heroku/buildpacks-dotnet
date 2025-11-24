@@ -148,6 +148,18 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 },
                 None,
             ),
+            DiscoveryError::NoAppFound => log_error_to(
+                &mut writer,
+                "No .NET application found",
+                formatdoc! {"
+                No .NET application found. This buildpack requires solution (`.sln`, `.slnx`),
+                project (`.csproj`, `.vbproj`, `.fsproj`) or C# (`.cs`) files in the root directory.
+
+                For more information, see:
+                https://github.com/heroku/buildpacks-dotnet#application-requirements
+                "},
+                None,
+            ),
             DiscoveryError::UnrecognizedAppExtension(path) => log_error_to(
                 &mut writer,
                 "Invalid configured application path",
@@ -163,18 +175,6 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 https://github.com/heroku/buildpacks-dotnet#solution-file
                 ", path.to_string_lossy()
                 },
-                None,
-            ),
-            DiscoveryError::NoAppFound => log_error_to(
-                &mut writer,
-                "No .NET application found",
-                formatdoc! {"
-                No .NET application found. This buildpack requires solution (`.sln`, `.slnx`),
-                project (`.csproj`, `.vbproj`, `.fsproj`) or C# (`.cs`) files in the root directory.
-
-                For more information, see:
-                https://github.com/heroku/buildpacks-dotnet#application-requirements
-                "},
                 None,
             ),
         },
