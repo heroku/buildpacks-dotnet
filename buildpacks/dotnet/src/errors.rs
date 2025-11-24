@@ -669,7 +669,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiple_root_directory_solution_files_error() {
+    fn test_discover_app_source_multiple_solution_files_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
             DiscoveryError::MultipleSolutionFiles(vec![
                 PathBuf::from("foo.sln"),
@@ -679,7 +679,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiple_root_directory_project_files_error() {
+    fn test_discover_app_source_multiple_project_files_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
             DiscoveryError::MultipleProjectFiles(vec![
                 PathBuf::from("foo.csproj"),
@@ -703,7 +703,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiple_root_directory_file_based_app_files_error() {
+    fn test_discover_app_source_multiple_file_based_apps_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
             DiscoveryError::MultipleFileBasedApps(vec![
                 PathBuf::from("foo.cs"),
