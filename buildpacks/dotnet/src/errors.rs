@@ -731,15 +731,6 @@ mod tests {
     }
 
     #[test]
-    fn test_load_app_source_solution_slnx_parse_error() {
-        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::Solution(solution::LoadError::SlnxParseError(
-                create_xml_parse_error(),
-            )),
-        ));
-    }
-
-    #[test]
     fn test_load_app_source_solution_load_project_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
             app_source::LoadError::Solution(solution::LoadError::LoadProject(
@@ -758,19 +749,28 @@ mod tests {
     }
 
     #[test]
-    fn test_load_app_source_project_read_error() {
+    fn test_load_app_source_solution_load_project_missing_target_framework_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::Project(project::LoadError::ReadProjectFile(
-                create_io_error(),
+            app_source::LoadError::Solution(solution::LoadError::LoadProject(
+                project::LoadError::MissingTargetFramework(PathBuf::from("foo.csproj")),
             )),
         ));
     }
 
     #[test]
-    fn test_load_app_source_solution_load_project_missing_target_framework_error() {
+    fn test_load_app_source_solution_slnx_parse_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::Solution(solution::LoadError::LoadProject(
-                project::LoadError::MissingTargetFramework(PathBuf::from("foo.csproj")),
+            app_source::LoadError::Solution(solution::LoadError::SlnxParseError(
+                create_xml_parse_error(),
+            )),
+        ));
+    }
+
+    #[test]
+    fn test_load_app_source_project_read_error() {
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::Project(project::LoadError::ReadProjectFile(
+                create_io_error(),
             )),
         ));
     }
@@ -794,6 +794,13 @@ mod tests {
     }
 
     #[test]
+    fn test_load_app_source_file_based_app_read_error() {
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::FileBasedApp(create_io_error()),
+        ));
+    }
+
+    #[test]
     fn test_parse_target_framework_moniker_invalid_format_error() {
         assert_error_snapshot(DotnetBuildpackError::ParseTargetFrameworkMoniker(
             ParseTargetFrameworkError::InvalidFormat("netfoo".to_string()),
@@ -804,13 +811,6 @@ mod tests {
     fn test_parse_target_framework_moniker_unsupported_os_tfm_error() {
         assert_error_snapshot(DotnetBuildpackError::ParseTargetFrameworkMoniker(
             ParseTargetFrameworkError::UnsupportedOSTfm("net8.0-windows".to_string()),
-        ));
-    }
-
-    #[test]
-    fn test_load_app_source_file_based_app_read_error() {
-        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::FileBasedApp(create_io_error()),
         ));
     }
 
