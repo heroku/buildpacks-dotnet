@@ -655,14 +655,14 @@ mod tests {
     }
 
     #[test]
-    fn test_no_app_found_error() {
+    fn test_discover_app_source_no_app_found_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
             DiscoveryError::NoAppFound,
         ));
     }
 
     #[test]
-    fn test_app_discovery_detection_io_error() {
+    fn test_discover_app_source_detection_io_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
             DiscoveryError::DetectionIoError(create_io_error()),
         ));
@@ -689,7 +689,7 @@ mod tests {
     }
 
     #[test]
-    fn test_invalid_configured_path_error() {
+    fn test_discover_app_source_unrecognized_app_extension_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
             DiscoveryError::UnrecognizedAppExtension(PathBuf::from("MyApp.txt")),
         ));
