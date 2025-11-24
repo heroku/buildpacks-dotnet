@@ -80,17 +80,11 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             );
         }
         DotnetBuildpackError::DiscoverAppSource(error) => match error {
-            DiscoveryError::NoAppFound => log_error_to(
+            DiscoveryError::DetectionIoError(io_error) => log_io_error_to(
                 &mut writer,
-                "No .NET application found",
-                formatdoc! {"
-                No .NET application found. This buildpack requires solution (`.sln`, `.slnx`),
-                project (`.csproj`, `.vbproj`, `.fsproj`) or C# (`.cs`) files in the root directory.
-
-                For more information, see:
-                https://github.com/heroku/buildpacks-dotnet#application-requirements
-                "},
-                None,
+                "App discovery error",
+                "detecting application files",
+                io_error,
             ),
             DiscoveryError::MultipleSolutionFiles(paths) => log_error_to(
                 &mut writer,
@@ -171,11 +165,17 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 },
                 None,
             ),
-            DiscoveryError::DetectionIoError(io_error) => log_io_error_to(
+            DiscoveryError::NoAppFound => log_error_to(
                 &mut writer,
-                "App discovery error",
-                "detecting application files",
-                io_error,
+                "No .NET application found",
+                formatdoc! {"
+                No .NET application found. This buildpack requires solution (`.sln`, `.slnx`),
+                project (`.csproj`, `.vbproj`, `.fsproj`) or C# (`.cs`) files in the root directory.
+
+                For more information, see:
+                https://github.com/heroku/buildpacks-dotnet#application-requirements
+                "},
+                None,
             ),
         },
         DotnetBuildpackError::ConfiguredSolutionFileNotFound(path) => log_error_to(
