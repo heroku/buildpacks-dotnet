@@ -655,13 +655,6 @@ mod tests {
     }
 
     #[test]
-    fn test_discover_app_source_no_app_found_error() {
-        assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
-            DiscoveryError::NoAppFound,
-        ));
-    }
-
-    #[test]
     fn test_discover_app_source_detection_io_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
             DiscoveryError::DetectionIoError(create_io_error()),
@@ -689,6 +682,23 @@ mod tests {
     }
 
     #[test]
+    fn test_discover_app_source_multiple_file_based_apps_error() {
+        assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
+            DiscoveryError::MultipleFileBasedApps(vec![
+                PathBuf::from("foo.cs"),
+                PathBuf::from("bar.cs"),
+            ]),
+        ));
+    }
+
+    #[test]
+    fn test_discover_app_source_no_app_found_error() {
+        assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
+            DiscoveryError::NoAppFound,
+        ));
+    }
+
+    #[test]
     fn test_discover_app_source_unrecognized_app_extension_error() {
         assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
             DiscoveryError::UnrecognizedAppExtension(PathBuf::from("MyApp.txt")),
@@ -699,16 +709,6 @@ mod tests {
     fn test_configured_solution_file_not_found_error() {
         assert_error_snapshot(DotnetBuildpackError::ConfiguredSolutionFileNotFound(
             PathBuf::from("/nonexistent/path/MyApp.sln"),
-        ));
-    }
-
-    #[test]
-    fn test_discover_app_source_multiple_file_based_apps_error() {
-        assert_error_snapshot(DotnetBuildpackError::DiscoverAppSource(
-            DiscoveryError::MultipleFileBasedApps(vec![
-                PathBuf::from("foo.cs"),
-                PathBuf::from("bar.cs"),
-            ]),
         ));
     }
 
