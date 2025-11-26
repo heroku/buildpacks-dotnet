@@ -39,8 +39,7 @@ impl<T: AsRef<Path>> PathFiltering for [T] {
 pub(crate) fn copy_recursively<P: AsRef<Path>>(src: P, dst: P) -> std::io::Result<()> {
     if src.as_ref().is_dir() {
         fs_err::create_dir_all(dst.as_ref())?;
-        for entry in fs_err::read_dir(src.as_ref())? {
-            let entry = entry?;
+        for entry in fs_err::read_dir(src.as_ref())?.filter_map(Result::ok) {
             let src_path = entry.path();
             let dst_path = dst.as_ref().join(entry.file_name());
 
@@ -245,5 +244,104 @@ mod tests {
         let dst = temp_dir.path().join("copy");
 
         assert!(copy_recursively(&src, &dst).is_err());
+    }
+
+    #[test]
+    fn test_copy_recursively_file_with_nonexistent_destination_parent() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let src_file = temp_dir.path().join("test.txt");
+        let dst_file = temp_dir
+            .path()
+            .join("nonexistent")
+            .join("subdir")
+            .join("copy.txt");
+
+        fs::write(&src_file, "test content").unwrap();
+
+        // This should fail because the destination parent directories don't exist
+        // and copy_recursively for files doesn't create parent directories
+        let result = copy_recursively(&src_file, &dst_file);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_copy_recursively_directory_with_unreadable_destination() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let src_dir = temp_dir.path().join("src");
+        let dst_parent = temp_dir.path().join("readonly_parent");
+        let dst_dir = dst_parent.join("dst");
+
+        fs::create_dir_all(&src_dir).unwrap();
+        fs::write(src_dir.join("file1.txt"), "file1 content").unwrap();
+
+        // Create the parent directory but make it read-only so create_dir_all fails
+        fs::create_dir(&dst_parent).unwrap();
+        let mut perms = fs::metadata(&dst_parent).unwrap().permissions();
+        perms.set_mode(0o444); // read-only
+        fs::set_permissions(&dst_parent, perms).unwrap();
+
+        let result = copy_recursively(&src_dir, &dst_dir);
+
+        // Restore permissions for cleanup
+        let mut perms = fs::metadata(&dst_parent).unwrap().permissions();
+        perms.set_mode(0o755);
+        let _ = fs::set_permissions(&dst_parent, perms);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_copy_recursively_with_unreadable_source_directory() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let src_dir = temp_dir.path().join("src");
+        let dst_dir = temp_dir.path().join("dst");
+
+        fs::create_dir_all(&src_dir).unwrap();
+        fs::write(src_dir.join("file1.txt"), "file1 content").unwrap();
+
+        // Make the source directory unreadable so read_dir fails
+        let mut perms = fs::metadata(&src_dir).unwrap().permissions();
+        perms.set_mode(0o000); // no permissions
+        fs::set_permissions(&src_dir, perms).unwrap();
+
+        let result = copy_recursively(&src_dir, &dst_dir);
+
+        // Restore permissions for cleanup
+        let mut perms = fs::metadata(&src_dir).unwrap().permissions();
+        perms.set_mode(0o755);
+        let _ = fs::set_permissions(&src_dir, perms);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_copy_recursively_with_nested_error() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+        let src_dir = temp_dir.path().join("src");
+        let dst_dir = temp_dir.path().join("dst");
+        let nested_src = src_dir.join("nested");
+
+        fs::create_dir_all(&nested_src).unwrap();
+        fs::write(nested_src.join("file.txt"), "content").unwrap();
+
+        // Make the nested source unreadable so the recursive call fails
+        let mut perms = fs::metadata(&nested_src).unwrap().permissions();
+        perms.set_mode(0o000);
+        fs::set_permissions(&nested_src, perms).unwrap();
+
+        let result = copy_recursively(&src_dir, &dst_dir);
+
+        // Restore permissions for cleanup
+        let mut perms = fs::metadata(&nested_src).unwrap().permissions();
+        perms.set_mode(0o755);
+        let _ = fs::set_permissions(&nested_src, perms);
+
+        assert!(result.is_err());
     }
 }
