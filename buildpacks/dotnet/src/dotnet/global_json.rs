@@ -34,7 +34,8 @@ impl TryFrom<SdkConfig> for VersionReq {
         // Parse version to ensure we have valid components to work with
         let version = Version::parse(version_str)?;
 
-        let policy = sdk_config.roll_forward.as_deref().unwrap_or("");
+        // Default policy is `patch`, see https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#matching-rules
+        let policy = sdk_config.roll_forward.as_deref().unwrap_or("patch");
 
         let version_req_str = match policy {
             "patch" | "latestPatch" => format!("~{version_str}"),
@@ -121,12 +122,12 @@ mod tests {
             TestCase {
                 version: "6.0.100",
                 roll_forward: None,
-                expected: "^6.0.100",
+                expected: "~6.0.100",
             },
             TestCase {
                 version: "6.0.100-rc.1.12345.1",
                 roll_forward: None,
-                expected: "^6.0.100-rc.1.12345.1",
+                expected: "~6.0.100-rc.1.12345.1",
             },
         ];
 
@@ -163,7 +164,7 @@ mod tests {
             roll_forward: None,
         };
         let version_req = VersionReq::try_from(sdk_config).unwrap();
-        assert_eq!(version_req, VersionReq::parse("6.0.100").unwrap());
+        assert_eq!(version_req, VersionReq::parse("~6.0.100").unwrap());
     }
 
     #[test]
