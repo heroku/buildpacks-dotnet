@@ -322,7 +322,7 @@ mod tests {
         fs::write(&project_path, "not valid xml").unwrap();
 
         let result = Project::load_from_path(&project_path);
-        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), LoadError::XmlParseError(_) if true));
     }
 
     #[test]
@@ -330,7 +330,7 @@ mod tests {
         let nonexistent_path = Path::new("/nonexistent/path/test.cs");
         let result = Project::load_from_file_based_app(nonexistent_path);
 
-        assert!(result.is_err());
+        assert!(matches!(result, Err(error) if error.kind() == ErrorKind::NotFound));
     }
 
     #[test]
