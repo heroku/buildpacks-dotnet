@@ -118,12 +118,9 @@ mod tests {
         let invalid_path = PathBuf::from("some\0file.csproj");
 
         let result = try_load_project(invalid_path);
-        assert!(matches!(
-            result,
-            Err(LoadError::LoadProject(project::LoadError::ReadProjectFile(
-                _
-            )))
-        ));
+        assert!(
+            matches!(result, Err(LoadError::LoadProject(project::LoadError::ReadProjectFile(_))) if true)
+        );
     }
 
     #[test]
@@ -239,7 +236,7 @@ mod tests {
         let non_existent_path = temp_dir.path().join("nonexistent.sln");
 
         let result = Solution::load_from_path(&non_existent_path);
-        assert!(matches!(result, Err(LoadError::ReadSolutionFile(_))));
+        assert!(matches!(result, Err(LoadError::ReadSolutionFile(_)) if true));
     }
 
     #[test]
@@ -308,6 +305,6 @@ mod tests {
         fs::write(&solution_path, malformed_slnx).unwrap();
 
         let result = Solution::load_from_path(&solution_path);
-        assert!(matches!(result, Err(LoadError::SlnxParseError(_))));
+        assert!(matches!(result, Err(LoadError::SlnxParseError(_)) if true));
     }
 }
