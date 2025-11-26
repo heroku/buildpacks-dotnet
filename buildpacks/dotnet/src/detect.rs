@@ -117,4 +117,12 @@ mod tests {
         let result = project_toml_file(temp_dir.path());
         assert_eq!(result, None);
     }
+
+    #[test]
+    fn test_find_files_with_extensions_io_error() {
+        // Test with a path that doesn't exist, which should cause an IO error
+        let nonexistent_path = std::path::PathBuf::from("/nonexistent/directory/that/does/not/exist");
+        let result = find_files_with_extensions(&nonexistent_path, &["csproj"]);
+        assert!(result.is_err());
+    }
 }
