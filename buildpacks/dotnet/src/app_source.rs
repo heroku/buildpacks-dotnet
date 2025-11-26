@@ -115,6 +115,7 @@ impl TryFrom<AppSource> for Solution {
 mod tests {
     use super::*;
     use std::fs;
+    use std::io::ErrorKind;
     use std::mem::discriminant;
     use tempfile::TempDir;
 
@@ -228,6 +229,16 @@ mod tests {
             app_source,
             AppSource::Project(ref path) if path.file_name().unwrap() == "MyApp.csproj"
         ));
+    }
+
+    #[test]
+    fn test_from_dir_with_detection_io_error() {
+        let result = AppSource::from_dir(Path::new("/nonexistent/directory/that/does/not/exist"))
+            .unwrap_err();
+
+        assert!(
+            matches!(result, DiscoveryError::DetectionIoError(ref error) if error.kind() == ErrorKind::NotFound)
+        );
     }
 
     #[test]
