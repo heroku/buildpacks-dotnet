@@ -155,6 +155,7 @@ mod tests {
             };
             let result = VersionReq::try_from(sdk_config).unwrap();
             assert_eq!(result.to_string(), case.expected);
+            assert!(result.matches(&Version::parse(case.version).unwrap()));
         }
     }
 
