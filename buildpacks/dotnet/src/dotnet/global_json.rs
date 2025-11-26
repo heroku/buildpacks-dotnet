@@ -199,4 +199,24 @@ mod tests {
         let global_json = GlobalJson::from_str(json_content).unwrap();
         assert!(global_json.sdk.is_none());
     }
+
+    #[test]
+    fn test_invalid_sdk_version() {
+        let sdk_config = SdkConfig {
+            version: "invalid-version".to_string(),
+            roll_forward: None,
+        };
+        let result = VersionReq::try_from(sdk_config);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_incomplete_sdk_version() {
+        let sdk_config = SdkConfig {
+            version: "6.0".to_string(),
+            roll_forward: None,
+        };
+        let result = VersionReq::try_from(sdk_config);
+        assert!(result.is_err());
+    }
 }
