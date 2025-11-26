@@ -97,6 +97,11 @@ mod tests {
                 expected: ">=6.0.100, <6.0.200",
             },
             TestCase {
+                version: "6.0.201",
+                roll_forward: Some("patch"),
+                expected: ">=6.0.201, <6.0.300",
+            },
+            TestCase {
                 version: "6.0.100",
                 roll_forward: Some("feature"),
                 expected: "~6.0",
