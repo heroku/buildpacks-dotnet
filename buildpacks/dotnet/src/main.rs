@@ -14,6 +14,7 @@ use crate::app_source::{
     AppSource, DiscoveryError, FILE_BASED_APP_EXTENSIONS, LoadError, PROJECT_EXTENSIONS,
     SOLUTION_EXTENSIONS,
 };
+use crate::detect::PathFiltering;
 use crate::dotnet::global_json::{GlobalJson, SdkConfig};
 use crate::dotnet::project::Project;
 use crate::dotnet::runtime_identifier;
@@ -64,8 +65,9 @@ impl Buildpack for DotnetBuildpack {
         ]
         .concat();
 
-        let paths = detect::find_files_with_extensions(&context.app_dir, &supported_extensions)
-            .map_err(DotnetBuildpackError::BuildpackDetection)?;
+        let paths = detect::list_files(&context.app_dir)
+            .map_err(DotnetBuildpackError::BuildpackDetection)?
+            .with_extensions(&supported_extensions);
 
         if paths.is_empty() {
             printdoc! {"
