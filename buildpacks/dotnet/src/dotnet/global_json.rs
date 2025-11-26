@@ -1,4 +1,4 @@
-use semver::VersionReq;
+use semver::{Version, VersionReq};
 use serde::Deserialize;
 use std::convert::TryFrom;
 use std::str::FromStr;
@@ -30,22 +30,22 @@ impl TryFrom<SdkConfig> for VersionReq {
 
     // TODO: Factor in pre-release logic
     fn try_from(sdk_config: SdkConfig) -> Result<Self, Self::Error> {
-        let version = &sdk_config.version;
+        let version_str = sdk_config.version.as_ref();
+        // Parse version to ensure we have valid components to work with
+        let version = Version::parse(version_str)?;
         let roll_forward = sdk_config.roll_forward.as_deref();
 
         let version_req_str = match roll_forward {
-            Some("patch" | "latestPatch") => format!("~{version}"),
-            Some("feature" | "latestFeature") => format!(
-                "~{}",
-                version.split('.').take(2).collect::<Vec<_>>().join(".")
-            ),
-            Some("minor" | "latestMinor") => format!(
-                "^{}",
-                version.split('.').take(2).collect::<Vec<_>>().join(".")
-            ),
+            Some("patch" | "latestPatch") => format!("~{version_str}"),
+            Some("feature" | "latestFeature") => {
+                format!("~{}.{}", version.major, version.minor)
+            }
+            Some("minor" | "latestMinor") => {
+                format!("^{}.{}", version.major, version.minor)
+            }
             Some("major" | "latestMajor") => "*".to_string(),
-            Some("disable") => format!("={version}"),
-            _ => version.clone(),
+            Some("disable") => format!("={version_str}"),
+            _ => version_str.to_string(),
         };
         VersionReq::parse(&version_req_str)
     }
