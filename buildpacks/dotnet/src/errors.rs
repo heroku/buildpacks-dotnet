@@ -957,6 +957,21 @@ mod tests {
     }
 
     #[test]
+    fn test_restore_dotnet_tools_command_non_zero_exit_already_streamed_error() {
+        assert_error_snapshot(DotnetBuildpackError::RestoreDotnetToolsCommand(
+            fun_run::nonzero_streamed(
+                "dotnet tool restore".to_string(),
+                std::process::Output {
+                    status: std::os::unix::process::ExitStatusExt::from_raw(1),
+                    stdout: vec![],
+                    stderr: vec![],
+                },
+            )
+            .unwrap_err(),
+        ));
+    }
+
+    #[test]
     fn test_publish_command_system_error() {
         assert_error_snapshot(DotnetBuildpackError::PublishCommand(
             fun_run::CmdError::SystemError("Cannot find executable".to_string(), create_io_error()),
@@ -966,6 +981,21 @@ mod tests {
     #[test]
     fn test_publish_command_non_zero_exit_not_streamed_error() {
         assert_error_snapshot(DotnetBuildpackError::PublishCommand(create_cmd_error(5)));
+    }
+
+    #[test]
+    fn test_publish_command_non_zero_exit_already_streamed_error() {
+        assert_error_snapshot(DotnetBuildpackError::PublishCommand(
+            fun_run::nonzero_streamed(
+                "dotnet publish".to_string(),
+                std::process::Output {
+                    status: std::os::unix::process::ExitStatusExt::from_raw(5),
+                    stdout: vec![],
+                    stderr: vec![],
+                },
+            )
+            .unwrap_err(),
+        ));
     }
 
     #[test]

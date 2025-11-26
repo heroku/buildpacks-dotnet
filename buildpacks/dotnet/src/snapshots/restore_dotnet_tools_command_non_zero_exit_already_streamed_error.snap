@@ -1,0 +1,15 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Unable to restore .NET tools[0m
+[0;31m![0m
+[0;31m! The `dotnet tool restore` command failed (signal: 1 (SIGHUP)).[0m
+[0;31m![0m
+[0;31m! The most common cause is a configuration error in your tool manifest. Review[0m
+[0;31m! the command output above to find and fix the issue.[0m
+[0;31m![0m
+[0;31m! The failure may also be temporary due to a network or service outage. Retrying[0m
+[0;31m! your build often resolves this.[0m
+[0;31m![0m
+[0;31m! If the log suggests a NuGet issue, check the service status before retrying:[0m
+[0;31m! https://status.nuget.org[0m
