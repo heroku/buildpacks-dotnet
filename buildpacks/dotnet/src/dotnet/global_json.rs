@@ -38,7 +38,24 @@ impl TryFrom<SdkConfig> for VersionReq {
         let policy = sdk_config.roll_forward.as_deref().unwrap_or("patch");
 
         let version_req_str = match policy {
-            "patch" | "latestPatch" => format!("~{version_str}"),
+            "patch" | "latestPatch" => {
+                // Feature band logic: 6.0.1xx matches 6.0.1xx, but not 6.0.2xx.
+                // See https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#rollforward
+                let patch = version.patch;
+                let feature_band_start = (patch / 100) * 100;
+                let feature_band_end = feature_band_start + 100;
+
+                // If the user requested a pre-release (e.g., 6.0.100-rc.1),
+                // we must allow pre-releases in the lower bound.
+                // Using an exact comparator for the lower bound handles this best.
+                format!(
+                    ">={}, <{}.{}.{}",
+                    version_str, // Use full string (6.0.100-rc.1) to include pre-release
+                    version.major,
+                    version.minor,
+                    feature_band_end
+                )
+            }
             "feature" | "latestFeature" => {
                 format!("~{}.{}", version.major, version.minor)
             }
@@ -72,12 +89,12 @@ mod tests {
             TestCase {
                 version: "6.0.100",
                 roll_forward: Some("patch"),
-                expected: "~6.0.100",
+                expected: ">=6.0.100, <6.0.200",
             },
             TestCase {
                 version: "6.0.100",
                 roll_forward: Some("latestPatch"),
-                expected: "~6.0.100",
+                expected: ">=6.0.100, <6.0.200",
             },
             TestCase {
                 version: "6.0.100",
@@ -122,12 +139,12 @@ mod tests {
             TestCase {
                 version: "6.0.100",
                 roll_forward: None,
-                expected: "~6.0.100",
+                expected: ">=6.0.100, <6.0.200",
             },
             TestCase {
                 version: "6.0.100-rc.1.12345.1",
                 roll_forward: None,
-                expected: "~6.0.100-rc.1.12345.1",
+                expected: ">=6.0.100-rc.1.12345.1, <6.0.200",
             },
         ];
 
@@ -164,7 +181,10 @@ mod tests {
             roll_forward: None,
         };
         let version_req = VersionReq::try_from(sdk_config).unwrap();
-        assert_eq!(version_req, VersionReq::parse("~6.0.100").unwrap());
+        assert_eq!(
+            version_req,
+            VersionReq::parse(">=6.0.100, <6.0.200").unwrap()
+        );
     }
 
     #[test]
