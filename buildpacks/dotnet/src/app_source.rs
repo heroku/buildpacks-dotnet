@@ -1,7 +1,6 @@
-use crate::detect::{PathFiltering, list_files};
 use crate::dotnet::project::{LoadError as ProjectLoadError, Project};
 use crate::dotnet::solution::{LoadError as SolutionLoadError, Solution};
-use crate::utils;
+use crate::utils::{self, PathFiltering, list_files};
 use std::io;
 use std::path::{Path, PathBuf};
 

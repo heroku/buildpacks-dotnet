@@ -1,9 +1,38 @@
-use std::path::Path;
+use std::io;
+use std::path::{Path, PathBuf};
 
 pub(crate) fn single_item<T>(items: Vec<T>) -> Result<Option<T>, Vec<T>> {
     match items.len() {
         0 | 1 => Ok(items.into_iter().next()),
         _ => Err(items),
+    }
+}
+
+pub(crate) fn list_files(dir: &Path) -> Result<Vec<PathBuf>, io::Error> {
+    let entries = fs_err::read_dir(dir)?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| path.is_file())
+        .collect();
+
+    Ok(entries)
+}
+
+pub(crate) trait PathFiltering {
+    fn with_extensions(&self, extensions: &[&str]) -> Vec<PathBuf>;
+}
+
+impl<T: AsRef<Path>> PathFiltering for [T] {
+    fn with_extensions(&self, extensions: &[&str]) -> Vec<PathBuf> {
+        self.iter()
+            .filter(|p| {
+                p.as_ref()
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                    .is_some_and(|ext| extensions.contains(&ext))
+            })
+            .map(|p| p.as_ref().to_path_buf())
+            .collect()
     }
 }
 
@@ -108,6 +137,14 @@ mod tests {
         let items = vec!["item1", "item2", "item3"];
         let result = single_item(items);
         assert!(matches!(result, Err(ref items) if items.len() == 3));
+    }
+
+    #[test]
+    fn test_list_files_io_error() {
+        let nonexistent_path =
+            std::path::PathBuf::from("/nonexistent/directory/that/does/not/exist");
+        let result = list_files(&nonexistent_path);
+        assert!(result.is_err());
     }
 
     #[test]

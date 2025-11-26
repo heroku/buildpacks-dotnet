@@ -14,7 +14,6 @@ use crate::app_source::{
     AppSource, DiscoveryError, FILE_BASED_APP_EXTENSIONS, LoadError, PROJECT_EXTENSIONS,
     SOLUTION_EXTENSIONS,
 };
-use crate::detect::PathFiltering;
 use crate::dotnet::global_json::{GlobalJson, SdkConfig};
 use crate::dotnet::project::Project;
 use crate::dotnet::runtime_identifier;
@@ -26,6 +25,7 @@ use crate::dotnet_buildpack_configuration::{
 use crate::dotnet_sdk_command::{DotnetPublishCommand, DotnetTestCommand};
 use crate::layers::sdk::SdkLayerError;
 use crate::project_toml::DotnetConfig;
+use crate::utils::{PathFiltering, list_files};
 use bullet_stream::fun_run::{self, CommandWithName};
 use bullet_stream::global::print;
 use bullet_stream::style;
@@ -65,7 +65,7 @@ impl Buildpack for DotnetBuildpack {
         ]
         .concat();
 
-        let paths = detect::list_files(&context.app_dir)
+        let paths = list_files(&context.app_dir)
             .map_err(DotnetBuildpackError::BuildpackDetection)?
             .with_extensions(&supported_extensions);
 
