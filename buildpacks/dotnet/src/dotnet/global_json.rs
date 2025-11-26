@@ -148,6 +148,11 @@ mod tests {
             },
             TestCase {
                 version: "6.0.100",
+                roll_forward: Some("invalid"),
+                expected: "^6.0.100",
+            },
+            TestCase {
+                version: "6.0.100",
                 roll_forward: None,
                 expected: ">=6.0.100, <6.0.200",
             },
