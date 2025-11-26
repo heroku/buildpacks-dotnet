@@ -33,9 +33,10 @@ impl TryFrom<SdkConfig> for VersionReq {
         let version_str = sdk_config.version.as_ref();
         // Parse version to ensure we have valid components to work with
         let version = Version::parse(version_str)?;
-        let roll_forward = sdk_config.roll_forward.as_deref().unwrap_or("");
 
-        let version_req_str = match roll_forward {
+        let policy = sdk_config.roll_forward.as_deref().unwrap_or("");
+
+        let version_req_str = match policy {
             "patch" | "latestPatch" => format!("~{version_str}"),
             "feature" | "latestFeature" => {
                 format!("~{}.{}", version.major, version.minor)
