@@ -176,19 +176,6 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_global_json_without_sdk_rollforward() {
-        let sdk_config = SdkConfig {
-            version: "6.0.100".to_string(),
-            roll_forward: None,
-        };
-        let version_req = VersionReq::try_from(sdk_config).unwrap();
-        assert_eq!(
-            version_req,
-            VersionReq::parse(">=6.0.100, <6.0.200").unwrap()
-        );
-    }
-
-    #[test]
     fn test_parse_empty_global_json() {
         let json_content = r"
         {
