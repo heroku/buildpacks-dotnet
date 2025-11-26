@@ -254,6 +254,32 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_buildpack_configuration_unsupported_execution_environment_error() {
+        let env = create_env(&[("CNB_EXEC_ENV", "invalid")]);
+        let result = DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env, None);
+
+        assert_eq!(
+            result,
+            Err(DotnetBuildpackConfigurationError::ExecutionEnvironment(
+                ExecutionEnvironmentError::UnsupportedExecutionEnvironment("invalid".to_string())
+            ))
+        );
+    }
+
+    #[test]
+    fn test_parse_buildpack_configuration_invalid_msbuild_verbosity_level_error() {
+        let env = create_env(&[("MSBUILD_VERBOSITY_LEVEL", "invalid")]);
+        let result = DotnetBuildpackConfiguration::try_from_env_and_project_toml(&env, None);
+
+        assert_eq!(
+            result,
+            Err(DotnetBuildpackConfigurationError::VerbosityLevel(
+                ParseVerbosityLevelError("invalid".to_string())
+            ))
+        );
+    }
+
+    #[test]
     fn test_parse_msbuild_verbosity_level() {
         let valid_cases = [
             ("q", VerbosityLevel::Quiet),
