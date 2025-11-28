@@ -322,7 +322,7 @@ mod tests {
         fs::write(&project_path, "not valid xml").unwrap();
 
         let result = Project::load_from_path(&project_path);
-        assert!(result.is_err());
+        assert_matches!(result, Err(LoadError::XmlParseError(_)));
     }
 
     #[test]

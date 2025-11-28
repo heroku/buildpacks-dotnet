@@ -243,7 +243,7 @@ mod tests {
     fn test_from_dir_no_app_found_in_empty_directory() {
         let temp_dir = TempDir::new().unwrap();
         let result = AppSource::from_dir(temp_dir.path());
-        assert!(result.is_err());
+        assert_matches!(result, Err(DiscoveryError::NoAppFound));
     }
 
     #[test]

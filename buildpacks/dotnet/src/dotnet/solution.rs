@@ -4,6 +4,7 @@ use regex::Regex;
 use std::io::{self};
 use std::path::{Path, PathBuf};
 
+#[derive(Debug)]
 pub(crate) struct Solution {
     pub(crate) path: PathBuf,
     pub(crate) projects: Vec<Project>,
@@ -308,6 +309,6 @@ mod tests {
         fs::write(&solution_path, malformed_slnx).unwrap();
 
         let result = Solution::load_from_path(&solution_path);
-        assert!(result.is_err());
+        assert_matches!(result, Err(LoadError::SlnxParseError(_)));
     }
 }
