@@ -137,7 +137,7 @@ mod tests {
 
         assert_matches!(
             app_source,
-            AppSource::Solution(ref path) if path.file_name().unwrap() == "MyApp.sln"
+            AppSource::Solution(path) if path.file_name().unwrap() == "MyApp.sln"
         );
     }
 
@@ -148,7 +148,7 @@ mod tests {
 
         assert_matches!(
             app_source,
-            AppSource::Solution(ref path) if path.file_name().unwrap() == "MyApp.slnx"
+            AppSource::Solution(path) if path.file_name().unwrap() == "MyApp.slnx"
         );
     }
 
@@ -159,7 +159,7 @@ mod tests {
 
         assert_matches!(
             app_source,
-            AppSource::Project(ref path) if path.file_name().unwrap() == "MyApp.csproj"
+            AppSource::Project(path) if path.file_name().unwrap() == "MyApp.csproj"
         );
     }
 
@@ -170,7 +170,7 @@ mod tests {
 
         assert_matches!(
             app_source,
-            AppSource::Project(ref path) if path.file_name().unwrap() == "MyApp.vbproj"
+            AppSource::Project(path) if path.file_name().unwrap() == "MyApp.vbproj"
         );
     }
 
@@ -181,7 +181,7 @@ mod tests {
 
         assert_matches!(
             app_source,
-            AppSource::Project(ref path) if path.file_name().unwrap() == "MyApp.fsproj"
+            AppSource::Project(path) if path.file_name().unwrap() == "MyApp.fsproj"
         );
     }
 
@@ -192,7 +192,7 @@ mod tests {
 
         assert_matches!(
             app_source,
-            AppSource::FileBasedApp(ref path) if path.file_name().unwrap() == "app.cs"
+            AppSource::FileBasedApp(path) if path.file_name().unwrap() == "app.cs"
         );
     }
 
@@ -203,7 +203,7 @@ mod tests {
 
         assert_matches!(
             app_source,
-            AppSource::Solution(ref path) if path.file_name().unwrap() == "MyApp.sln"
+            AppSource::Solution(path) if path.file_name().unwrap() == "MyApp.sln"
         );
     }
 
@@ -214,7 +214,7 @@ mod tests {
 
         assert_matches!(
             app_source,
-            AppSource::Solution(ref path) if path.file_name().unwrap() == "MyApp.sln"
+            AppSource::Solution(path) if path.file_name().unwrap() == "MyApp.sln"
         );
     }
 
@@ -225,7 +225,7 @@ mod tests {
 
         assert_matches!(
             app_source,
-            AppSource::Project(ref path) if path.file_name().unwrap() == "MyApp.csproj"
+            AppSource::Project(path) if path.file_name().unwrap() == "MyApp.csproj"
         );
     }
 
@@ -234,7 +234,7 @@ mod tests {
         let result = AppSource::from_dir(Path::new("/nonexistent/directory/that/does/not/exist"))
             .unwrap_err();
 
-        assert_matches!(result, DiscoveryError::DetectionIoError(ref error) if error.kind() == ErrorKind::NotFound);
+        assert_matches!(result, DiscoveryError::DetectionIoError(error) if error.kind() == ErrorKind::NotFound);
     }
 
     #[test]
@@ -251,7 +251,7 @@ mod tests {
 
         assert_matches!(
             result,
-            Err(DiscoveryError::MultipleSolutionFiles(ref paths)) if paths.len() == 2
+            Err(DiscoveryError::MultipleSolutionFiles(paths)) if paths.len() == 2
         );
     }
 
@@ -262,7 +262,7 @@ mod tests {
 
         assert_matches!(
             result,
-            Err(DiscoveryError::MultipleProjectFiles(ref paths)) if paths.len() == 2
+            Err(DiscoveryError::MultipleProjectFiles(paths)) if paths.len() == 2
         );
     }
 
@@ -273,7 +273,7 @@ mod tests {
 
         assert_matches!(
             result,
-            Err(DiscoveryError::MultipleFileBasedApps(ref paths)) if paths.len() == 2
+            Err(DiscoveryError::MultipleFileBasedApps(paths)) if paths.len() == 2
         );
     }
 
@@ -283,7 +283,7 @@ mod tests {
         let app_source = AppSource::from_file(temp_dir.path().join("MyApp.sln").as_path()).unwrap();
         assert_matches!(
             app_source,
-            AppSource::Solution(ref path) if path.file_name().unwrap() == "MyApp.sln"
+            AppSource::Solution(path) if path.file_name().unwrap() == "MyApp.sln"
         );
     }
 
@@ -294,7 +294,7 @@ mod tests {
             AppSource::from_file(temp_dir.path().join("MyApp.slnx").as_path()).unwrap();
         assert_matches!(
             app_source,
-            AppSource::Solution(ref path) if path.file_name().unwrap() == "MyApp.slnx"
+            AppSource::Solution(path) if path.file_name().unwrap() == "MyApp.slnx"
         );
     }
 
@@ -305,7 +305,7 @@ mod tests {
             AppSource::from_file(temp_dir.path().join("MyApp.csproj").as_path()).unwrap();
         assert_matches!(
             app_source,
-            AppSource::Project(ref path) if path.file_name().unwrap() == "MyApp.csproj"
+            AppSource::Project(path) if path.file_name().unwrap() == "MyApp.csproj"
         );
     }
 
@@ -316,7 +316,7 @@ mod tests {
             AppSource::from_file(temp_dir.path().join("MyApp.vbproj").as_path()).unwrap();
         assert_matches!(
             app_source,
-            AppSource::Project(ref path) if path.file_name().unwrap() == "MyApp.vbproj"
+            AppSource::Project(path) if path.file_name().unwrap() == "MyApp.vbproj"
         );
     }
 
@@ -327,7 +327,7 @@ mod tests {
             AppSource::from_file(temp_dir.path().join("MyApp.fsproj").as_path()).unwrap();
         assert_matches!(
             app_source,
-            AppSource::Project(ref path) if path.file_name().unwrap() == "MyApp.fsproj"
+            AppSource::Project(path) if path.file_name().unwrap() == "MyApp.fsproj"
         );
     }
 
@@ -337,7 +337,7 @@ mod tests {
         let app_source = AppSource::from_file(temp_dir.path().join("app.cs").as_path()).unwrap();
         assert_matches!(
             app_source,
-            AppSource::FileBasedApp(ref path) if path.file_name().unwrap() == "app.cs"
+            AppSource::FileBasedApp(path) if path.file_name().unwrap() == "app.cs"
         );
     }
 
@@ -347,7 +347,7 @@ mod tests {
         let expected_path = temp_dir.path().join("src/MyApp/MyApp.csproj");
         let app_source = AppSource::from_file(&expected_path).unwrap();
 
-        assert_matches!(app_source, AppSource::Project(ref path) if path == &expected_path);
+        assert_matches!(app_source, AppSource::Project(path) if path == &expected_path);
     }
 
     #[test]
@@ -356,7 +356,7 @@ mod tests {
         let invalid_path = temp_dir.path().join("MyApp.txt");
         let result = AppSource::from_file(&invalid_path).unwrap_err();
 
-        assert_matches!(result, DiscoveryError::UnrecognizedAppExtension(ref path) if path == &invalid_path);
+        assert_matches!(result, DiscoveryError::UnrecognizedAppExtension(path) if path == &invalid_path);
     }
 
     #[test]
@@ -365,7 +365,7 @@ mod tests {
         let invalid_path = temp_dir.path().join("MyApp");
         let result = AppSource::from_file(&invalid_path).unwrap_err();
 
-        assert_matches!(result, DiscoveryError::UnrecognizedAppExtension(ref path) if path == &invalid_path);
+        assert_matches!(result, DiscoveryError::UnrecognizedAppExtension(path) if path == &invalid_path);
     }
 
     #[test]
@@ -455,7 +455,7 @@ mod tests {
 
         assert_matches!(
             discovery_error,
-            DiscoveryError::DetectionIoError(ref err) if err.kind() == io::ErrorKind::NotFound
+            DiscoveryError::DetectionIoError(err) if err.kind() == io::ErrorKind::NotFound
         );
     }
 }

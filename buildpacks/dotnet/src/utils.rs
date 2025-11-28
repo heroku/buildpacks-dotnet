@@ -135,7 +135,7 @@ mod tests {
     fn test_single_item_returns_error_on_multiple() {
         let items = vec!["item1", "item2", "item3"];
         let result = single_item(items);
-        assert_matches!(result, Err(ref items) if items.len() == 3);
+        assert_matches!(result, Err(items) if items.len() == 3);
     }
 
     #[test]

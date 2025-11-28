@@ -12,7 +12,7 @@ macro_rules! assert_matches {
     // With a guard (e.g. `Ok(x) if x > 10``)
     ($expression:expr, $pattern:pat if $guard:expr $(,)?) => {
         assert!(
-            matches!($expression, $pattern if $guard),
+            matches!(&$expression, $pattern if $guard),
             "Expected match pattern: {} where {}, but got {:?}",
             stringify!($pattern),
             stringify!($guard),
@@ -23,7 +23,7 @@ macro_rules! assert_matches {
     // Without a guard (injects `if true` to force branch coverage)
     ($expression:expr, $pattern:pat $(,)?) => {
         assert!(
-            matches!($expression, $pattern if true),
+            matches!(&$expression, $pattern if true),
             "Expected match pattern: {}, but got {:?}",
             stringify!($pattern),
             $expression

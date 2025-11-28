@@ -326,7 +326,7 @@ mod tests {
         let nonexistent_path = Path::new("/nonexistent/path/test.cs");
         let result = Project::load_from_file_based_app(nonexistent_path);
 
-        assert_matches!(result, Err(ref error) if error.kind() == ErrorKind::NotFound);
+        assert_matches!(result, Err(error) if error.kind() == ErrorKind::NotFound);
     }
 
     #[test]
