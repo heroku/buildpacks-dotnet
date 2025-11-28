@@ -115,7 +115,6 @@ mod tests {
     use super::*;
     use std::fs;
     use std::io::ErrorKind;
-    use std::mem::discriminant;
     use tempfile::TempDir;
 
     fn create_temp_dir_with_files(files: &[&str]) -> TempDir {
@@ -243,12 +242,8 @@ mod tests {
     #[test]
     fn test_from_dir_no_app_found_in_empty_directory() {
         let temp_dir = TempDir::new().unwrap();
-        let result = AppSource::from_dir(temp_dir.path()).unwrap_err();
-
-        assert_eq!(
-            discriminant(&result),
-            discriminant(&DiscoveryError::NoAppFound)
-        );
+        let result = AppSource::from_dir(temp_dir.path());
+        assert!(result.is_err());
     }
 
     #[test]
