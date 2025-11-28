@@ -959,15 +959,7 @@ mod tests {
     #[test]
     fn test_restore_dotnet_tools_command_non_zero_exit_already_streamed_error() {
         assert_error_snapshot(DotnetBuildpackError::RestoreDotnetToolsCommand(
-            fun_run::nonzero_streamed(
-                "dotnet tool restore".to_string(),
-                std::process::Output {
-                    status: std::os::unix::process::ExitStatusExt::from_raw(1),
-                    stdout: vec![],
-                    stderr: vec![],
-                },
-            )
-            .unwrap_err(),
+            create_cmd_error_streamed(1),
         ));
     }
 
@@ -986,15 +978,7 @@ mod tests {
     #[test]
     fn test_publish_command_non_zero_exit_already_streamed_error() {
         assert_error_snapshot(DotnetBuildpackError::PublishCommand(
-            fun_run::nonzero_streamed(
-                "dotnet publish".to_string(),
-                std::process::Output {
-                    status: std::os::unix::process::ExitStatusExt::from_raw(5),
-                    stdout: vec![],
-                    stderr: vec![],
-                },
-            )
-            .unwrap_err(),
+            create_cmd_error_streamed(5),
         ));
     }
 
@@ -1045,6 +1029,18 @@ mod tests {
 
     fn create_cmd_error(exit_code: i32) -> fun_run::CmdError {
         fun_run::nonzero_captured(
+            "foo".to_string(),
+            std::process::Output {
+                status: std::os::unix::process::ExitStatusExt::from_raw(exit_code),
+                stdout: vec![],
+                stderr: vec![],
+            },
+        )
+        .unwrap_err()
+    }
+
+    fn create_cmd_error_streamed(exit_code: i32) -> fun_run::CmdError {
+        fun_run::nonzero_streamed(
             "foo".to_string(),
             std::process::Output {
                 status: std::os::unix::process::ExitStatusExt::from_raw(exit_code),
