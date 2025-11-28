@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Improved error handling when configured solution file doesn't exist, has an invalid extension, or is not a simple filename. ([#340](https://github.com/heroku/buildpacks-dotnet/pull/340))
 
+### Fixed
+
+- `global.json` SDK version matching now correctly respects .NET SDK feature band boundaries when using `patch` or `latestPatch` roll-forward policies. ([#348](https://github.com/heroku/buildpacks-dotnet/pull/348))
+- The default `global.json` roll-forward policy now defaults to `patch`. ([#348](https://github.com/heroku/buildpacks-dotnet/pull/348))
+
 ## [0.11.2] - 2025-11-20
 
 ### Added

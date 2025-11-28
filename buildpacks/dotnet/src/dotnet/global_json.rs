@@ -1,4 +1,4 @@
-use semver::VersionReq;
+use semver::{Version, VersionReq};
 use serde::Deserialize;
 use std::convert::TryFrom;
 use std::str::FromStr;
@@ -30,22 +30,41 @@ impl TryFrom<SdkConfig> for VersionReq {
 
     // TODO: Factor in pre-release logic
     fn try_from(sdk_config: SdkConfig) -> Result<Self, Self::Error> {
-        let version = &sdk_config.version;
-        let roll_forward = sdk_config.roll_forward.as_deref();
+        let version_str = sdk_config.version.as_ref();
+        // Parse version to ensure we have valid components to work with
+        let version = Version::parse(version_str)?;
 
-        let version_req_str = match roll_forward {
-            Some("patch" | "latestPatch") => format!("~{version}"),
-            Some("feature" | "latestFeature") => format!(
-                "~{}",
-                version.split('.').take(2).collect::<Vec<_>>().join(".")
-            ),
-            Some("minor" | "latestMinor") => format!(
-                "^{}",
-                version.split('.').take(2).collect::<Vec<_>>().join(".")
-            ),
-            Some("major" | "latestMajor") => "*".to_string(),
-            Some("disable") => format!("={version}"),
-            _ => version.clone(),
+        // Default policy is `patch`, see https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#matching-rules
+        let policy = sdk_config.roll_forward.as_deref().unwrap_or("patch");
+
+        let version_req_str = match policy {
+            "patch" | "latestPatch" => {
+                // Feature band logic: 6.0.1xx matches 6.0.1xx, but not 6.0.2xx.
+                // See https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#rollforward
+                let patch = version.patch;
+                let feature_band_start = (patch / 100) * 100;
+                let feature_band_end = feature_band_start + 100;
+
+                // If the user requested a pre-release (e.g., 6.0.100-rc.1),
+                // we must allow pre-releases in the lower bound.
+                // Using an exact comparator for the lower bound handles this best.
+                format!(
+                    ">={}, <{}.{}.{}",
+                    version_str, // Use full string (6.0.100-rc.1) to include pre-release
+                    version.major,
+                    version.minor,
+                    feature_band_end
+                )
+            }
+            "feature" | "latestFeature" => {
+                format!("~{}.{}", version.major, version.minor)
+            }
+            "minor" | "latestMinor" => {
+                format!("^{}.{}", version.major, version.minor)
+            }
+            "major" | "latestMajor" => "*".to_string(),
+            "disable" => format!("={version_str}"),
+            _ => version_str.to_string(),
         };
         VersionReq::parse(&version_req_str)
     }
@@ -70,12 +89,22 @@ mod tests {
             TestCase {
                 version: "6.0.100",
                 roll_forward: Some("patch"),
-                expected: "~6.0.100",
+                expected: ">=6.0.100, <6.0.200",
             },
             TestCase {
                 version: "6.0.100",
                 roll_forward: Some("latestPatch"),
-                expected: "~6.0.100",
+                expected: ">=6.0.100, <6.0.200",
+            },
+            TestCase {
+                version: "6.0.201",
+                roll_forward: Some("patch"),
+                expected: ">=6.0.201, <6.0.300",
+            },
+            TestCase {
+                version: "6.0.201-rc.1.12345.1",
+                roll_forward: Some("patch"),
+                expected: ">=6.0.201-rc.1.12345.1, <6.0.300",
             },
             TestCase {
                 version: "6.0.100",
@@ -119,13 +148,18 @@ mod tests {
             },
             TestCase {
                 version: "6.0.100",
-                roll_forward: None,
+                roll_forward: Some("invalid"),
                 expected: "^6.0.100",
+            },
+            TestCase {
+                version: "6.0.100",
+                roll_forward: None,
+                expected: ">=6.0.100, <6.0.200",
             },
             TestCase {
                 version: "6.0.100-rc.1.12345.1",
                 roll_forward: None,
-                expected: "^6.0.100-rc.1.12345.1",
+                expected: ">=6.0.100-rc.1.12345.1, <6.0.200",
             },
         ];
 
@@ -136,6 +170,7 @@ mod tests {
             };
             let result = VersionReq::try_from(sdk_config).unwrap();
             assert_eq!(result.to_string(), case.expected);
+            assert!(result.matches(&Version::parse(case.version).unwrap()));
         }
     }
 
@@ -156,16 +191,6 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_global_json_without_sdk_rollforward() {
-        let sdk_config = SdkConfig {
-            version: "6.0.100".to_string(),
-            roll_forward: None,
-        };
-        let version_req = VersionReq::try_from(sdk_config).unwrap();
-        assert_eq!(version_req, VersionReq::parse("6.0.100").unwrap());
-    }
-
-    #[test]
     fn test_parse_empty_global_json() {
         let json_content = r"
         {
@@ -173,5 +198,25 @@ mod tests {
         ";
         let global_json = GlobalJson::from_str(json_content).unwrap();
         assert!(global_json.sdk.is_none());
+    }
+
+    #[test]
+    fn test_invalid_sdk_version() {
+        let sdk_config = SdkConfig {
+            version: "invalid-version".to_string(),
+            roll_forward: None,
+        };
+        let result = VersionReq::try_from(sdk_config);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_incomplete_sdk_version() {
+        let sdk_config = SdkConfig {
+            version: "6.0".to_string(),
+            roll_forward: None,
+        };
+        let result = VersionReq::try_from(sdk_config);
+        assert!(result.is_err());
     }
 }
