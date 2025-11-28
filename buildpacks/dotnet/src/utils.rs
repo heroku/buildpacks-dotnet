@@ -115,6 +115,7 @@ pub(crate) fn to_rfc1123_label(input: &str) -> Result<String, ()> {
 mod tests {
     use super::*;
     use std::fs;
+    use std::os::unix::fs::PermissionsExt;
 
     #[test]
     fn test_single_item_returns_single() {
@@ -266,8 +267,6 @@ mod tests {
 
     #[test]
     fn test_copy_recursively_directory_with_unreadable_destination() {
-        use std::os::unix::fs::PermissionsExt;
-
         let temp_dir = tempfile::tempdir().unwrap();
         let src_dir = temp_dir.path().join("src");
         let dst_parent = temp_dir.path().join("readonly_parent");
@@ -294,8 +293,6 @@ mod tests {
 
     #[test]
     fn test_copy_recursively_with_unreadable_source_directory() {
-        use std::os::unix::fs::PermissionsExt;
-
         let temp_dir = tempfile::tempdir().unwrap();
         let src_dir = temp_dir.path().join("src");
         let dst_dir = temp_dir.path().join("dst");
@@ -320,8 +317,6 @@ mod tests {
 
     #[test]
     fn test_copy_recursively_with_unreadable_source_subdirectory() {
-        use std::os::unix::fs::PermissionsExt;
-
         let temp_dir = tempfile::tempdir().unwrap();
         let src_dir = temp_dir.path().join("src");
         let dst_dir = temp_dir.path().join("dst");
