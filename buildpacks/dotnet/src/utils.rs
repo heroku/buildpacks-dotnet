@@ -115,7 +115,6 @@ pub(crate) fn to_rfc1123_label(input: &str) -> Result<String, ()> {
 mod tests {
     use super::*;
     use std::fs;
-    use std::os::unix::fs::PermissionsExt;
 
     #[test]
     fn test_single_item_returns_single() {
@@ -255,21 +254,11 @@ mod tests {
         let dst_dir = dst_parent.join("dst");
 
         fs::create_dir_all(&src_dir).unwrap();
-
-        // Create the parent directory but make it read-only so create_dir_all fails
         fs::create_dir(&dst_parent).unwrap();
-        let mut perms = fs::metadata(&dst_parent).unwrap().permissions();
-        perms.set_mode(0o444);
-        fs::set_permissions(&dst_parent, perms).unwrap();
 
-        let result = copy_recursively(&src_dir, &dst_dir);
-
-        // Restore permissions for cleanup
-        let mut perms = fs::metadata(&dst_parent).unwrap().permissions();
-        perms.set_mode(0o755);
-        let _ = fs::set_permissions(&dst_parent, perms);
-
-        assert!(result.is_err());
+        with_readonly_dir(&dst_parent, || {
+            assert!(copy_recursively(&src_dir, &dst_dir).is_err());
+        });
     }
 
     #[test]
@@ -280,19 +269,9 @@ mod tests {
 
         fs::create_dir_all(&src_dir).unwrap();
 
-        // Make the source directory unreadable so read_dir fails
-        let mut perms = fs::metadata(&src_dir).unwrap().permissions();
-        perms.set_mode(0o000);
-        fs::set_permissions(&src_dir, perms).unwrap();
-
-        let result = copy_recursively(&src_dir, &dst_dir);
-
-        // Restore permissions for cleanup
-        let mut perms = fs::metadata(&src_dir).unwrap().permissions();
-        perms.set_mode(0o755);
-        let _ = fs::set_permissions(&src_dir, perms);
-
-        assert!(result.is_err());
+        with_unreadable_dir(&src_dir, || {
+            assert!(copy_recursively(&src_dir, &dst_dir).is_err());
+        });
     }
 
     #[test]
@@ -304,18 +283,30 @@ mod tests {
 
         fs::create_dir_all(&src_dir_subdirectory).unwrap();
 
-        // Make the source subdirectory unreadable so the recursive call fails
-        let mut perms = fs::metadata(&src_dir_subdirectory).unwrap().permissions();
-        perms.set_mode(0o000);
-        fs::set_permissions(&src_dir_subdirectory, perms).unwrap();
+        with_unreadable_dir(&src_dir_subdirectory, || {
+            assert!(copy_recursively(&src_dir, &dst_dir).is_err());
+        });
+    }
 
-        let result = copy_recursively(&src_dir, &dst_dir);
+    fn with_readonly_dir<F: FnOnce()>(dir: &Path, f: F) {
+        with_modified_permissions(dir, 0o444, f);
+    }
 
-        // Restore permissions for cleanup
-        let mut perms = fs::metadata(&src_dir_subdirectory).unwrap().permissions();
+    fn with_unreadable_dir<F: FnOnce()>(dir: &Path, f: F) {
+        with_modified_permissions(dir, 0o000, f);
+    }
+
+    fn with_modified_permissions<F: FnOnce()>(dir: &Path, mode: u32, f: F) {
+        use std::os::unix::fs::PermissionsExt;
+
+        let mut perms = fs::metadata(dir).unwrap().permissions();
+        perms.set_mode(mode);
+        fs::set_permissions(dir, perms).unwrap();
+
+        f();
+
+        let mut perms = fs::metadata(dir).unwrap().permissions();
         perms.set_mode(0o755);
-        let _ = fs::set_permissions(&src_dir_subdirectory, perms);
-
-        assert!(result.is_err());
+        let _ = fs::set_permissions(dir, perms);
     }
 }
