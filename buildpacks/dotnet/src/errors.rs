@@ -952,7 +952,7 @@ mod tests {
     #[test]
     fn test_restore_dotnet_tools_command_non_zero_exit_not_streamed_error() {
         assert_error_snapshot(DotnetBuildpackError::RestoreDotnetToolsCommand(
-            create_cmd_error(),
+            create_cmd_error_captured(),
         ));
     }
 
@@ -972,7 +972,9 @@ mod tests {
 
     #[test]
     fn test_publish_command_non_zero_exit_not_streamed_error() {
-        assert_error_snapshot(DotnetBuildpackError::PublishCommand(create_cmd_error()));
+        assert_error_snapshot(DotnetBuildpackError::PublishCommand(
+            create_cmd_error_captured(),
+        ));
     }
 
     #[test]
@@ -1027,7 +1029,7 @@ mod tests {
         quick_xml::de::DeError::Custom("XML parsing error".to_string())
     }
 
-    fn create_cmd_error() -> fun_run::CmdError {
+    fn create_cmd_error_captured() -> fun_run::CmdError {
         fun_run::nonzero_captured(
             "foo".to_string(),
             std::process::Output {
