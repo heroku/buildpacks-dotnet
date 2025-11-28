@@ -1,6 +1,6 @@
 use crate::dotnet::project::{LoadError as ProjectLoadError, Project};
 use crate::dotnet::solution::{LoadError as SolutionLoadError, Solution};
-use crate::utils::{self, PathFiltering, list_files};
+use crate::utils::{self, PathsExt, list_files};
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -35,20 +35,21 @@ impl AppSource {
     pub(crate) fn from_dir(dir: &Path) -> Result<Self, DiscoveryError> {
         let dir_files = list_files(dir).map_err(DiscoveryError::DetectionIoError)?;
 
-        if let Some(path) = utils::single_item(dir_files.with_extensions(SOLUTION_EXTENSIONS))
+        if let Some(path) = utils::single_item(dir_files.filter_by_extension(SOLUTION_EXTENSIONS))
             .map_err(DiscoveryError::MultipleSolutionFiles)?
         {
             return Ok(Self::Solution(path));
         }
 
-        if let Some(path) = utils::single_item(dir_files.with_extensions(PROJECT_EXTENSIONS))
+        if let Some(path) = utils::single_item(dir_files.filter_by_extension(PROJECT_EXTENSIONS))
             .map_err(DiscoveryError::MultipleProjectFiles)?
         {
             return Ok(Self::Project(path));
         }
 
-        if let Some(path) = utils::single_item(dir_files.with_extensions(FILE_BASED_APP_EXTENSIONS))
-            .map_err(DiscoveryError::MultipleFileBasedApps)?
+        if let Some(path) =
+            utils::single_item(dir_files.filter_by_extension(FILE_BASED_APP_EXTENSIONS))
+                .map_err(DiscoveryError::MultipleFileBasedApps)?
         {
             return Ok(Self::FileBasedApp(path));
         }

@@ -25,7 +25,7 @@ use crate::dotnet_buildpack_configuration::{
 use crate::dotnet_sdk_command::{DotnetPublishCommand, DotnetTestCommand};
 use crate::layers::sdk::SdkLayerError;
 use crate::project_toml::DotnetConfig;
-use crate::utils::{PathFiltering, list_files};
+use crate::utils::{PathsExt, list_files};
 use bullet_stream::fun_run::{self, CommandWithName};
 use bullet_stream::global::print;
 use bullet_stream::style;
@@ -67,7 +67,7 @@ impl Buildpack for DotnetBuildpack {
 
         let paths = list_files(&context.app_dir)
             .map_err(DotnetBuildpackError::BuildpackDetection)?
-            .with_extensions(&supported_extensions);
+            .filter_by_extension(&supported_extensions);
 
         if paths.is_empty() {
             printdoc! {"

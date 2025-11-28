@@ -18,12 +18,12 @@ pub(crate) fn list_files(dir: &Path) -> Result<Vec<PathBuf>, io::Error> {
     Ok(entries)
 }
 
-pub(crate) trait PathFiltering {
-    fn with_extensions(&self, extensions: &[&str]) -> Vec<PathBuf>;
+pub(crate) trait PathsExt {
+    fn filter_by_extension(&self, extensions: &[&str]) -> Vec<PathBuf>;
 }
 
-impl<T: AsRef<Path>> PathFiltering for [T] {
-    fn with_extensions(&self, extensions: &[&str]) -> Vec<PathBuf> {
+impl<T: AsRef<Path>> PathsExt for [T] {
+    fn filter_by_extension(&self, extensions: &[&str]) -> Vec<PathBuf> {
         self.iter()
             .filter(|p| {
                 p.as_ref()
