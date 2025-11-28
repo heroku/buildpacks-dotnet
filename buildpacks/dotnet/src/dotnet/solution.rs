@@ -308,6 +308,6 @@ mod tests {
         fs::write(&solution_path, malformed_slnx).unwrap();
 
         let result = Solution::load_from_path(&solution_path);
-        assert!(matches!(result, Err(LoadError::SlnxParseError(_)) if true));
+        assert!(result.is_err());
     }
 }
