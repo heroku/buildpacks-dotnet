@@ -79,6 +79,7 @@ fn extract_project_references(contents: &str) -> Vec<String> {
 mod tests {
     use super::*;
     use std::fs;
+    use std::io::ErrorKind;
 
     const SIMPLE_PROJECT_CONTENT: &str = r#"
         <Project Sdk="Microsoft.NET.Sdk">
@@ -119,7 +120,7 @@ mod tests {
 
         let result = try_load_project(invalid_path);
         assert!(
-            matches!(result, Err(LoadError::LoadProject(project::LoadError::ReadProjectFile(_))) if true)
+            matches!(result, Err(LoadError::LoadProject(project::LoadError::ReadProjectFile(error))) if error.kind() == ErrorKind::InvalidInput)
         );
     }
 
@@ -236,7 +237,9 @@ mod tests {
         let non_existent_path = temp_dir.path().join("nonexistent.sln");
 
         let result = Solution::load_from_path(&non_existent_path);
-        assert!(matches!(result, Err(LoadError::ReadSolutionFile(_)) if true));
+        assert!(
+            matches!(result, Err(LoadError::ReadSolutionFile(error)) if error.kind() == ErrorKind::NotFound)
+        );
     }
 
     #[test]
