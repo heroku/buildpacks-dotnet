@@ -3,7 +3,7 @@ source: buildpacks/dotnet/src/errors.rs
 ---
 [0;31m! Unable to publish[0m
 [0;31m![0m
-[0;31m! The `dotnet publish` command failed (signal: 5 (SIGTRAP)).[0m
+[0;31m! The `dotnet publish` command failed (signal: 1 (SIGHUP)).[0m
 [0;31m![0m
 [0;31m! The most common cause is a compilation error. Review the command output above[0m
 [0;31m! to find and fix the issue.[0m
