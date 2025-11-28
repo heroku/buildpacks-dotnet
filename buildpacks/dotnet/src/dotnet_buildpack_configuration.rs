@@ -300,10 +300,10 @@ mod tests {
         }
 
         let result = "invalid".parse::<VerbosityLevel>();
-        assert!(matches!(
+        assert_matches!(
             result,
-            Err(ParseVerbosityLevelError(s)) if s == "invalid"
-        ));
+            Err(ParseVerbosityLevelError(ref s)) if s == "invalid"
+        );
     }
 
     #[test]

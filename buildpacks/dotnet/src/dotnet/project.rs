@@ -300,9 +300,7 @@ mod tests {
         .unwrap();
 
         let result = Project::load_from_path(&project_path);
-        assert!(
-            matches!(result, Err(LoadError::MissingTargetFramework(ref path)) if path == &project_path)
-        );
+        assert_matches!(result, Err(LoadError::MissingTargetFramework(path)) if path == &project_path);
     }
 
     #[test]
@@ -310,9 +308,7 @@ mod tests {
         let nonexistent_path = Path::new("/nonexistent/path/test.csproj");
         let result = Project::load_from_path(nonexistent_path).unwrap_err();
 
-        assert!(
-            matches!(result, LoadError::ReadProjectFile(ref error) if error.kind() == ErrorKind::NotFound)
-        );
+        assert_matches!(result, LoadError::ReadProjectFile(error) if error.kind() == ErrorKind::NotFound);
     }
 
     #[test]
@@ -330,7 +326,7 @@ mod tests {
         let nonexistent_path = Path::new("/nonexistent/path/test.cs");
         let result = Project::load_from_file_based_app(nonexistent_path);
 
-        assert!(matches!(result, Err(error) if error.kind() == ErrorKind::NotFound));
+        assert_matches!(result, Err(ref error) if error.kind() == ErrorKind::NotFound);
     }
 
     #[test]
