@@ -21,9 +21,10 @@ pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> 
         .filter_map(|project| {
             let mut process = project_launch_process(app_dir, project)?;
 
-            // If it's a web app and the only one, override its type.
+            // If it's a web app and the only one, override its type and make it default.
             if has_single_web_app && project.project_type == ProjectType::WebApplication {
                 process.r#type = process_type!("web");
+                process.default = true;
             }
 
             Some(process)
@@ -138,7 +139,7 @@ mod tests {
                 "cd bar/bin/publish; ./bar --urls http://*:$PORT".to_string(),
             ],
             args: vec![],
-            default: false,
+            default: true,
             working_directory: WorkingDirectory::App,
         }];
 
@@ -296,7 +297,7 @@ mod tests {
                 "cd src/MyApp/bin/publish; ./MyApp --urls http://*:$PORT".to_string(),
             ],
             args: vec![],
-            default: false,
+            default: true,
             working_directory: WorkingDirectory::App,
         }];
 
