@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Improved error handling when configured solution file doesn't exist, has an invalid extension, or is not a simple filename. ([#340](https://github.com/heroku/buildpacks-dotnet/pull/340))
+- The buildpack now configures the `web` process type as the default launch process when only a single web application is detected. ([#350](https://github.com/heroku/buildpacks-dotnet/pull/350))
 
 ### Fixed
 
