@@ -93,7 +93,6 @@ msbuild.configuration = "Debug"
 
         let result = parse(project_toml_content);
 
-        assert!(result.is_err());
-        assert!(matches!(result, Err(toml::de::Error { .. })));
+        assert_matches!(result, Err(toml::de::Error { .. }));
     }
 }

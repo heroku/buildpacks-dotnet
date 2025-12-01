@@ -952,7 +952,14 @@ mod tests {
     #[test]
     fn test_restore_dotnet_tools_command_non_zero_exit_not_streamed_error() {
         assert_error_snapshot(DotnetBuildpackError::RestoreDotnetToolsCommand(
-            create_cmd_error(1),
+            create_fun_run_cmd_error_captured_output(),
+        ));
+    }
+
+    #[test]
+    fn test_restore_dotnet_tools_command_non_zero_exit_already_streamed_error() {
+        assert_error_snapshot(DotnetBuildpackError::RestoreDotnetToolsCommand(
+            create_fun_run_cmd_error_streamed_output(),
         ));
     }
 
@@ -965,7 +972,16 @@ mod tests {
 
     #[test]
     fn test_publish_command_non_zero_exit_not_streamed_error() {
-        assert_error_snapshot(DotnetBuildpackError::PublishCommand(create_cmd_error(5)));
+        assert_error_snapshot(DotnetBuildpackError::PublishCommand(
+            create_fun_run_cmd_error_captured_output(),
+        ));
+    }
+
+    #[test]
+    fn test_publish_command_non_zero_exit_already_streamed_error() {
+        assert_error_snapshot(DotnetBuildpackError::PublishCommand(
+            create_fun_run_cmd_error_streamed_output(),
+        ));
     }
 
     #[test]
@@ -1013,11 +1029,23 @@ mod tests {
         quick_xml::de::DeError::Custom("XML parsing error".to_string())
     }
 
-    fn create_cmd_error(exit_code: i32) -> fun_run::CmdError {
+    fn create_fun_run_cmd_error_captured_output() -> fun_run::CmdError {
         fun_run::nonzero_captured(
             "foo".to_string(),
             std::process::Output {
-                status: std::os::unix::process::ExitStatusExt::from_raw(exit_code),
+                status: std::os::unix::process::ExitStatusExt::from_raw(1),
+                stdout: vec![],
+                stderr: vec![],
+            },
+        )
+        .unwrap_err()
+    }
+
+    fn create_fun_run_cmd_error_streamed_output() -> fun_run::CmdError {
+        fun_run::nonzero_streamed(
+            "foo".to_string(),
+            std::process::Output {
+                status: std::os::unix::process::ExitStatusExt::from_raw(1),
                 stdout: vec![],
                 stderr: vec![],
             },

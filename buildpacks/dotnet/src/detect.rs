@@ -1,22 +1,4 @@
-use std::io;
 use std::path::{Path, PathBuf};
-
-pub(crate) fn find_files_with_extensions(
-    dir: &Path,
-    extensions: &[&str],
-) -> Result<Vec<PathBuf>, io::Error> {
-    let files = fs_err::read_dir(dir)?
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .filter(|path| path.is_file())
-        .filter(|path| {
-            path.extension()
-                .and_then(|ext| ext.to_str())
-                .is_some_and(|ext| extensions.contains(&ext))
-        })
-        .collect();
-    Ok(files)
-}
 
 /// Returns the path to `global.json` if it exists in the given directory.
 pub(crate) fn global_json_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {

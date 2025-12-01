@@ -1,3 +1,7 @@
+#[cfg(test)]
+#[macro_use]
+mod test_utils;
+
 mod app_source;
 mod detect;
 mod dotnet;
@@ -25,6 +29,7 @@ use crate::dotnet_buildpack_configuration::{
 use crate::dotnet_sdk_command::{DotnetPublishCommand, DotnetTestCommand};
 use crate::layers::sdk::SdkLayerError;
 use crate::project_toml::DotnetConfig;
+use crate::utils::{PathsExt, list_files};
 use bullet_stream::fun_run::{self, CommandWithName};
 use bullet_stream::global::print;
 use bullet_stream::style;
@@ -64,8 +69,9 @@ impl Buildpack for DotnetBuildpack {
         ]
         .concat();
 
-        let paths = detect::find_files_with_extensions(&context.app_dir, &supported_extensions)
-            .map_err(DotnetBuildpackError::BuildpackDetection)?;
+        let paths = list_files(&context.app_dir)
+            .map_err(DotnetBuildpackError::BuildpackDetection)?
+            .filter_by_extension(&supported_extensions);
 
         if paths.is_empty() {
             printdoc! {"

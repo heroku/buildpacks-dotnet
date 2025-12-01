@@ -1,4 +1,5 @@
-use std::path::Path;
+use std::io;
+use std::path::{Path, PathBuf};
 
 pub(crate) fn single_item<T>(items: Vec<T>) -> Result<Option<T>, Vec<T>> {
     match items.len() {
@@ -7,11 +8,38 @@ pub(crate) fn single_item<T>(items: Vec<T>) -> Result<Option<T>, Vec<T>> {
     }
 }
 
+pub(crate) fn list_files(dir: &Path) -> Result<Vec<PathBuf>, io::Error> {
+    let entries = fs_err::read_dir(dir)?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| path.is_file())
+        .collect();
+
+    Ok(entries)
+}
+
+pub(crate) trait PathsExt {
+    fn filter_by_extension(&self, extensions: &[&str]) -> Vec<PathBuf>;
+}
+
+impl<T: AsRef<Path>> PathsExt for [T] {
+    fn filter_by_extension(&self, extensions: &[&str]) -> Vec<PathBuf> {
+        self.iter()
+            .filter(|p| {
+                p.as_ref()
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                    .is_some_and(|ext| extensions.contains(&ext))
+            })
+            .map(|p| p.as_ref().to_path_buf())
+            .collect()
+    }
+}
+
 pub(crate) fn copy_recursively<P: AsRef<Path>>(src: P, dst: P) -> std::io::Result<()> {
     if src.as_ref().is_dir() {
         fs_err::create_dir_all(dst.as_ref())?;
-        for entry in fs_err::read_dir(src.as_ref())? {
-            let entry = entry?;
+        for entry in fs_err::read_dir(src.as_ref())?.filter_map(Result::ok) {
             let src_path = entry.path();
             let dst_path = dst.as_ref().join(entry.file_name());
 
@@ -107,7 +135,15 @@ mod tests {
     fn test_single_item_returns_error_on_multiple() {
         let items = vec!["item1", "item2", "item3"];
         let result = single_item(items);
-        assert!(matches!(result, Err(ref items) if items.len() == 3));
+        assert_matches!(result, Err(items) if items.len() == 3);
+    }
+
+    #[test]
+    fn test_list_files_io_error() {
+        let nonexistent_path =
+            std::path::PathBuf::from("/nonexistent/directory/that/does/not/exist");
+        let result = list_files(&nonexistent_path);
+        assert!(result.is_err());
     }
 
     #[test]
@@ -208,5 +244,69 @@ mod tests {
         let dst = temp_dir.path().join("copy");
 
         assert!(copy_recursively(&src, &dst).is_err());
+    }
+
+    #[test]
+    fn test_copy_recursively_directory_with_unreadable_destination() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let src_dir = temp_dir.path().join("src");
+        let dst_parent = temp_dir.path().join("readonly_parent");
+        let dst_dir = dst_parent.join("dst");
+
+        fs::create_dir_all(&src_dir).unwrap();
+        fs::create_dir(&dst_parent).unwrap();
+
+        with_readonly_dir(&dst_parent, || {
+            assert!(copy_recursively(&src_dir, &dst_dir).is_err());
+        });
+    }
+
+    #[test]
+    fn test_copy_recursively_with_unreadable_source_directory() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let src_dir = temp_dir.path().join("src");
+        let dst_dir = temp_dir.path().join("dst");
+
+        fs::create_dir_all(&src_dir).unwrap();
+
+        with_unreadable_dir(&src_dir, || {
+            assert!(copy_recursively(&src_dir, &dst_dir).is_err());
+        });
+    }
+
+    #[test]
+    fn test_copy_recursively_with_unreadable_source_subdirectory() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let src_dir = temp_dir.path().join("src");
+        let dst_dir = temp_dir.path().join("dst");
+        let src_dir_subdirectory = src_dir.join("subdirectory");
+
+        fs::create_dir_all(&src_dir_subdirectory).unwrap();
+
+        with_unreadable_dir(&src_dir_subdirectory, || {
+            assert!(copy_recursively(&src_dir, &dst_dir).is_err());
+        });
+    }
+
+    fn with_readonly_dir<F: FnOnce()>(dir: &Path, f: F) {
+        with_modified_permissions(dir, 0o444, f);
+    }
+
+    fn with_unreadable_dir<F: FnOnce()>(dir: &Path, f: F) {
+        with_modified_permissions(dir, 0o000, f);
+    }
+
+    fn with_modified_permissions<F: FnOnce()>(dir: &Path, mode: u32, f: F) {
+        use std::os::unix::fs::PermissionsExt;
+
+        let mut perms = fs::metadata(dir).unwrap().permissions();
+        perms.set_mode(mode);
+        fs::set_permissions(dir, perms).unwrap();
+
+        f();
+
+        let mut perms = fs::metadata(dir).unwrap().permissions();
+        perms.set_mode(0o755);
+        let _ = fs::set_permissions(dir, perms);
     }
 }

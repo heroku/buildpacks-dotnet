@@ -4,6 +4,7 @@ use regex::Regex;
 use std::io::{self};
 use std::path::{Path, PathBuf};
 
+#[derive(Debug)]
 pub(crate) struct Solution {
     pub(crate) path: PathBuf,
     pub(crate) projects: Vec<Project>,
@@ -79,6 +80,7 @@ fn extract_project_references(contents: &str) -> Vec<String> {
 mod tests {
     use super::*;
     use std::fs;
+    use std::io::ErrorKind;
 
     const SIMPLE_PROJECT_CONTENT: &str = r#"
         <Project Sdk="Microsoft.NET.Sdk">
@@ -118,12 +120,7 @@ mod tests {
         let invalid_path = PathBuf::from("some\0file.csproj");
 
         let result = try_load_project(invalid_path);
-        assert!(matches!(
-            result,
-            Err(LoadError::LoadProject(project::LoadError::ReadProjectFile(
-                _
-            )))
-        ));
+        assert_matches!(result, Err(LoadError::LoadProject(project::LoadError::ReadProjectFile(error))) if error.kind() == ErrorKind::InvalidInput);
     }
 
     #[test]
@@ -239,7 +236,7 @@ mod tests {
         let non_existent_path = temp_dir.path().join("nonexistent.sln");
 
         let result = Solution::load_from_path(&non_existent_path);
-        assert!(matches!(result, Err(LoadError::ReadSolutionFile(_))));
+        assert_matches!(result, Err(LoadError::ReadSolutionFile(error)) if error.kind() == ErrorKind::NotFound);
     }
 
     #[test]
@@ -256,9 +253,7 @@ mod tests {
         fs::write(&solution_path, solution_content).unwrap();
 
         let result = Solution::load_from_path(&solution_path);
-        assert!(
-            matches!(result, Err(LoadError::ProjectNotFound(path)) if path == missing_project_path)
-        );
+        assert_matches!(result, Err(LoadError::ProjectNotFound(path)) if path == &missing_project_path);
     }
 
     #[test]
@@ -308,6 +303,6 @@ mod tests {
         fs::write(&solution_path, malformed_slnx).unwrap();
 
         let result = Solution::load_from_path(&solution_path);
-        assert!(matches!(result, Err(LoadError::SlnxParseError(_))));
+        assert_matches!(result, Err(LoadError::SlnxParseError(_)));
     }
 }

@@ -173,6 +173,7 @@ fn infer_project_type(sdk_id: &str, output_type: Option<&str>) -> ProjectType {
 mod tests {
     use super::*;
     use std::fs;
+    use std::io::ErrorKind;
 
     #[test]
     fn test_sdk_attribute_resolution() {
@@ -299,7 +300,33 @@ mod tests {
         .unwrap();
 
         let result = Project::load_from_path(&project_path);
-        assert!(matches!(result, Err(LoadError::MissingTargetFramework(_))));
+        assert_matches!(result, Err(LoadError::MissingTargetFramework(path)) if path == &project_path);
+    }
+
+    #[test]
+    fn test_read_project_file_error() {
+        let nonexistent_path = Path::new("/nonexistent/path/test.csproj");
+        let result = Project::load_from_path(nonexistent_path).unwrap_err();
+
+        assert_matches!(result, LoadError::ReadProjectFile(error) if error.kind() == ErrorKind::NotFound);
+    }
+
+    #[test]
+    fn test_xml_parse_error() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let project_path = temp_dir.path().join("test.csproj");
+        fs::write(&project_path, "not valid xml").unwrap();
+
+        let result = Project::load_from_path(&project_path);
+        assert_matches!(result, Err(LoadError::XmlParseError(_)));
+    }
+
+    #[test]
+    fn test_load_file_based_app_io_error() {
+        let nonexistent_path = Path::new("/nonexistent/path/test.cs");
+        let result = Project::load_from_file_based_app(nonexistent_path);
+
+        assert_matches!(result, Err(error) if error.kind() == ErrorKind::NotFound);
     }
 
     #[test]
