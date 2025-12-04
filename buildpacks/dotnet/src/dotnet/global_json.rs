@@ -76,10 +76,12 @@ impl TryFrom<SdkConfig> for VersionReq {
         let version = Version::parse(version_str).map_err(SdkConfigError::InvalidVersion)?;
 
         // Default policy is `patch`, see https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#matching-rules
-        let policy = sdk_config.roll_forward.as_deref().unwrap_or("patch");
+        let policy_str = sdk_config.roll_forward.as_deref().unwrap_or("patch");
+        let policy =
+            RollForwardPolicy::from_str(policy_str).map_err(SdkConfigError::InvalidRollForward)?;
 
         let version_req_str = match policy {
-            "patch" | "latestPatch" => {
+            RollForwardPolicy::Patch | RollForwardPolicy::LatestPatch => {
                 // Feature band logic: 6.0.1xx matches 6.0.1xx, but not 6.0.2xx.
                 // See https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#rollforward
                 let patch = version.patch;
@@ -97,15 +99,14 @@ impl TryFrom<SdkConfig> for VersionReq {
                     feature_band_end
                 )
             }
-            "feature" | "latestFeature" => {
+            RollForwardPolicy::Feature | RollForwardPolicy::LatestFeature => {
                 format!("~{}.{}", version.major, version.minor)
             }
-            "minor" | "latestMinor" => {
+            RollForwardPolicy::Minor | RollForwardPolicy::LatestMinor => {
                 format!("^{}.{}", version.major, version.minor)
             }
-            "major" | "latestMajor" => "*".to_string(),
-            "disable" => format!("={version_str}"),
-            _ => version_str.to_string(),
+            RollForwardPolicy::Major | RollForwardPolicy::LatestMajor => "*".to_string(),
+            RollForwardPolicy::Disable => format!("={version_str}"),
         };
         VersionReq::parse(&version_req_str).map_err(SdkConfigError::InvalidVersion)
     }
@@ -189,11 +190,6 @@ mod tests {
             },
             TestCase {
                 version: "6.0.100",
-                roll_forward: Some("invalid"),
-                expected: "^6.0.100",
-            },
-            TestCase {
-                version: "6.0.100",
                 roll_forward: None,
                 expected: ">=6.0.100, <6.0.200",
             },
@@ -259,6 +255,16 @@ mod tests {
         };
         let result = VersionReq::try_from(sdk_config);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_invalid_roll_forward_policy() {
+        let sdk_config = SdkConfig {
+            version: "6.0.100".to_string(),
+            roll_forward: Some("invalid".to_string()),
+        };
+        let result = VersionReq::try_from(sdk_config);
+        assert_matches!(result, Err(SdkConfigError::InvalidRollForward(p)) if p == "invalid");
     }
 
     #[test]
