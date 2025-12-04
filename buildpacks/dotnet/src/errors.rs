@@ -318,7 +318,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             &mut writer,
             "Invalid `rollForward` policy in `global.json`",
             formatdoc! {"
-                The `rollForward` policy '{policy}' in your `global.json` file is not valid.
+                The `rollForward` policy (`{policy}`) in your `global.json` file is not valid.
 
                 Valid roll-forward policies are: patch, latestPatch, feature, latestFeature,
                 minor, latestMinor, major, latestMajor, disable.
