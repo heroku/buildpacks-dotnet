@@ -325,6 +325,21 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             "},
             None,
         ),
+        DotnetBuildpackError::ParseGlobalJsonSdkConfig(
+            SdkConfigError::InvalidVersionRequirement(error),
+        ) => log_error_to(
+            &mut writer,
+            "Invalid `global.json` SDK version requirement",
+            formatdoc! {"
+                We can't parse the .NET SDK version requirement inferred from your `global.json` file.
+
+                Use the debug information above to troubleshoot and retry your build. If you think
+                you found a bug in the buildpack, reproduce the issue locally with a minimal
+                example and file an issue here:
+                https://github.com/heroku/buildpacks-dotnet/issues/new
+            "},
+            Some(error.to_string()),
+        ),
         DotnetBuildpackError::ParseInventory(error) => log_error_to(
             &mut writer,
             "Invalid `inventory.toml` file",
@@ -857,6 +872,16 @@ mod tests {
         use crate::dotnet::global_json::SdkConfigError;
         assert_error_snapshot(DotnetBuildpackError::ParseGlobalJsonSdkConfig(
             SdkConfigError::InvalidRollForward("foo".to_string()),
+        ));
+    }
+
+    #[test]
+    fn test_parse_global_json_sdk_config_invalid_version_requirement_error() {
+        use crate::dotnet::global_json::SdkConfigError;
+        assert_error_snapshot(DotnetBuildpackError::ParseGlobalJsonSdkConfig(
+            SdkConfigError::InvalidVersionRequirement(
+                semver::VersionReq::parse("invalid-version").unwrap_err(),
+            ),
         ));
     }
 

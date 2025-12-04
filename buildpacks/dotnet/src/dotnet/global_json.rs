@@ -64,6 +64,7 @@ impl FromStr for RollForwardPolicy {
 pub(crate) enum SdkConfigError {
     InvalidVersion(semver::Error),
     InvalidRollForward(String),
+    InvalidVersionRequirement(semver::Error),
 }
 
 impl TryFrom<SdkConfig> for VersionReq {
@@ -111,7 +112,7 @@ impl TryFrom<SdkConfig> for VersionReq {
             RollForwardPolicy::Major | RollForwardPolicy::LatestMajor => "*".to_string(),
             RollForwardPolicy::Disable => format!("={version_str}"),
         };
-        VersionReq::parse(&version_req_str).map_err(SdkConfigError::InvalidVersion)
+        VersionReq::parse(&version_req_str).map_err(SdkConfigError::InvalidVersionRequirement)
     }
 }
 
