@@ -19,13 +19,12 @@ impl Project {
 
         let property_groups = &project_xml.property_groups;
 
-        // Find the last one; it's an error if it's missing.
-        let target_framework = property_groups
-            .iter()
-            .filter_map(|pg| pg.target_framework.as_ref())
-            .next_back()
-            .cloned()
-            .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?;
+        // Try to find TargetFramework in project file first, then Directory.Build.props
+        let target_framework = match extract_target_framework(property_groups) {
+            Some(tfm) => tfm,
+            None => find_target_framework_from_directory_build_props(path)?
+                .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?,
+        };
 
         // Find the last one, but if it's blank, fall back to the file name
         // (even if an earlier, non-empty/whitespace assembly name is set).
@@ -95,8 +94,13 @@ impl Project {
 
         // Apply defaults if values were not found in the file
         let final_sdk_id = sdk_id.unwrap_or("Microsoft.NET.Sdk");
-        let final_target_framework = target_framework.unwrap_or("net10.0").to_string();
-
+        let final_target_framework = if let Some(tfm) = target_framework {
+            tfm.to_string()
+        } else {
+            find_target_framework_from_directory_build_props(path)
+                .unwrap() // Handle error more gracefully
+                .unwrap_or_else(|| "net10.0".to_string())
+        };
         // File-based apps are executables, so pass 'Exe' as the output type when
         // when inferring project type (e.g. default to ConsoleApplication).
         let project_type = infer_project_type(final_sdk_id, Some("Exe"));
@@ -137,6 +141,12 @@ struct ProjectXml {
 }
 
 #[derive(Debug, Deserialize)]
+struct DirectoryBuildPropsXml {
+    #[serde(rename = "PropertyGroup", default)]
+    property_groups: Vec<PropertyGroup>,
+}
+
+#[derive(Debug, Deserialize)]
 struct SdkElement {
     #[serde(rename = "@Name")]
     name: String,
@@ -155,6 +165,8 @@ pub(crate) enum LoadError {
     ReadProjectFile(io::Error),
     XmlParseError(quick_xml::de::DeError),
     MissingTargetFramework(PathBuf),
+    ReadDirectoryBuildProps(io::Error),
+    XmlParseDirectoryBuildProps(quick_xml::de::DeError),
 }
 
 fn infer_project_type(sdk_id: &str, output_type: Option<&str>) -> ProjectType {
@@ -167,6 +179,41 @@ fn infer_project_type(sdk_id: &str, output_type: Option<&str>) -> ProjectType {
         "Microsoft.NET.Sdk.Worker" => ProjectType::WorkerService,
         _ => ProjectType::Unknown,
     }
+}
+
+fn find_directory_build_props(start_dir: &Path) -> Option<PathBuf> {
+    let mut current = start_dir;
+    loop {
+        let props_path = current.join("Directory.Build.props");
+        if props_path.exists() && props_path.is_file() {
+            return Some(props_path);
+        }
+        current = current.parent()?;
+    }
+}
+
+fn extract_target_framework(property_groups: &[PropertyGroup]) -> Option<String> {
+    // Find the last TargetFramework property (last wins)
+    property_groups
+        .iter()
+        .filter_map(|pg| pg.target_framework.as_ref())
+        .next_back()
+        .cloned()
+}
+
+fn find_target_framework_from_directory_build_props(
+    file_path: &Path,
+) -> Result<Option<String>, LoadError> {
+    let Some(props_path) = file_path.parent().and_then(find_directory_build_props) else {
+        return Ok(None);
+    };
+
+    let content =
+        fs_err::read_to_string(&props_path).map_err(LoadError::ReadDirectoryBuildProps)?;
+    let props_xml: DirectoryBuildPropsXml =
+        from_str(&content).map_err(LoadError::XmlParseDirectoryBuildProps)?;
+
+    Ok(extract_target_framework(&props_xml.property_groups))
 }
 
 #[cfg(test)]
@@ -438,5 +485,245 @@ Console.WriteLine("foobar");
         assert_eq!(project.project_type, ProjectType::WorkerService);
         assert_eq!(project.target_framework, "net10.0");
         assert_eq!(project.assembly_name, "WorkerApp");
+    }
+
+    #[test]
+    fn test_load_file_based_app_with_directory_build_props() {
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        // Create Directory.Build.props with TargetFramework
+        fs::write(
+            temp_dir.path().join("Directory.Build.props"),
+            r"
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+    </PropertyGroup>
+</Project>",
+        )
+        .unwrap();
+
+        // Create file-based app without TargetFramework property
+        let app_path = temp_dir.path().join("MyApp.cs");
+        fs::write(
+            &app_path,
+            r#"
+#:sdk Microsoft.NET.Sdk
+
+Console.WriteLine("Hello from file-based app!");
+"#,
+        )
+        .unwrap();
+
+        let project = Project::load_from_file_based_app(&app_path).unwrap();
+
+        assert_eq!(project.target_framework, "net9.0");
+        assert_eq!(project.project_type, ProjectType::ConsoleApplication);
+        assert_eq!(project.assembly_name, "MyApp");
+    }
+
+    #[test]
+    fn test_load_project_with_directory_build_props() {
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        // Create Directory.Build.props with TargetFramework
+        fs::write(
+            temp_dir.path().join("Directory.Build.props"),
+            r"
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+    </PropertyGroup>
+</Project>",
+        )
+        .unwrap();
+
+        // Create subdirectory with project that doesn't specify TargetFramework
+        let project_dir = temp_dir.path().join("MyProject");
+        fs::create_dir(&project_dir).unwrap();
+        let project_path = project_dir.join("MyProject.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+</Project>"#,
+        )
+        .unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        assert_eq!(project.target_framework, "net8.0");
+        assert_eq!(project.project_type, ProjectType::ConsoleApplication);
+    }
+
+    #[test]
+    fn test_project_target_framework_overrides_directory_build_props() {
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        // Directory.Build.props has net6.0
+        fs::write(
+            temp_dir.path().join("Directory.Build.props"),
+            r"
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
+</Project>",
+        )
+        .unwrap();
+
+        // Project file has net8.0 - Directory.Build.props should be ignored
+        let project_path = temp_dir.path().join("MyProject.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+    </PropertyGroup>
+</Project>"#,
+        )
+        .unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        // Project file's TargetFramework is used, Directory.Build.props is not consulted
+        assert_eq!(project.target_framework, "net8.0");
+    }
+
+    #[test]
+    fn test_directory_build_props_walks_up_directory_tree() {
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        // Put Directory.Build.props at root
+        fs::write(
+            temp_dir.path().join("Directory.Build.props"),
+            r"
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+    </PropertyGroup>
+</Project>",
+        )
+        .unwrap();
+
+        // Create deeply nested project
+        let project_dir = temp_dir.path().join("src").join("MyProject");
+        fs::create_dir_all(&project_dir).unwrap();
+        let project_path = project_dir.join("MyProject.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+</Project>"#,
+        )
+        .unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        assert_eq!(project.target_framework, "net9.0");
+        assert_eq!(project.project_type, ProjectType::ConsoleApplication);
+    }
+
+    #[test]
+    fn test_malformed_directory_build_props_returns_error() {
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        fs::write(
+            temp_dir.path().join("Directory.Build.props"),
+            "not valid xml",
+        )
+        .unwrap();
+
+        let project_path = temp_dir.path().join("MyProject.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+</Project>"#,
+        )
+        .unwrap();
+
+        let result = Project::load_from_path(&project_path);
+        assert_matches!(result, Err(LoadError::XmlParseDirectoryBuildProps(_)));
+    }
+
+    #[test]
+    fn test_directory_build_props_with_multiple_property_groups() {
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        // Directory.Build.props with multiple PropertyGroups
+        fs::write(
+            temp_dir.path().join("Directory.Build.props"),
+            r"
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+    </PropertyGroup>
+</Project>",
+        )
+        .unwrap();
+
+        let project_path = temp_dir.path().join("MyProject.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+</Project>"#,
+        )
+        .unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        // Last PropertyGroup wins
+        assert_eq!(project.target_framework, "net8.0");
+    }
+
+    #[test]
+    fn test_directory_build_props_read_io_error() {
+        use std::fs::Permissions;
+        use std::os::unix::fs::PermissionsExt;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        // Create Directory.Build.props file and make it unreadable
+        let props_path = temp_dir.path().join("Directory.Build.props");
+        fs::write(
+            &props_path,
+            r"
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+    </PropertyGroup>
+</Project>",
+        )
+        .unwrap();
+
+        // Make the file unreadable (mode 000)
+        fs::set_permissions(&props_path, Permissions::from_mode(0o000)).unwrap();
+
+        let project_path = temp_dir.path().join("MyProject.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+</Project>"#,
+        )
+        .unwrap();
+
+        let result = Project::load_from_path(&project_path);
+
+        // Restore permissions for cleanup
+        let _ = fs::set_permissions(&props_path, Permissions::from_mode(0o644));
+
+        assert_matches!(result, Err(LoadError::ReadDirectoryBuildProps(_)));
     }
 }

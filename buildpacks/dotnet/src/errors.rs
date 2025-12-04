@@ -595,15 +595,42 @@ fn on_load_dotnet_project_error_with_writer(
         project::LoadError::MissingTargetFramework(project_path) => {
             log_error_to(
                 &mut writer,
-                "Project file missing TargetFramework property",
+                "Missing target framework configuration",
                 formatdoc! {"
-                    The project file `{project_path}` is missing the `TargetFramework` property.
-                    You must set this required property.
+                    The project `{project_path}` is missing `TargetFramework` configuration.
+
+                    The `TargetFramework` property must be set either:
+                    * In the project file itself
+                    * In a `Directory.Build.props` file in the project directory or any parent directory
 
                     For more information, see:
                     https://github.com/heroku/buildpacks-dotnet#net-version
                 ", project_path = project_path.to_string_lossy()},
                 None,
+            );
+        }
+        project::LoadError::ReadDirectoryBuildProps(io_error) => {
+            log_io_error_to(
+                &mut writer,
+                "Error reading `Directory.Build.props`",
+                "loading a `Directory.Build.props` file",
+                io_error,
+            );
+        }
+        project::LoadError::XmlParseDirectoryBuildProps(xml_parse_error) => {
+            log_error_to(
+                &mut writer,
+                "Error parsing `Directory.Build.props`",
+                formatdoc! {"
+                    We can’t parse the `Directory.Build.props` file’s XML content. Parsing errors
+                    usually indicate an error in the file.
+
+                    Use the debug information above to troubleshoot and retry your build.
+
+                    For more information, see:
+                    https://github.com/heroku/buildpacks-dotnet#net-version
+                "},
+                Some(xml_parse_error.to_string()),
             );
         }
     }
@@ -822,7 +849,25 @@ mod tests {
     fn test_load_app_source_project_missing_target_framework_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
             app_source::LoadError::Project(project::LoadError::MissingTargetFramework(
-                PathBuf::from("fpp.csproj"),
+                PathBuf::from("foo.csproj"),
+            )),
+        ));
+    }
+
+    #[test]
+    fn test_load_app_source_project_read_directory_build_props_error() {
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::Project(project::LoadError::ReadDirectoryBuildProps(
+                create_io_error(),
+            )),
+        ));
+    }
+
+    #[test]
+    fn test_load_app_source_project_xml_parse_directory_build_props_error() {
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::Project(project::LoadError::XmlParseDirectoryBuildProps(
+                create_xml_parse_error(),
             )),
         ));
     }
