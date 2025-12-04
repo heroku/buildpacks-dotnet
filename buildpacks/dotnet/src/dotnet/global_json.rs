@@ -75,10 +75,13 @@ impl TryFrom<SdkConfig> for VersionReq {
         // Parse version to ensure we have valid components to work with
         let version = Version::parse(version_str).map_err(SdkConfigError::InvalidVersion)?;
 
-        // Default policy is `patch`, see https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#matching-rules
-        let policy_str = sdk_config.roll_forward.as_deref().unwrap_or("patch");
-        let policy =
-            RollForwardPolicy::from_str(policy_str).map_err(SdkConfigError::InvalidRollForward)?;
+        let policy = sdk_config
+            .roll_forward
+            .as_deref()
+            .map(RollForwardPolicy::from_str)
+            .transpose()
+            .map_err(SdkConfigError::InvalidRollForward)?
+            .unwrap_or_default();
 
         let version_req_str = match policy {
             RollForwardPolicy::Patch | RollForwardPolicy::LatestPatch => {
