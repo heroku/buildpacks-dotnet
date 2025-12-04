@@ -63,6 +63,7 @@ impl FromStr for RollForwardPolicy {
 #[derive(Debug)]
 pub(crate) enum SdkConfigError {
     InvalidVersion(semver::Error),
+    InvalidRollForward(String),
 }
 
 impl TryFrom<SdkConfig> for VersionReq {

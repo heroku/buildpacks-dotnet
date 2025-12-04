@@ -295,7 +295,6 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             "},
             Some(error.to_string()),
         ),
-        // TODO: Consider adding more specific errors for the parsed values (e.g. an invalid rollForward value)
         DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
             SdkConfigError::InvalidVersion(error),
         ) => log_error_to(
@@ -309,6 +308,22 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 https://github.com/heroku/buildpacks-dotnet#net-version
             "},
             Some(error.to_string()),
+        ),
+        DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
+            SdkConfigError::InvalidRollForward(policy),
+        ) => log_error_to(
+            &mut writer,
+            "Invalid `rollForward` policy in `global.json`",
+            formatdoc! {"
+                The `rollForward` policy '{policy}' in your `global.json` file is not valid.
+
+                Valid roll-forward policies are: patch, latestPatch, feature, latestFeature,
+                minor, latestMinor, major, latestMajor, disable.
+
+                For more information, see:
+                https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#rollforward
+            "},
+            None,
         ),
         DotnetBuildpackError::ParseInventory(error) => log_error_to(
             &mut writer,
@@ -834,6 +849,14 @@ mod tests {
             SdkConfigError::InvalidVersion(
                 semver::VersionReq::parse("invalid-version").unwrap_err(),
             ),
+        ));
+    }
+
+    #[test]
+    fn test_parse_global_json_invalid_roll_forward_policy_error() {
+        use crate::dotnet::global_json::SdkConfigError;
+        assert_error_snapshot(DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
+            SdkConfigError::InvalidRollForward("foo".to_string()),
         ));
     }
 

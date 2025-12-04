@@ -1,0 +1,12 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+[0;31m! Invalid `rollForward` policy in `global.json`[0m
+[0;31m![0m
+[0;31m! The `rollForward` policy 'foo' in your `global.json` file is not valid.[0m
+[0;31m![0m
+[0;31m! Valid roll-forward policies are: patch, latestPatch, feature, latestFeature,[0m
+[0;31m! minor, latestMinor, major, latestMajor, disable.[0m
+[0;31m![0m
+[0;31m! For more information, see:[0m
+[0;31m! https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#rollforward[0m
