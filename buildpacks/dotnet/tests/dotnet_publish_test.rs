@@ -368,12 +368,16 @@ fn test_dotnet_publish_with_updated_process_type_name_heroku_warning() {
 
 #[test]
 #[ignore = "integration test"]
-fn test_dotnet_publish_slnx_with_web_and_console_projects() {
+fn test_dotnet_publish_slnx_with_web_and_console_projects_and_directory_build_props() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/solution_slnx_with_web_and_console_projects")
             .env("STACK", "heroku-24"),
         |context| {
             assert_empty!(context.pack_stderr);
+            assert_contains!(
+                context.pack_stdout,
+                "- Detected version requirement: `^10.0`"
+            );
             assert_contains!(
                 context.pack_stdout,
                 &formatdoc! {r"
