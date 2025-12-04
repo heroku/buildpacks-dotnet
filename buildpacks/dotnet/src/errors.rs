@@ -298,13 +298,16 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
         DotnetBuildpackError::ParseGlobalJsonSdkConfig(SdkConfigError::InvalidVersion(error)) => {
             log_error_to(
                 &mut writer,
-                "Error parsing `global.json` version requirement",
+                "Invalid SDK `version` in `global.json`",
                 formatdoc! {"
-                    We can’t parse the .NET SDK version requirement.
+                    The .NET SDK version in your `global.json` file is not valid.
 
-                    Use the debug information above to troubleshoot and retry your build. For more
-                    information, see:
-                    https://github.com/heroku/buildpacks-dotnet#net-version
+                    Ensure the `version` is a full version number, such as `10.0.100`.
+
+                    Use the debug information above to troubleshoot and retry your build.
+                    
+                    For more information, see:
+                    https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#version
                 "},
                 Some(error.to_string()),
             );
@@ -861,9 +864,7 @@ mod tests {
     fn test_parse_global_json_sdk_config_invalid_version_error() {
         use crate::dotnet::global_json::SdkConfigError;
         assert_error_snapshot(DotnetBuildpackError::ParseGlobalJsonSdkConfig(
-            SdkConfigError::InvalidVersion(
-                semver::VersionReq::parse("invalid-version").unwrap_err(),
-            ),
+            SdkConfigError::InvalidVersion(semver::Version::parse("8.0").unwrap_err()),
         ));
     }
 
