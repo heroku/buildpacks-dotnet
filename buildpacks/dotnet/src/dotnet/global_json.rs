@@ -25,6 +25,41 @@ impl FromStr for GlobalJson {
     }
 }
 
+/// Represents the rollForward policy for SDK version selection.
+/// See <https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#rollforward>
+#[derive(Debug, PartialEq, Default)]
+enum RollForwardPolicy {
+    #[default]
+    Patch,
+    LatestPatch,
+    Feature,
+    LatestFeature,
+    Minor,
+    LatestMinor,
+    Major,
+    LatestMajor,
+    Disable,
+}
+
+impl FromStr for RollForwardPolicy {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "patch" => Ok(Self::Patch),
+            "latestPatch" => Ok(Self::LatestPatch),
+            "feature" => Ok(Self::Feature),
+            "latestFeature" => Ok(Self::LatestFeature),
+            "minor" => Ok(Self::Minor),
+            "latestMinor" => Ok(Self::LatestMinor),
+            "major" => Ok(Self::Major),
+            "latestMajor" => Ok(Self::LatestMajor),
+            "disable" => Ok(Self::Disable),
+            _ => Err(s.to_string()),
+        }
+    }
+}
+
 impl TryFrom<SdkConfig> for VersionReq {
     type Error = semver::Error;
 
@@ -218,5 +253,47 @@ mod tests {
         };
         let result = VersionReq::try_from(sdk_config);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_roll_forward_policy_from_str_valid() {
+        let test_cases = [
+            ("patch", RollForwardPolicy::Patch),
+            ("latestPatch", RollForwardPolicy::LatestPatch),
+            ("feature", RollForwardPolicy::Feature),
+            ("latestFeature", RollForwardPolicy::LatestFeature),
+            ("minor", RollForwardPolicy::Minor),
+            ("latestMinor", RollForwardPolicy::LatestMinor),
+            ("major", RollForwardPolicy::Major),
+            ("latestMajor", RollForwardPolicy::LatestMajor),
+            ("disable", RollForwardPolicy::Disable),
+        ];
+
+        for (input, expected) in test_cases {
+            let result = RollForwardPolicy::from_str(input);
+            assert_eq!(result.unwrap(), expected);
+        }
+    }
+
+    #[test]
+    fn test_roll_forward_policy_from_str_invalid() {
+        let invalid_cases = [
+            "invalid",
+            "Patch",
+            "latestpatch",
+            "latestMinorr",
+            "",
+            " patch ",
+        ];
+
+        for input in &invalid_cases {
+            let result = RollForwardPolicy::from_str(input);
+            assert_matches!(result, Err(error) if error == input);
+        }
+    }
+
+    #[test]
+    fn test_roll_forward_policy_default() {
+        assert_eq!(RollForwardPolicy::default(), RollForwardPolicy::Patch);
     }
 }
