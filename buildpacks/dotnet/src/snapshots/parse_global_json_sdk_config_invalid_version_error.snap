@@ -1,0 +1,16 @@
+---
+source: buildpacks/dotnet/src/errors.rs
+---
+- [1;36mDebug info[0m
+  - unexpected end of input while parsing minor version number
+
+[0;31m! Invalid SDK `version` in `global.json`[0m
+[0;31m![0m
+[0;31m! The .NET SDK version in your `global.json` file is not valid.[0m
+[0;31m![0m
+[0;31m! Ensure the `version` is a full version number, such as `10.0.100`.[0m
+[0;31m![0m
+[0;31m! Use the debug information above to troubleshoot and retry your build.[0m
+[0;31m![0m
+[0;31m! For more information, see:[0m
+[0;31m! https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#version[0m

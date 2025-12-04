@@ -25,20 +25,67 @@ impl FromStr for GlobalJson {
     }
 }
 
+/// Represents the rollForward policy for SDK version selection.
+/// See <https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#rollforward>
+#[derive(Debug, PartialEq, Default)]
+enum RollForwardPolicy {
+    #[default]
+    Patch,
+    LatestPatch,
+    Feature,
+    LatestFeature,
+    Minor,
+    LatestMinor,
+    Major,
+    LatestMajor,
+    Disable,
+}
+
+impl FromStr for RollForwardPolicy {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "patch" => Ok(Self::Patch),
+            "latestPatch" => Ok(Self::LatestPatch),
+            "feature" => Ok(Self::Feature),
+            "latestFeature" => Ok(Self::LatestFeature),
+            "minor" => Ok(Self::Minor),
+            "latestMinor" => Ok(Self::LatestMinor),
+            "major" => Ok(Self::Major),
+            "latestMajor" => Ok(Self::LatestMajor),
+            "disable" => Ok(Self::Disable),
+            _ => Err(s.to_string()),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) enum SdkConfigError {
+    InvalidVersion(semver::Error),
+    InvalidRollForward(String),
+    InvalidVersionRequirement(semver::Error),
+}
+
 impl TryFrom<SdkConfig> for VersionReq {
-    type Error = semver::Error;
+    type Error = SdkConfigError;
 
     // TODO: Factor in pre-release logic
     fn try_from(sdk_config: SdkConfig) -> Result<Self, Self::Error> {
         let version_str = sdk_config.version.as_ref();
         // Parse version to ensure we have valid components to work with
-        let version = Version::parse(version_str)?;
+        let version = Version::parse(version_str).map_err(SdkConfigError::InvalidVersion)?;
 
-        // Default policy is `patch`, see https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#matching-rules
-        let policy = sdk_config.roll_forward.as_deref().unwrap_or("patch");
+        let policy = sdk_config
+            .roll_forward
+            .as_deref()
+            .map(RollForwardPolicy::from_str)
+            .transpose()
+            .map_err(SdkConfigError::InvalidRollForward)?
+            .unwrap_or_default();
 
         let version_req_str = match policy {
-            "patch" | "latestPatch" => {
+            RollForwardPolicy::Patch | RollForwardPolicy::LatestPatch => {
                 // Feature band logic: 6.0.1xx matches 6.0.1xx, but not 6.0.2xx.
                 // See https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#rollforward
                 let patch = version.patch;
@@ -56,17 +103,16 @@ impl TryFrom<SdkConfig> for VersionReq {
                     feature_band_end
                 )
             }
-            "feature" | "latestFeature" => {
+            RollForwardPolicy::Feature | RollForwardPolicy::LatestFeature => {
                 format!("~{}.{}", version.major, version.minor)
             }
-            "minor" | "latestMinor" => {
+            RollForwardPolicy::Minor | RollForwardPolicy::LatestMinor => {
                 format!("^{}.{}", version.major, version.minor)
             }
-            "major" | "latestMajor" => "*".to_string(),
-            "disable" => format!("={version_str}"),
-            _ => version_str.to_string(),
+            RollForwardPolicy::Major | RollForwardPolicy::LatestMajor => "*".to_string(),
+            RollForwardPolicy::Disable => format!("={version_str}"),
         };
-        VersionReq::parse(&version_req_str)
+        VersionReq::parse(&version_req_str).map_err(SdkConfigError::InvalidVersionRequirement)
     }
 }
 
@@ -148,11 +194,6 @@ mod tests {
             },
             TestCase {
                 version: "6.0.100",
-                roll_forward: Some("invalid"),
-                expected: "^6.0.100",
-            },
-            TestCase {
-                version: "6.0.100",
                 roll_forward: None,
                 expected: ">=6.0.100, <6.0.200",
             },
@@ -207,7 +248,7 @@ mod tests {
             roll_forward: None,
         };
         let result = VersionReq::try_from(sdk_config);
-        assert!(result.is_err());
+        assert_matches!(result, Err(SdkConfigError::InvalidVersion(_)));
     }
 
     #[test]
@@ -217,6 +258,58 @@ mod tests {
             roll_forward: None,
         };
         let result = VersionReq::try_from(sdk_config);
-        assert!(result.is_err());
+        assert_matches!(result, Err(SdkConfigError::InvalidVersion(_)));
+    }
+
+    #[test]
+    fn test_invalid_roll_forward_policy() {
+        let sdk_config = SdkConfig {
+            version: "6.0.100".to_string(),
+            roll_forward: Some("invalid".to_string()),
+        };
+        let result = VersionReq::try_from(sdk_config);
+        assert_matches!(result, Err(SdkConfigError::InvalidRollForward(p)) if p == "invalid");
+    }
+
+    #[test]
+    fn test_roll_forward_policy_from_str_valid() {
+        let test_cases = [
+            ("patch", RollForwardPolicy::Patch),
+            ("latestPatch", RollForwardPolicy::LatestPatch),
+            ("feature", RollForwardPolicy::Feature),
+            ("latestFeature", RollForwardPolicy::LatestFeature),
+            ("minor", RollForwardPolicy::Minor),
+            ("latestMinor", RollForwardPolicy::LatestMinor),
+            ("major", RollForwardPolicy::Major),
+            ("latestMajor", RollForwardPolicy::LatestMajor),
+            ("disable", RollForwardPolicy::Disable),
+        ];
+
+        for (input, expected) in test_cases {
+            let result = RollForwardPolicy::from_str(input);
+            assert_eq!(result, Ok(expected));
+        }
+    }
+
+    #[test]
+    fn test_roll_forward_policy_from_str_invalid() {
+        let invalid_cases = [
+            "invalid",
+            "Patch",
+            "latestpatch",
+            "latestMinorr",
+            "",
+            " patch ",
+        ];
+
+        for input in &invalid_cases {
+            let result = RollForwardPolicy::from_str(input);
+            assert_matches!(result, Err(error) if error == input);
+        }
+    }
+
+    #[test]
+    fn test_roll_forward_policy_default() {
+        assert_eq!(RollForwardPolicy::default(), RollForwardPolicy::Patch);
     }
 }

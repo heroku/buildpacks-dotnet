@@ -18,7 +18,7 @@ use crate::app_source::{
     AppSource, DiscoveryError, FILE_BASED_APP_EXTENSIONS, LoadError, PROJECT_EXTENSIONS,
     SOLUTION_EXTENSIONS,
 };
-use crate::dotnet::global_json::{GlobalJson, SdkConfig};
+use crate::dotnet::global_json::{GlobalJson, SdkConfig, SdkConfigError};
 use crate::dotnet::project::Project;
 use crate::dotnet::runtime_identifier;
 use crate::dotnet::solution::Solution;
@@ -349,7 +349,7 @@ fn detect_sdk_version_requirement(
             |sdk_config| {
                 print::sub_bullet("Detecting version requirement from root global.json file");
                 VersionReq::try_from(sdk_config)
-                    .map_err(DotnetBuildpackError::ParseGlobalJsonVersionRequirement)
+                    .map_err(DotnetBuildpackError::ParseGlobalJsonSdkConfig)
             },
         )
         .inspect(|version_req| {
@@ -413,7 +413,7 @@ enum DotnetBuildpackError {
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     ReadGlobalJsonFile(io::Error),
     ParseGlobalJson(serde_json::Error),
-    ParseGlobalJsonVersionRequirement(semver::Error),
+    ParseGlobalJsonSdkConfig(SdkConfigError),
     ParseInventory(ParseInventoryError),
     ParseSolutionVersionRequirement(semver::Error),
     ResolveSdkVersion(VersionReq),
