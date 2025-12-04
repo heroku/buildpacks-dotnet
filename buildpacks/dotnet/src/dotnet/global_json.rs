@@ -60,14 +60,19 @@ impl FromStr for RollForwardPolicy {
     }
 }
 
+#[derive(Debug)]
+pub(crate) enum SdkConfigError {
+    InvalidVersion(semver::Error),
+}
+
 impl TryFrom<SdkConfig> for VersionReq {
-    type Error = semver::Error;
+    type Error = SdkConfigError;
 
     // TODO: Factor in pre-release logic
     fn try_from(sdk_config: SdkConfig) -> Result<Self, Self::Error> {
         let version_str = sdk_config.version.as_ref();
         // Parse version to ensure we have valid components to work with
-        let version = Version::parse(version_str)?;
+        let version = Version::parse(version_str).map_err(SdkConfigError::InvalidVersion)?;
 
         // Default policy is `patch`, see https://learn.microsoft.com/en-us/dotnet/core/tools/global-json#matching-rules
         let policy = sdk_config.roll_forward.as_deref().unwrap_or("patch");
@@ -101,7 +106,7 @@ impl TryFrom<SdkConfig> for VersionReq {
             "disable" => format!("={version_str}"),
             _ => version_str.to_string(),
         };
-        VersionReq::parse(&version_req_str)
+        VersionReq::parse(&version_req_str).map_err(SdkConfigError::InvalidVersion)
     }
 }
 

@@ -18,7 +18,7 @@ use crate::app_source::{
     AppSource, DiscoveryError, FILE_BASED_APP_EXTENSIONS, LoadError, PROJECT_EXTENSIONS,
     SOLUTION_EXTENSIONS,
 };
-use crate::dotnet::global_json::{GlobalJson, SdkConfig};
+use crate::dotnet::global_json::{GlobalJson, SdkConfig, SdkConfigError};
 use crate::dotnet::project::Project;
 use crate::dotnet::runtime_identifier;
 use crate::dotnet::solution::Solution;
@@ -413,7 +413,7 @@ enum DotnetBuildpackError {
     ParseTargetFrameworkMoniker(ParseTargetFrameworkError),
     ReadGlobalJsonFile(io::Error),
     ParseGlobalJson(serde_json::Error),
-    ParseGlobalJsonVersionRequirement(semver::Error),
+    ParseGlobalJsonVersionRequirement(SdkConfigError),
     ParseInventory(ParseInventoryError),
     ParseSolutionVersionRequirement(semver::Error),
     ResolveSdkVersion(VersionReq),

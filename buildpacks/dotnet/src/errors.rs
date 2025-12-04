@@ -1,5 +1,6 @@
 use crate::DotnetBuildpackError;
 use crate::app_source::{self, DiscoveryError};
+use crate::dotnet::global_json::SdkConfigError;
 use crate::dotnet::target_framework_moniker::ParseTargetFrameworkError;
 use crate::dotnet::{project, solution};
 use crate::dotnet_buildpack_configuration::{
@@ -295,7 +296,9 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             Some(error.to_string()),
         ),
         // TODO: Consider adding more specific errors for the parsed values (e.g. an invalid rollForward value)
-        DotnetBuildpackError::ParseGlobalJsonVersionRequirement(error) => log_error_to(
+        DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
+            SdkConfigError::InvalidVersion(error),
+        ) => log_error_to(
             &mut writer,
             "Error parsing `global.json` version requirement",
             formatdoc! {"
@@ -826,8 +829,11 @@ mod tests {
 
     #[test]
     fn test_parse_global_json_version_requirement_error() {
+        use crate::dotnet::global_json::SdkConfigError;
         assert_error_snapshot(DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
-            semver::VersionReq::parse("invalid-version").unwrap_err(),
+            SdkConfigError::InvalidVersion(
+                semver::VersionReq::parse("invalid-version").unwrap_err(),
+            ),
         ));
     }
 
