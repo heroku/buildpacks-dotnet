@@ -295,23 +295,23 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             "},
             Some(error.to_string()),
         ),
-        DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
-            SdkConfigError::InvalidVersion(error),
-        ) => log_error_to(
-            &mut writer,
-            "Error parsing `global.json` version requirement",
-            formatdoc! {"
-                We can’t parse the .NET SDK version requirement.
+        DotnetBuildpackError::ParseGlobalJsonSdkConfig(SdkConfigError::InvalidVersion(error)) => {
+            log_error_to(
+                &mut writer,
+                "Error parsing `global.json` version requirement",
+                formatdoc! {"
+                    We can’t parse the .NET SDK version requirement.
 
-                Use the debug information above to troubleshoot and retry your build. For more
-                information, see:
-                https://github.com/heroku/buildpacks-dotnet#net-version
-            "},
-            Some(error.to_string()),
-        ),
-        DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
-            SdkConfigError::InvalidRollForward(policy),
-        ) => log_error_to(
+                    Use the debug information above to troubleshoot and retry your build. For more
+                    information, see:
+                    https://github.com/heroku/buildpacks-dotnet#net-version
+                "},
+                Some(error.to_string()),
+            );
+        }
+        DotnetBuildpackError::ParseGlobalJsonSdkConfig(SdkConfigError::InvalidRollForward(
+            policy,
+        )) => log_error_to(
             &mut writer,
             "Invalid `rollForward` policy in `global.json`",
             formatdoc! {"
@@ -843,9 +843,9 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_global_json_version_requirement_error() {
+    fn test_parse_global_json_sdk_config_invalid_version_error() {
         use crate::dotnet::global_json::SdkConfigError;
-        assert_error_snapshot(DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
+        assert_error_snapshot(DotnetBuildpackError::ParseGlobalJsonSdkConfig(
             SdkConfigError::InvalidVersion(
                 semver::VersionReq::parse("invalid-version").unwrap_err(),
             ),
@@ -853,9 +853,9 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_global_json_invalid_roll_forward_policy_error() {
+    fn test_parse_global_json_sdk_config_invalid_roll_forward_error() {
         use crate::dotnet::global_json::SdkConfigError;
-        assert_error_snapshot(DotnetBuildpackError::ParseGlobalJsonVersionRequirement(
+        assert_error_snapshot(DotnetBuildpackError::ParseGlobalJsonSdkConfig(
             SdkConfigError::InvalidRollForward("foo".to_string()),
         ));
     }
