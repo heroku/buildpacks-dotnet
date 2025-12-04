@@ -248,7 +248,7 @@ mod tests {
             roll_forward: None,
         };
         let result = VersionReq::try_from(sdk_config);
-        assert!(result.is_err());
+        assert_matches!(result, Err(SdkConfigError::InvalidVersion(_)));
     }
 
     #[test]
@@ -258,7 +258,7 @@ mod tests {
             roll_forward: None,
         };
         let result = VersionReq::try_from(sdk_config);
-        assert!(result.is_err());
+        assert_matches!(result, Err(SdkConfigError::InvalidVersion(_)));
     }
 
     #[test]
@@ -287,7 +287,7 @@ mod tests {
 
         for (input, expected) in test_cases {
             let result = RollForwardPolicy::from_str(input);
-            assert_eq!(result.unwrap(), expected);
+            assert_eq!(result, Ok(expected));
         }
     }
 
