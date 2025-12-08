@@ -32,10 +32,14 @@ pub(crate) fn detect_solution_processes(
     solution
         .projects
         .iter()
-        .filter(|project| matches!(
-            project.project_type,
-            ProjectType::ConsoleApplication | ProjectType::WebApplication | ProjectType::WorkerService
-        ))
+        .filter(|project| {
+            matches!(
+                project.project_type,
+                ProjectType::ConsoleApplication
+                    | ProjectType::WebApplication
+                    | ProjectType::WorkerService
+            )
+        })
         .map(|project| {
             let relative_source = project
                 .path
