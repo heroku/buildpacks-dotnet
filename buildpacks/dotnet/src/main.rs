@@ -253,14 +253,14 @@ impl Buildpack for DotnetBuildpack {
 
                     // Print all detection results
                     for result in &detection_results {
-                        let message = if result.process.is_some() {
+                        let outcome = if result.process.is_some() {
                             "Found artifact at"
                         } else {
                             "No artifact found at"
                         };
 
                         print::sub_bullet(format!(
-                            "{}: {message} {}",
+                            "{}: {outcome} {}",
                             style::value(result.relative_source.display().to_string()),
                             style::value(result.relative_artifact.display().to_string())
                         ));
