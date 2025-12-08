@@ -270,7 +270,7 @@ impl Buildpack for DotnetBuildpack {
                                 relative_artifact,
                             } => {
                                 print::sub_bullet(format!(
-                                    "{}: Error - Executable not found at {}",
+                                    "{}: No executable found at {}",
                                     style::value(relative_source.display().to_string()),
                                     style::value(relative_artifact.display().to_string())
                                 ));
