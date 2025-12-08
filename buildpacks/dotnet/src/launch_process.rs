@@ -6,16 +6,10 @@ use libcnb::data::process_type;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum ProcessDetectionResult {
-    Valid {
-        relative_source: PathBuf,
-        relative_artifact: PathBuf,
-        process: Process,
-    },
-    Invalid {
-        relative_source: PathBuf,
-        relative_artifact: PathBuf,
-    },
+pub(crate) struct ProcessDetectionResult {
+    pub relative_source: PathBuf,
+    pub relative_artifact: PathBuf,
+    pub process: Option<Process>,
 }
 
 pub(crate) fn detect_solution_processes(
@@ -54,9 +48,10 @@ pub(crate) fn detect_solution_processes(
                 .to_path_buf();
 
             if !absolute_artifact.exists() {
-                return ProcessDetectionResult::Invalid {
+                return ProcessDetectionResult {
                     relative_source,
                     relative_artifact,
+                    process: None,
                 };
             }
 
@@ -69,10 +64,10 @@ pub(crate) fn detect_solution_processes(
                 process.default = true;
             }
 
-            ProcessDetectionResult::Valid {
+            ProcessDetectionResult {
                 relative_source,
                 relative_artifact,
-                process,
+                process: Some(process),
             }
         })
         .collect()
@@ -163,10 +158,10 @@ mod tests {
 
         assert_eq!(
             results[0],
-            ProcessDetectionResult::Valid {
+            ProcessDetectionResult {
                 relative_source: PathBuf::from("bar/bar.csproj"),
                 relative_artifact: PathBuf::from("bar/bin/publish/bar"),
-                process: Process {
+                process: Some(Process {
                     r#type: process_type!("web"),
                     command: vec![
                         "bash".to_string(),
@@ -176,7 +171,7 @@ mod tests {
                     args: vec![],
                     default: true,
                     working_directory: WorkingDirectory::App,
-                }
+                })
             }
         );
     }
@@ -209,9 +204,10 @@ mod tests {
         assert_eq!(results.len(), 2);
 
         let result = &results[0];
-        assert_matches!(result, ProcessDetectionResult::Valid { process, .. } if process.r#type == process_type!("bar") && !process.default);
+        assert_matches!(result, ProcessDetectionResult { process: Some(process), .. } if process.r#type == process_type!("bar") && !process.default);
+
         let result = &results[1];
-        assert_matches!(result, ProcessDetectionResult::Valid { process, .. } if process.r#type == process_type!("baz") && !process.default);
+        assert_matches!(result, ProcessDetectionResult { process: Some(process), .. } if process.r#type == process_type!("baz") && !process.default);
     }
 
     #[test]
@@ -243,10 +239,10 @@ mod tests {
         let result = &results[0];
         assert_matches!(
             result,
-            ProcessDetectionResult::Valid {
+            ProcessDetectionResult {
                 relative_source,
                 relative_artifact,
-                process,
+                process: Some(process),
             } if relative_source == &PathBuf::from("Backend/Backend.csproj")
                 && relative_artifact == &PathBuf::from("Backend/bin/publish/Backend")
                 && process.r#type == process_type!("web")
@@ -256,9 +252,10 @@ mod tests {
         let result = &results[1];
         assert_matches!(
             result,
-            ProcessDetectionResult::Invalid {
+            ProcessDetectionResult {
                 relative_source,
                 relative_artifact,
+                process: None,
             } if relative_source == &PathBuf::from("jobs/worker.cs")
                 && relative_artifact == &PathBuf::from("jobs/bin/publish/worker")
         );
@@ -327,6 +324,6 @@ mod tests {
         assert_eq!(results.len(), 1);
 
         let result = &results[0];
-        assert_matches!(result, ProcessDetectionResult::Invalid { relative_source, ..} if relative_source == "bar/bar.csproj");
+        assert_matches!(result, ProcessDetectionResult { relative_source, process: None, ..} if relative_source == "bar/bar.csproj");
     }
 }

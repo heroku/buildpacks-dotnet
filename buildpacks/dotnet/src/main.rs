@@ -253,40 +253,26 @@ impl Buildpack for DotnetBuildpack {
 
                     // Print all detection results
                     for result in &detection_results {
-                        match result {
-                            launch_process::ProcessDetectionResult::Valid {
-                                relative_source,
-                                relative_artifact,
-                                ..
-                            } => {
-                                print::sub_bullet(format!(
-                                    "{}: Found artifact at {}",
-                                    style::value(relative_source.display().to_string()),
-                                    style::value(relative_artifact.display().to_string())
-                                ));
-                            }
-                            launch_process::ProcessDetectionResult::Invalid {
-                                relative_source,
-                                relative_artifact,
-                            } => {
-                                print::sub_bullet(format!(
-                                    "{}: No artifact found at {}",
-                                    style::value(relative_source.display().to_string()),
-                                    style::value(relative_artifact.display().to_string())
-                                ));
-                            }
+                        let source_path_display =
+                            style::value(result.relative_source.display().to_string());
+                        let artifact_path_display =
+                            style::value(result.relative_artifact.display().to_string());
+
+                        if result.process.is_some() {
+                            print::sub_bullet(format!(
+                                "{source_path_display}: Found artifact at {artifact_path_display}"
+                            ));
+                        } else {
+                            print::sub_bullet(format!(
+                                "{source_path_display}: No artifact found at {artifact_path_display}"
+                            ));
                         }
                     }
 
                     // Filter to only valid processes
                     let valid_processes: Vec<_> = detection_results
-                        .iter()
-                        .filter_map(|result| match result {
-                            launch_process::ProcessDetectionResult::Valid { process, .. } => {
-                                Some(process.clone())
-                            }
-                            launch_process::ProcessDetectionResult::Invalid { .. } => None,
-                        })
+                        .into_iter()
+                        .filter_map(|result| result.process)
                         .collect();
 
                     if !valid_processes.is_empty() {
