@@ -33,8 +33,6 @@ pub(crate) fn detect_solution_processes(
         .projects
         .iter()
         .filter_map(|project| {
-            let mut process = project_launch_process(app_dir, project)?;
-
             let relative_source = project
                 .path
                 .strip_prefix(app_dir)
@@ -43,6 +41,8 @@ pub(crate) fn detect_solution_processes(
 
             let relative_artifact = relative_executable_path(app_dir, project);
             let absolute_artifact = app_dir.join(&relative_artifact);
+
+            let mut process = project_launch_process(&relative_artifact, project)?;
 
             if !absolute_artifact.exists() {
                 return Some(ProcessDetectionResult::Invalid {
@@ -66,17 +66,15 @@ pub(crate) fn detect_solution_processes(
 }
 
 /// Determines if a project should have a launchable process and constructs it
-fn project_launch_process(app_dir: &Path, project: &Project) -> Option<Process> {
+fn project_launch_process(relative_executable_path: &Path, project: &Project) -> Option<Process> {
     if !matches!(
         project.project_type,
         ProjectType::ConsoleApplication | ProjectType::WebApplication | ProjectType::WorkerService
     ) {
         return None;
     }
-    let relative_executable_path = relative_executable_path(app_dir, project);
 
-    let command = build_command(&relative_executable_path, project.project_type);
-
+    let command = build_command(relative_executable_path, project.project_type);
     let process_type = project_process_type(project);
 
     Some(ProcessBuilder::new(process_type, ["bash", "-c", &command]).build())
