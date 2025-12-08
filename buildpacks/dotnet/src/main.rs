@@ -253,20 +253,17 @@ impl Buildpack for DotnetBuildpack {
 
                     // Print all detection results
                     for result in &detection_results {
-                        let source_path_display =
-                            style::value(result.relative_source.display().to_string());
-                        let artifact_path_display =
-                            style::value(result.relative_artifact.display().to_string());
-
-                        if result.process.is_some() {
-                            print::sub_bullet(format!(
-                                "{source_path_display}: Found artifact at {artifact_path_display}"
-                            ));
+                        let message = if result.process.is_some() {
+                            "Found artifact at"
                         } else {
-                            print::sub_bullet(format!(
-                                "{source_path_display}: No artifact found at {artifact_path_display}"
-                            ));
-                        }
+                            "No artifact found at"
+                        };
+
+                        print::sub_bullet(format!(
+                            "{}: {message} {}",
+                            style::value(result.relative_source.display().to_string()),
+                            style::value(result.relative_artifact.display().to_string())
+                        ));
                     }
 
                     // Filter to only valid processes
