@@ -32,7 +32,11 @@ pub(crate) fn detect_solution_processes(
     solution
         .projects
         .iter()
-        .filter_map(|project| {
+        .filter(|project| matches!(
+            project.project_type,
+            ProjectType::ConsoleApplication | ProjectType::WebApplication | ProjectType::WorkerService
+        ))
+        .map(|project| {
             let relative_source = project
                 .path
                 .strip_prefix(app_dir)
@@ -42,42 +46,29 @@ pub(crate) fn detect_solution_processes(
             let relative_artifact = relative_executable_path(app_dir, project);
             let absolute_artifact = app_dir.join(&relative_artifact);
 
-            let mut process = project_launch_process(&relative_artifact, project)?;
-
             if !absolute_artifact.exists() {
-                return Some(ProcessDetectionResult::Invalid {
+                return ProcessDetectionResult::Invalid {
                     relative_source,
                     relative_artifact,
-                });
+                };
             }
+
+            let command = build_command(&relative_artifact, project.project_type);
+            let process_type = project_process_type(project);
+            let mut process = ProcessBuilder::new(process_type, ["bash", "-c", &command]).build();
 
             if has_single_web_app && project.project_type == ProjectType::WebApplication {
                 process.r#type = process_type!("web");
                 process.default = true;
             }
 
-            Some(ProcessDetectionResult::Valid {
+            ProcessDetectionResult::Valid {
                 relative_source,
                 relative_artifact,
                 process,
-            })
+            }
         })
         .collect()
-}
-
-/// Determines if a project should have a launchable process and constructs it
-fn project_launch_process(relative_executable_path: &Path, project: &Project) -> Option<Process> {
-    if !matches!(
-        project.project_type,
-        ProjectType::ConsoleApplication | ProjectType::WebApplication | ProjectType::WorkerService
-    ) {
-        return None;
-    }
-
-    let command = build_command(relative_executable_path, project.project_type);
-    let process_type = project_process_type(project);
-
-    Some(ProcessBuilder::new(process_type, ["bash", "-c", &command]).build())
 }
 
 /// Constructs the shell command for launching the process
