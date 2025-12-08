@@ -47,8 +47,11 @@ pub(crate) fn detect_solution_processes(
                 .expect("Project path should be inside the app directory")
                 .to_path_buf();
 
-            let relative_artifact = relative_executable_path(app_dir, project);
-            let absolute_artifact = app_dir.join(&relative_artifact);
+            let absolute_artifact = project_executable_path(project);
+            let relative_artifact = absolute_artifact
+                .strip_prefix(app_dir)
+                .expect("Executable path should be inside the app directory")
+                .to_path_buf();
 
             if !absolute_artifact.exists() {
                 return ProcessDetectionResult::Invalid {
@@ -108,14 +111,6 @@ fn project_process_type(project: &Project) -> ProcessType {
         .expect("Assembly name to include at least one character compatible with the RFC 1123 DNS label spec")
         .parse::<ProcessType>()
         .expect("Sanitized process type name should always be valid")
-}
-
-/// Returns the (expected) relative executable path from the app directory
-fn relative_executable_path(app_dir: &Path, project: &Project) -> PathBuf {
-    project_executable_path(project)
-        .strip_prefix(app_dir)
-        .expect("Executable path should be inside the app directory")
-        .to_path_buf()
 }
 
 /// Returns the (expected) absolute path to the project's compiled executable
@@ -275,21 +270,6 @@ mod tests {
         fs_err::create_dir_all(artifact_path.parent().unwrap()).unwrap();
         fs_err::write(&artifact_path, b"").unwrap();
         artifact_path
-    }
-
-    #[test]
-    fn test_relative_executable_path() {
-        let app_dir = Path::new("/tmp");
-        let project = create_test_project(
-            "/tmp/project/project.csproj",
-            "TestApp",
-            ProjectType::ConsoleApplication,
-        );
-
-        assert_eq!(
-            relative_executable_path(app_dir, &project),
-            PathBuf::from("project/bin/publish/TestApp")
-        );
     }
 
     #[test]
