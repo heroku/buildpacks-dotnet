@@ -7,8 +7,8 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct ProcessDetectionResult {
-    pub relative_source: PathBuf,
-    pub relative_artifact: PathBuf,
+    pub relative_project_file: PathBuf,
+    pub relative_executable: PathBuf,
     pub process: Option<Process>,
 }
 
@@ -35,27 +35,27 @@ pub(crate) fn detect_solution_processes(
             )
         })
         .map(|project| {
-            let relative_source = project
+            let relative_project_file = project
                 .path
                 .strip_prefix(app_dir)
                 .expect("Project path should be inside the app directory")
                 .to_path_buf();
 
-            let absolute_artifact = project_executable_path(project);
-            let relative_artifact = absolute_artifact
+            let absolute_executable = project_executable_path(project);
+            let relative_executable = absolute_executable
                 .strip_prefix(app_dir)
                 .expect("Executable path should be inside the app directory")
                 .to_path_buf();
 
-            if !absolute_artifact.exists() {
+            if !absolute_executable.exists() {
                 return ProcessDetectionResult {
-                    relative_source,
-                    relative_artifact,
+                    relative_project_file,
+                    relative_executable,
                     process: None,
                 };
             }
 
-            let command = build_command(&relative_artifact, project.project_type);
+            let command = build_command(&relative_executable, project.project_type);
             let process_type = project_process_type(project);
             let mut process = ProcessBuilder::new(process_type, ["bash", "-c", &command]).build();
 
@@ -65,8 +65,8 @@ pub(crate) fn detect_solution_processes(
             }
 
             ProcessDetectionResult {
-                relative_source,
-                relative_artifact,
+                relative_project_file,
+                relative_executable,
                 process: Some(process),
             }
         })
@@ -159,8 +159,8 @@ mod tests {
         assert_eq!(
             results[0],
             ProcessDetectionResult {
-                relative_source: PathBuf::from("bar/bar.csproj"),
-                relative_artifact: PathBuf::from("bar/bin/publish/bar"),
+                relative_project_file: PathBuf::from("bar/bar.csproj"),
+                relative_executable: PathBuf::from("bar/bin/publish/bar"),
                 process: Some(Process {
                     r#type: process_type!("web"),
                     command: vec![
@@ -240,11 +240,11 @@ mod tests {
         assert_matches!(
             result,
             ProcessDetectionResult {
-                relative_source,
-                relative_artifact,
+                relative_project_file,
+                relative_executable,
                 process: Some(process),
-            } if relative_source == &PathBuf::from("Backend/Backend.csproj")
-                && relative_artifact == &PathBuf::from("Backend/bin/publish/Backend")
+            } if relative_project_file == &PathBuf::from("Backend/Backend.csproj")
+                && relative_executable == &PathBuf::from("Backend/bin/publish/Backend")
                 && process.r#type == process_type!("web")
                 && process.default
         );
@@ -253,11 +253,11 @@ mod tests {
         assert_matches!(
             result,
             ProcessDetectionResult {
-                relative_source,
-                relative_artifact,
+                relative_project_file,
+                relative_executable,
                 process: None,
-            } if relative_source == &PathBuf::from("jobs/worker.cs")
-                && relative_artifact == &PathBuf::from("jobs/bin/publish/worker")
+            } if relative_project_file == &PathBuf::from("jobs/worker.cs")
+                && relative_executable == &PathBuf::from("jobs/bin/publish/worker")
         );
     }
 
@@ -324,6 +324,6 @@ mod tests {
         assert_eq!(results.len(), 1);
 
         let result = &results[0];
-        assert_matches!(result, ProcessDetectionResult { relative_source, process: None, ..} if relative_source == "bar/bar.csproj");
+        assert_matches!(result, ProcessDetectionResult { relative_project_file, process: None, ..} if relative_project_file == &PathBuf::from("bar/bar.csproj"));
     }
 }

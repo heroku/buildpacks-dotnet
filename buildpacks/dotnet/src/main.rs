@@ -261,8 +261,8 @@ impl Buildpack for DotnetBuildpack {
 
                         print::sub_bullet(format!(
                             "{}: {outcome} {}",
-                            style::value(result.relative_source.display().to_string()),
-                            style::value(result.relative_artifact.display().to_string())
+                            style::value(result.relative_project_file.display().to_string()),
+                            style::value(result.relative_executable.display().to_string())
                         ));
                     }
 
