@@ -185,7 +185,7 @@ fn test_dotnet_publish_file_based_app_basic_console() {
             assert_contains!(context.pack_stdout, "- Analyzing candidates:");
             assert_contains!(
                 context.pack_stdout,
-                "- `foo.cs`: Found executable at `bin/publish/foo`"
+                "- `foo.cs`: Found artifact at `bin/publish/foo`"
             );
         },
     );
@@ -214,7 +214,7 @@ fn test_dotnet_publish_file_based_app_basic_web() {
             assert_contains!(context.pack_stdout, "- Analyzing candidates:");
             assert_contains!(
                 context.pack_stdout,
-                "- `foo.cs`: Found executable at `bin/publish/foo`"
+                "- `foo.cs`: Found artifact at `bin/publish/foo`"
             );
         },
     );
@@ -233,7 +233,7 @@ fn test_dotnet_publish_process_registration_with_procfile() {
                     - Process types
                       - Detecting process types from published artifacts
                       - Analyzing candidates:
-                      - `foo.csproj`: Found executable at `bin/publish/foo`
+                      - `foo.csproj`: Found artifact at `bin/publish/foo`
                       - Procfile detected
                       - Skipping automatic registration (Procfile takes precedence)
                       - Available process types (for reference):
@@ -256,7 +256,7 @@ fn test_dotnet_publish_process_registration_without_procfile() {
                 - Process types
                   - Detecting process types from published artifacts
                   - Analyzing candidates:
-                  - `foo.csproj`: Found executable at `bin/publish/foo`
+                  - `foo.csproj`: Found artifact at `bin/publish/foo`
                   - No Procfile detected
                   - Registering launch processes:
                   - `web`: bash -c cd bin/publish; ./foo --urls http://*:$PORT
@@ -333,7 +333,7 @@ fn test_dotnet_publish_with_space_in_project_filename() {
 
             assert_contains!(
                 &context.pack_stdout,
-                r"- `console app/console app.csproj`: Found executable at `console app/bin/publish/console app`"
+                r"- `console app/console app.csproj`: Found artifact at `console app/bin/publish/console app`"
             );
             assert_contains!(
                 &context.pack_stdout,
@@ -367,8 +367,8 @@ fn test_dotnet_publish_with_updated_process_type_name_heroku_warning() {
                   - Process types
                     - Detecting process types from published artifacts
                     - Analyzing candidates:
-                    - `web/web.csproj`: Found executable at `web/bin/publish/web`
-                    - `worker/worker.csproj`: Found executable at `worker/bin/publish/worker`
+                    - `web/web.csproj`: Found artifact at `web/bin/publish/web`
+                    - `worker/worker.csproj`: Found artifact at `worker/bin/publish/worker`
                     - No Procfile detected
                     - Registering launch processes:
                     - `web`: bash -c cd web/bin/publish; ./web --urls http://*:$PORT
@@ -394,8 +394,8 @@ fn test_dotnet_publish_slnx_with_web_and_console_projects() {
                   - Process types
                     - Detecting process types from published artifacts
                     - Analyzing candidates:
-                    - `web/web.csproj`: Found executable at `web/bin/publish/web`
-                    - `worker/worker.csproj`: Found executable at `worker/bin/publish/worker`
+                    - `web/web.csproj`: Found artifact at `web/bin/publish/web`
+                    - `worker/worker.csproj`: Found artifact at `worker/bin/publish/worker`
                     - No Procfile detected
                     - Registering launch processes:
                     - `web`: bash -c cd web/bin/publish; ./web --urls http://*:$PORT
