@@ -254,9 +254,9 @@ impl Buildpack for DotnetBuildpack {
                     // Print all detection results
                     for result in &detection_results {
                         let outcome = if result.process.is_some() {
-                            "Found artifact at"
+                            "Found executable at"
                         } else {
-                            "No artifact found at"
+                            "No executable found at"
                         };
 
                         print::sub_bullet(format!(
