@@ -1,3 +1,4 @@
+use crate::detect::directory_build_props_file;
 use quick_xml::de::from_str;
 use serde::Deserialize;
 use std::io;
@@ -181,16 +182,6 @@ fn infer_project_type(sdk_id: &str, output_type: Option<&str>) -> ProjectType {
     }
 }
 
-fn find_directory_build_props(start_dir: &Path) -> Option<PathBuf> {
-    let mut current = start_dir;
-    loop {
-        let props_path = current.join("Directory.Build.props");
-        if props_path.exists() && props_path.is_file() {
-            return Some(props_path);
-        }
-        current = current.parent()?;
-    }
-}
 
 fn extract_target_framework(property_groups: &[PropertyGroup]) -> Option<String> {
     // Find the last TargetFramework property (last wins)
@@ -204,7 +195,7 @@ fn extract_target_framework(property_groups: &[PropertyGroup]) -> Option<String>
 fn find_target_framework_from_directory_build_props(
     file_path: &Path,
 ) -> Result<Option<String>, LoadError> {
-    let Some(props_path) = file_path.parent().and_then(find_directory_build_props) else {
+    let Some(props_path) = file_path.parent().and_then(directory_build_props_file) else {
         return Ok(None);
     };
 
