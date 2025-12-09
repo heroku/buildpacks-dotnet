@@ -15,8 +15,10 @@ pub(crate) struct Project {
 
 impl Project {
     pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadError> {
-        let content = fs_err::read_to_string(path).map_err(LoadError::ReadProjectFile)?;
-        let project_xml: ProjectXml = from_str(&content).map_err(LoadError::XmlParseError)?;
+        let content = fs_err::read_to_string(path)
+            .map_err(|e| LoadError::ProjectFile(FileLoadError::Read(e)))?;
+        let project_xml: ProjectXml =
+            from_str(&content).map_err(|e| LoadError::ProjectFile(FileLoadError::XmlParse(e)))?;
 
         let property_groups = &project_xml.property_groups;
 
@@ -64,8 +66,9 @@ impl Project {
         })
     }
 
-    pub(crate) fn load_from_file_based_app(path: &Path) -> Result<Self, io::Error> {
-        let content = fs_err::read_to_string(path)?;
+    pub(crate) fn load_from_file_based_app(path: &Path) -> Result<Self, LoadError> {
+        let content = fs_err::read_to_string(path)
+            .map_err(|e| LoadError::ProjectFile(FileLoadError::Read(e)))?;
 
         let mut sdk_id: Option<&str> = None;
         let mut target_framework: Option<&str> = None;
@@ -98,8 +101,7 @@ impl Project {
         let final_target_framework = if let Some(tfm) = target_framework {
             tfm.to_string()
         } else {
-            find_target_framework_from_directory_build_props(path)
-                .unwrap() // Handle error more gracefully
+            find_target_framework_from_directory_build_props(path)?
                 .unwrap_or_else(|| "net10.0".to_string())
         };
         // File-based apps are executables, so pass 'Exe' as the output type when
@@ -162,12 +164,16 @@ pub(crate) enum ProjectType {
 }
 
 #[derive(Debug)]
+pub(crate) enum FileLoadError {
+    Read(io::Error),
+    XmlParse(quick_xml::de::DeError),
+}
+
+#[derive(Debug)]
 pub(crate) enum LoadError {
-    ReadProjectFile(io::Error),
-    XmlParseError(quick_xml::de::DeError),
+    ProjectFile(FileLoadError),
+    DirectoryBuildProps(FileLoadError),
     MissingTargetFramework(PathBuf),
-    ReadDirectoryBuildProps(io::Error),
-    XmlParseDirectoryBuildProps(quick_xml::de::DeError),
 }
 
 fn infer_project_type(sdk_id: &str, output_type: Option<&str>) -> ProjectType {
@@ -181,7 +187,6 @@ fn infer_project_type(sdk_id: &str, output_type: Option<&str>) -> ProjectType {
         _ => ProjectType::Unknown,
     }
 }
-
 
 fn extract_target_framework(property_groups: &[PropertyGroup]) -> Option<String> {
     // Find the last TargetFramework property (last wins)
@@ -199,10 +204,10 @@ fn find_target_framework_from_directory_build_props(
         return Ok(None);
     };
 
-    let content =
-        fs_err::read_to_string(&props_path).map_err(LoadError::ReadDirectoryBuildProps)?;
-    let props_xml: DirectoryBuildPropsXml =
-        from_str(&content).map_err(LoadError::XmlParseDirectoryBuildProps)?;
+    let content = fs_err::read_to_string(&props_path)
+        .map_err(|e| LoadError::DirectoryBuildProps(FileLoadError::Read(e)))?;
+    let props_xml: DirectoryBuildPropsXml = from_str(&content)
+        .map_err(|e| LoadError::DirectoryBuildProps(FileLoadError::XmlParse(e)))?;
 
     Ok(extract_target_framework(&props_xml.property_groups))
 }
@@ -346,7 +351,7 @@ mod tests {
         let nonexistent_path = Path::new("/nonexistent/path/test.csproj");
         let result = Project::load_from_path(nonexistent_path).unwrap_err();
 
-        assert_matches!(result, LoadError::ReadProjectFile(error) if error.kind() == ErrorKind::NotFound);
+        assert_matches!(result, LoadError::ProjectFile(FileLoadError::Read(error)) if error.kind() == ErrorKind::NotFound);
     }
 
     #[test]
@@ -356,7 +361,10 @@ mod tests {
         fs::write(&project_path, "not valid xml").unwrap();
 
         let result = Project::load_from_path(&project_path);
-        assert_matches!(result, Err(LoadError::XmlParseError(_)));
+        assert_matches!(
+            result,
+            Err(LoadError::ProjectFile(FileLoadError::XmlParse(_)))
+        );
     }
 
     #[test]
@@ -364,7 +372,7 @@ mod tests {
         let nonexistent_path = Path::new("/nonexistent/path/test.cs");
         let result = Project::load_from_file_based_app(nonexistent_path);
 
-        assert_matches!(result, Err(error) if error.kind() == ErrorKind::NotFound);
+        assert_matches!(result, Err(LoadError::ProjectFile(FileLoadError::Read(error))) if error.kind() == ErrorKind::NotFound);
     }
 
     #[test]
@@ -603,7 +611,10 @@ Console.WriteLine("Hello from file-based app!");
         .unwrap();
 
         let result = Project::load_from_path(&project_path);
-        assert_matches!(result, Err(LoadError::XmlParseDirectoryBuildProps(_)));
+        assert_matches!(
+            result,
+            Err(LoadError::DirectoryBuildProps(FileLoadError::XmlParse(_)))
+        );
     }
 
     #[test]
@@ -679,6 +690,9 @@ Console.WriteLine("Hello from file-based app!");
         // Restore permissions for cleanup
         let _ = fs::set_permissions(&props_path, Permissions::from_mode(0o644));
 
-        assert_matches!(result, Err(LoadError::ReadDirectoryBuildProps(_)));
+        assert_matches!(
+            result,
+            Err(LoadError::DirectoryBuildProps(FileLoadError::Read(_)))
+        );
     }
 }

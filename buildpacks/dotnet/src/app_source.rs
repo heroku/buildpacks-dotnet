@@ -89,7 +89,7 @@ impl AppSource {
 pub(crate) enum LoadError {
     Solution(SolutionLoadError),
     Project(ProjectLoadError),
-    FileBasedApp(io::Error),
+    FileBasedApp(ProjectLoadError),
 }
 
 impl TryFrom<AppSource> for Solution {

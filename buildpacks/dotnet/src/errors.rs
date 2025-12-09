@@ -254,11 +254,10 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 );
             }
             app_source::LoadError::FileBasedApp(error) => {
-                log_io_error_to(
+                on_load_dotnet_project_error_with_writer(
                     &mut writer,
-                    "Error loading file-based app",
-                    "reading file-based app file",
                     error,
+                    "reading file-based app file",
                 );
             }
         },
@@ -574,24 +573,52 @@ fn on_load_dotnet_project_error_with_writer(
     occurred_while: &str,
 ) {
     match error {
-        project::LoadError::ReadProjectFile(io_error) => {
-            log_io_error_to(
+        project::LoadError::ProjectFile(file_error) => match file_error {
+            project::FileLoadError::Read(io_error) => {
+                log_io_error_to(
+                    &mut writer,
+                    "Error loading an app file",
+                    occurred_while,
+                    io_error,
+                );
+            }
+            project::FileLoadError::XmlParse(xml_parse_error) => log_error_to(
                 &mut writer,
-                "Error loading the project file",
-                occurred_while,
-                io_error,
-            );
-        }
-        project::LoadError::XmlParseError(xml_parse_error) => log_error_to(
-            &mut writer,
-            "Error parsing the project file",
-            formatdoc! {"
-                We can’t parse the project file’s XML content. Parsing errors usually
-                indicate an error in the project file.
-                
-                Use the debug information above to troubleshoot and retry your build."},
-            Some(xml_parse_error.to_string()),
-        ),
+                "Error parsing the project file",
+                formatdoc! {"
+                    We can’t parse the project file’s XML content. Parsing errors usually
+                    indicate an error in the project file.
+
+                    Use the debug information above to troubleshoot and retry your build."},
+                Some(xml_parse_error.to_string()),
+            ),
+        },
+        project::LoadError::DirectoryBuildProps(file_error) => match file_error {
+            project::FileLoadError::Read(io_error) => {
+                log_io_error_to(
+                    &mut writer,
+                    "Error reading `Directory.Build.props`",
+                    "loading a `Directory.Build.props` file",
+                    io_error,
+                );
+            }
+            project::FileLoadError::XmlParse(xml_parse_error) => {
+                log_error_to(
+                    &mut writer,
+                    "Error parsing `Directory.Build.props`",
+                    formatdoc! {"
+                        We can’t parse the `Directory.Build.props` file’s XML content. Parsing errors
+                        usually indicate an error in the file.
+
+                        Use the debug information above to troubleshoot and retry your build.
+
+                        For more information, see:
+                        https://github.com/heroku/buildpacks-dotnet#net-version
+                    "},
+                    Some(xml_parse_error.to_string()),
+                );
+            }
+        },
         project::LoadError::MissingTargetFramework(project_path) => {
             log_error_to(
                 &mut writer,
@@ -607,30 +634,6 @@ fn on_load_dotnet_project_error_with_writer(
                     https://github.com/heroku/buildpacks-dotnet#net-version
                 ", project_path = project_path.to_string_lossy()},
                 None,
-            );
-        }
-        project::LoadError::ReadDirectoryBuildProps(io_error) => {
-            log_io_error_to(
-                &mut writer,
-                "Error reading `Directory.Build.props`",
-                "loading a `Directory.Build.props` file",
-                io_error,
-            );
-        }
-        project::LoadError::XmlParseDirectoryBuildProps(xml_parse_error) => {
-            log_error_to(
-                &mut writer,
-                "Error parsing `Directory.Build.props`",
-                formatdoc! {"
-                    We can’t parse the `Directory.Build.props` file’s XML content. Parsing errors
-                    usually indicate an error in the file.
-
-                    Use the debug information above to troubleshoot and retry your build.
-
-                    For more information, see:
-                    https://github.com/heroku/buildpacks-dotnet#net-version
-                "},
-                Some(xml_parse_error.to_string()),
             );
         }
     }
@@ -797,7 +800,7 @@ mod tests {
     fn test_load_app_source_solution_load_project_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
             app_source::LoadError::Solution(solution::LoadError::LoadProject(
-                project::LoadError::ReadProjectFile(create_io_error()),
+                project::LoadError::ProjectFile(project::FileLoadError::Read(create_io_error())),
             )),
         ));
     }
@@ -806,7 +809,9 @@ mod tests {
     fn test_load_app_source_solution_load_project_xml_parse_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
             app_source::LoadError::Solution(solution::LoadError::LoadProject(
-                project::LoadError::XmlParseError(create_xml_parse_error()),
+                project::LoadError::ProjectFile(project::FileLoadError::XmlParse(
+                    create_xml_parse_error(),
+                )),
             )),
         ));
     }
@@ -832,15 +837,17 @@ mod tests {
     #[test]
     fn test_load_app_source_project_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::Project(project::LoadError::ReadProjectFile(create_io_error())),
+            app_source::LoadError::Project(project::LoadError::ProjectFile(
+                project::FileLoadError::Read(create_io_error()),
+            )),
         ));
     }
 
     #[test]
     fn test_load_app_source_project_xml_parse_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::Project(project::LoadError::XmlParseError(
-                create_xml_parse_error(),
+            app_source::LoadError::Project(project::LoadError::ProjectFile(
+                project::FileLoadError::XmlParse(create_xml_parse_error()),
             )),
         ));
     }
@@ -857,8 +864,8 @@ mod tests {
     #[test]
     fn test_load_app_source_project_read_directory_build_props_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::Project(project::LoadError::ReadDirectoryBuildProps(
-                create_io_error(),
+            app_source::LoadError::Project(project::LoadError::DirectoryBuildProps(
+                project::FileLoadError::Read(create_io_error()),
             )),
         ));
     }
@@ -866,8 +873,8 @@ mod tests {
     #[test]
     fn test_load_app_source_project_xml_parse_directory_build_props_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::Project(project::LoadError::XmlParseDirectoryBuildProps(
-                create_xml_parse_error(),
+            app_source::LoadError::Project(project::LoadError::DirectoryBuildProps(
+                project::FileLoadError::XmlParse(create_xml_parse_error()),
             )),
         ));
     }
@@ -875,7 +882,9 @@ mod tests {
     #[test]
     fn test_load_app_source_file_based_app_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::FileBasedApp(create_io_error()),
+            app_source::LoadError::FileBasedApp(project::LoadError::ProjectFile(
+                project::FileLoadError::Read(create_io_error()),
+            )),
         ));
     }
 
