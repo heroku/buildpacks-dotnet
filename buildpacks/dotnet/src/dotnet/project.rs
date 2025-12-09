@@ -25,7 +25,8 @@ impl Project {
         // Try to find TargetFramework in project file first, then Directory.Build.props
         let target_framework = match extract_target_framework(property_groups) {
             Some(tfm) => tfm,
-            None => find_target_framework_from_directory_build_props(path)?
+            None => find_target_framework_from_directory_build_props(path)
+                .map_err(LoadError::DirectoryBuildProps)?
                 .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?,
         };
 
@@ -101,7 +102,8 @@ impl Project {
         let final_target_framework = if let Some(tfm) = target_framework {
             tfm.to_string()
         } else {
-            find_target_framework_from_directory_build_props(path)?
+            find_target_framework_from_directory_build_props(path)
+                .map_err(LoadError::DirectoryBuildProps)?
                 .unwrap_or_else(|| "net10.0".to_string())
         };
         // File-based apps are executables, so pass 'Exe' as the output type when
@@ -199,15 +201,13 @@ fn extract_target_framework(property_groups: &[PropertyGroup]) -> Option<String>
 
 fn find_target_framework_from_directory_build_props(
     file_path: &Path,
-) -> Result<Option<String>, LoadError> {
+) -> Result<Option<String>, FileLoadError> {
     let Some(props_path) = file_path.parent().and_then(directory_build_props_file) else {
         return Ok(None);
     };
 
-    let content = fs_err::read_to_string(&props_path)
-        .map_err(|e| LoadError::DirectoryBuildProps(FileLoadError::Read(e)))?;
-    let props_xml: DirectoryBuildPropsXml = from_str(&content)
-        .map_err(|e| LoadError::DirectoryBuildProps(FileLoadError::XmlParse(e)))?;
+    let content = fs_err::read_to_string(&props_path).map_err(FileLoadError::Read)?;
+    let props_xml: DirectoryBuildPropsXml = from_str(&content).map_err(FileLoadError::XmlParse)?;
 
     Ok(extract_target_framework(&props_xml.property_groups))
 }
