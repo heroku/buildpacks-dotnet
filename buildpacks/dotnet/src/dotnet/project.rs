@@ -522,6 +522,36 @@ Console.WriteLine("Hello from file-based app!");
     }
 
     #[test]
+    fn test_load_file_based_app_with_malformed_directory_build_props() {
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        // Create malformed Directory.Build.props
+        fs::write(
+            temp_dir.path().join("Directory.Build.props"),
+            "not valid xml",
+        )
+        .unwrap();
+
+        // Create file-based app without TargetFramework property
+        let app_path = temp_dir.path().join("MyApp.cs");
+        fs::write(
+            &app_path,
+            r#"
+#:sdk Microsoft.NET.Sdk
+
+Console.WriteLine("Hello from file-based app!");
+"#,
+        )
+        .unwrap();
+
+        let result = Project::load_from_file_based_app(&app_path);
+        assert_matches!(
+            result,
+            Err(LoadError::DirectoryBuildProps(FileLoadError::XmlParse(_)))
+        );
+    }
+
+    #[test]
     fn test_load_project_with_directory_build_props() {
         let temp_dir = tempfile::tempdir().unwrap();
 
