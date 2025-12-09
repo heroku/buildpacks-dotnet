@@ -25,17 +25,14 @@ pub(crate) fn project_toml_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
 /// This follows `MSBuild`'s convention where `Directory.Build.props` files in
 /// parent directories are automatically imported into projects.
 ///
-/// The starting path can be either a file or directory - if it's a file, the search
-/// starts from its parent directory.
+/// The starting path can be either a file or directory.
 pub(crate) fn directory_build_props_file<P: AsRef<Path>>(start_path: P) -> Option<PathBuf> {
     let path = start_path.as_ref();
 
     for ancestor in path.ancestors() {
-        if ancestor.is_dir() {
-            let props_path = ancestor.join("Directory.Build.props");
-            if props_path.is_file() {
-                return Some(props_path);
-            }
+        let props_path = ancestor.join("Directory.Build.props");
+        if props_path.is_file() {
+            return Some(props_path);
         }
     }
 
