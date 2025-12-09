@@ -30,24 +30,16 @@ pub(crate) fn project_toml_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
 pub(crate) fn directory_build_props_file<P: AsRef<Path>>(start_path: P) -> Option<PathBuf> {
     let path = start_path.as_ref();
 
-    // If path is a file, start from its parent directory
-    // Using let chain allow us to check the file condition AND bind the parent
-    // in a single, safe (and testable) block.
-    let search_dir = if path.is_file()
-        && let Some(parent) = path.parent()
-    {
-        parent
-    } else {
-        path
-    };
-
-    let props_path = search_dir.join("Directory.Build.props");
-    if props_path.is_file() {
-        return Some(props_path);
+    for ancestor in path.ancestors() {
+        if ancestor.is_dir() {
+            let props_path = ancestor.join("Directory.Build.props");
+            if props_path.is_file() {
+                return Some(props_path);
+            }
+        }
     }
 
-    // Recursively search parent directory
-    search_dir.parent().and_then(directory_build_props_file)
+    None
 }
 
 #[cfg(test)]
