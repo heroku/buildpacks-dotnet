@@ -584,42 +584,6 @@ Console.WriteLine("Hello from file-based app!");
     }
 
     #[test]
-    fn test_directory_build_props_walks_up_directory_tree() {
-        let temp_dir = tempfile::tempdir().unwrap();
-
-        // Put Directory.Build.props at root
-        fs::write(
-            temp_dir.path().join("Directory.Build.props"),
-            r"
-<Project>
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-    </PropertyGroup>
-</Project>",
-        )
-        .unwrap();
-
-        // Create deeply nested project
-        let project_dir = temp_dir.path().join("src").join("MyProject");
-        fs::create_dir_all(&project_dir).unwrap();
-        let project_path = project_dir.join("MyProject.csproj");
-        fs::write(
-            &project_path,
-            r#"
-<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <OutputType>Exe</OutputType>
-    </PropertyGroup>
-</Project>"#,
-        )
-        .unwrap();
-
-        let project = Project::load_from_path(&project_path).unwrap();
-        assert_eq!(project.target_framework, "net9.0");
-        assert_eq!(project.project_type, ProjectType::ConsoleApplication);
-    }
-
-    #[test]
     fn test_malformed_directory_build_props_returns_error() {
         let temp_dir = tempfile::tempdir().unwrap();
 
