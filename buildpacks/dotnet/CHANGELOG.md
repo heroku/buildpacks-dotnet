@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2025-12-09
+
 ### Changed
 
 - Improved `global.json` parsing to validate `rollForward` policy values and provide clearer error messages for invalid SDK versions. ([#357](https://github.com/heroku/buildpacks-dotnet/pull/357))
@@ -338,7 +340,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.12.0...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.11.2...v0.12.0
 [0.11.2]: https://github.com/heroku/buildpacks-dotnet/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/heroku/buildpacks-dotnet/compare/v0.11.0...v0.11.1
