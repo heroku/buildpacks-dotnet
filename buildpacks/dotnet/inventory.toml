@@ -1691,3 +1691,17 @@ os = "linux"
 arch = "arm64"
 url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.100/dotnet-sdk-10.0.100-linux-arm64.tar.gz"
 checksum = "sha512:24fc2b105ab8484c34213ef57ac4e6a36a6593241f0ebc6cf0a40ec2f5fea2d76de85c4b87b2a53814d194e32ec1288dd5053cd6f52768d79cd0ac948cbf84ea"
+
+[[artifacts]]
+version = "10.0.101"
+os = "linux"
+arch = "amd64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.101/dotnet-sdk-10.0.101-linux-x64.tar.gz"
+checksum = "sha512:0443602455d30af51c819d7805e9b45550101c3718acbb3ec5f991e73d18e79b18fb5bc7cdf77bc308936a96275176b23a56e96133e7de83ae60ca2240bc602f"
+
+[[artifacts]]
+version = "10.0.101"
+os = "linux"
+arch = "arm64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.101/dotnet-sdk-10.0.101-linux-arm64.tar.gz"
+checksum = "sha512:9238f8d1acad38d143324b4099caa1d810fb57cf599f271e8872e1f5cd678aa53d4e8504ada9b8d47869f454a2f7a9699006a17ca0d750f09a13dd417448641c"
