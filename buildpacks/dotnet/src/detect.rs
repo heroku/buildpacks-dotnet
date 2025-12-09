@@ -19,20 +19,33 @@ pub(crate) fn project_toml_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
 }
 
 /// Returns the path to `Directory.Build.props` by walking up the directory tree
-/// from the given starting directory. Returns `None` if no such file is found
+/// from the given starting path. Returns `None` if no such file is found
 /// before reaching the filesystem root.
 ///
 /// This follows `MSBuild`'s convention where `Directory.Build.props` files in
 /// parent directories are automatically imported into projects.
-pub(crate) fn directory_build_props_file<P: AsRef<Path>>(start_dir: P) -> Option<PathBuf> {
-    let mut current = start_dir.as_ref();
-    loop {
-        let props_path = current.join("Directory.Build.props");
-        if props_path.exists() && props_path.is_file() {
-            return Some(props_path);
-        }
-        current = current.parent()?;
+///
+/// The starting path can be either a file or directory - if it's a file, the search
+/// starts from its parent directory.
+pub(crate) fn directory_build_props_file<P: AsRef<Path>>(start_path: P) -> Option<PathBuf> {
+    let path = start_path.as_ref();
+
+    // If path is a file, start from its parent directory
+    let search_dir = if path.is_file()
+        && let Some(parent) = path.parent()
+    {
+        parent
+    } else {
+        path
+    };
+
+    let props_path = search_dir.join("Directory.Build.props");
+    if props_path.exists() && props_path.is_file() {
+        return Some(props_path);
     }
+
+    // Recursively search parent directory
+    search_dir.parent().and_then(directory_build_props_file)
 }
 
 #[cfg(test)]

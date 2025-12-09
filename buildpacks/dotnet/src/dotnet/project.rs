@@ -202,7 +202,7 @@ fn extract_target_framework(property_groups: &[PropertyGroup]) -> Option<String>
 fn find_target_framework_from_directory_build_props(
     file_path: &Path,
 ) -> Result<Option<String>, FileLoadError> {
-    let Some(props_path) = file_path.parent().and_then(directory_build_props_file) else {
+    let Some(props_path) = directory_build_props_file(file_path) else {
         return Ok(None);
     };
 
