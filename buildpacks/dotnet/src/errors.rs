@@ -562,15 +562,15 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
 fn on_load_dotnet_project_error_with_writer(
     mut writer: impl Write,
     error: &project::LoadError,
-    app_source_type: &str,
+    context: &str,
 ) {
     match error {
         project::LoadError::ProjectFile(file_error) => match file_error {
             project::FileLoadError::Read(io_error) => {
                 log_io_error_to(
                     &mut writer,
-                    &format!("Error loading {app_source_type}"),
-                    &format!("reading {app_source_type} file"),
+                    &format!("Error loading {context}"),
+                    &format!("reading {context} file"),
                     io_error,
                 );
             }
