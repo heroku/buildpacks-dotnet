@@ -45,7 +45,7 @@ The buildpack supports C#, Visual Basic and F# apps using the .NET and ASP.NET C
 
 By default, the buildpack will install the latest available .NET SDK based on the value of the [`TargetFramework` property][target-framework], which must be configured for each project. If a project file doesn't specify `TargetFramework`, the buildpack will look for a [`Directory.Build.props`][directory-build-props] file in the project directory or any parent directory and use the `TargetFramework` property if defined there.
 
-Target framework moniker (TFM) values that follow the `net{major_version}.0` format are currently supported (e.g. `net6.0`, `net7.0`, `net8.0`). If a solution references projects that target different framework versions, the most recent version will be preferred when inferring the .NET SDK version to install.
+Target framework moniker (TFM) values that follow the `net{major_version}.0` format are currently supported (e.g. `net8.0`, `net9.0`, `net10.0`). If a solution references projects that target different framework versions, the most recent version will be preferred when inferring the .NET SDK version to install.
 
 To install a different .NET SDK version, add a [`global.json` file][global-json] to the root directory. The buildpack supports specifying both the `version` and `rollForward` policy to define which .NET SDK version to install. For instance, to install a specific version a `global.json` file may look like this:
 
