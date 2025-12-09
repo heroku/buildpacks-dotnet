@@ -31,6 +31,8 @@ pub(crate) fn directory_build_props_file<P: AsRef<Path>>(start_path: P) -> Optio
     let path = start_path.as_ref();
 
     // If path is a file, start from its parent directory
+    // Using let chain allow us to check the file condition AND bind the parent
+    // in a single, safe (and testable) block.
     let search_dir = if path.is_file()
         && let Some(parent) = path.parent()
     {
