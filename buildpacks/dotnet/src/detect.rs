@@ -42,7 +42,7 @@ pub(crate) fn directory_build_props_file<P: AsRef<Path>>(start_path: P) -> Optio
     };
 
     let props_path = search_dir.join("Directory.Build.props");
-    if props_path.exists() && props_path.is_file() {
+    if props_path.is_file() {
         return Some(props_path);
     }
 
