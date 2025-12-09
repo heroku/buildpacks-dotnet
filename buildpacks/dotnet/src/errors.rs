@@ -209,7 +209,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     on_load_dotnet_project_error_with_writer(
                         &mut writer,
                         load_project_error,
-                        "reading solution project files",
+                        "solution project",
                     );
                 }
                 solution::LoadError::ProjectNotFound(project_path) => {
@@ -247,18 +247,10 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 }
             },
             app_source::LoadError::Project(error) => {
-                on_load_dotnet_project_error_with_writer(
-                    &mut writer,
-                    error,
-                    "reading root project file",
-                );
+                on_load_dotnet_project_error_with_writer(&mut writer, error, "root project");
             }
             app_source::LoadError::FileBasedApp(error) => {
-                on_load_dotnet_project_error_with_writer(
-                    &mut writer,
-                    error,
-                    "reading file-based app file",
-                );
+                on_load_dotnet_project_error_with_writer(&mut writer, error, "file-based app");
             }
         },
         DotnetBuildpackError::ParseTargetFrameworkMoniker(error) => match error {
@@ -570,15 +562,15 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
 fn on_load_dotnet_project_error_with_writer(
     mut writer: impl Write,
     error: &project::LoadError,
-    occurred_while: &str,
+    app_source_type: &str,
 ) {
     match error {
         project::LoadError::ProjectFile(file_error) => match file_error {
             project::FileLoadError::Read(io_error) => {
                 log_io_error_to(
                     &mut writer,
-                    "Error loading an app file",
-                    occurred_while,
+                    &format!("Error loading {app_source_type}"),
+                    &format!("reading {app_source_type} file"),
                     io_error,
                 );
             }

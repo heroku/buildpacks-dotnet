@@ -4,7 +4,7 @@ source: buildpacks/dotnet/src/errors.rs
 - [1;36mDebug info[0m
   - foo bar baz
 
-[0;31m! Error loading an app file[0m
+[0;31m! Error loading file-based app[0m
 [0;31m![0m
 [0;31m! An unexpected I/O error occurred while reading file-based app file.[0m
 [0;31m![0m
