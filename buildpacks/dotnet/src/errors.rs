@@ -247,7 +247,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 }
             },
             app_source::LoadError::Project(error) => {
-                on_load_dotnet_project_error_with_writer(&mut writer, error, "root project");
+                on_load_dotnet_project_error_with_writer(&mut writer, error, "project");
             }
             app_source::LoadError::FileBasedApp(error) => {
                 on_load_dotnet_project_error_with_writer(&mut writer, error, "file-based app");
