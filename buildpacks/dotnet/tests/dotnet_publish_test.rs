@@ -164,7 +164,7 @@ fn test_solution_file_env_var_takes_precedence_over_project_toml() {
 
 #[test]
 #[ignore = "integration test"]
-fn test_dotnet_publish_file_based_app_basic_console() {
+fn test_dotnet_publish_file_based_app_basic_console_with_assembly_name() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/file_based_app_basic_console"),
         |context| {
@@ -184,7 +184,7 @@ fn test_dotnet_publish_file_based_app_basic_console() {
             assert_contains!(context.pack_stdout, "foo -> /workspace/bin/publish/");
             assert_contains!(
                 context.pack_stdout,
-                "- Found `foo`: bash -c cd bin/publish; ./foo"
+                "- Found `bar`: bash -c cd bin/publish; ./bar"
             );
         },
     );

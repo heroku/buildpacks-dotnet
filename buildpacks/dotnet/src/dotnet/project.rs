@@ -73,6 +73,7 @@ impl Project {
 
         let mut sdk_id: Option<&str> = None;
         let mut target_framework: Option<&str> = None;
+        let mut assembly_name: Option<&str> = None;
 
         for line in content.lines() {
             let trimmed_line = line.trim();
@@ -81,7 +82,7 @@ impl Project {
             if sdk_id.is_none()
                 && let Some(sdk_val) = trimmed_line.strip_prefix("#:sdk ")
             {
-                sdk_id = Some(sdk_val);
+                sdk_id = Some(sdk_val.trim_start());
             }
 
             // Find the *first* TargetFramework. Specifying duplicate properties will cause an error during
@@ -89,10 +90,17 @@ impl Project {
             if target_framework.is_none()
                 && let Some(tfm_val) = trimmed_line.strip_prefix("#:property TargetFramework=")
             {
-                target_framework = Some(tfm_val);
+                target_framework = Some(tfm_val.trim_start());
             }
 
-            if sdk_id.is_some() && target_framework.is_some() {
+            // Find the *first* AssemblyName
+            if assembly_name.is_none()
+                && let Some(asm_val) = trimmed_line.strip_prefix("#:property AssemblyName=")
+            {
+                assembly_name = Some(asm_val.trim_start());
+            }
+
+            if sdk_id.is_some() && target_framework.is_some() && assembly_name.is_some() {
                 break;
             }
         }
@@ -110,19 +118,21 @@ impl Project {
         // when inferring project type (e.g. default to ConsoleApplication).
         let project_type = infer_project_type(final_sdk_id, Some("Exe"));
 
-        // File-based apps use the file stem as the assembly name, just like project file defaults.
-        // Unlike project files, setting the AssemblyName property doesn't change the output.
-        let assembly_name = path
-            .file_stem()
-            .expect("A path that can be read must have a file stem")
-            .to_string_lossy()
-            .to_string();
+        // Use the AssemblyName property if specified, otherwise fall back to the file stem
+        let final_assembly_name = if let Some(name) = assembly_name {
+            String::from(name)
+        } else {
+            path.file_stem()
+                .expect("A path that can be read must have a file stem")
+                .to_string_lossy()
+                .into_owned()
+        };
 
         Ok(Self {
             path: path.to_path_buf(),
             target_framework: final_target_framework,
             project_type,
-            assembly_name,
+            assembly_name: final_assembly_name,
         })
     }
 }
@@ -449,6 +459,7 @@ Console.WriteLine("foobar");
 #:sdk Aspire.AppHost.Sdk@9.4.1
 #:property TargetFramework=net11.0
 #:property LangVersion=preview
+#:property AssemblyName=CustomAssemblyName
 
 Console.WriteLine("foobar");
 "#;
@@ -462,9 +473,29 @@ Console.WriteLine("foobar");
         assert_eq!(project.project_type, ProjectType::WebApplication);
         // It should find the TargetFramework
         assert_eq!(project.target_framework, "net11.0");
-        // Assembly name should be file stem
-        assert_eq!(project.assembly_name, "MyApp");
+        // It should find the AssemblyName
+        assert_eq!(project.assembly_name, "CustomAssemblyName");
         assert_eq!(project.path, app_path);
+    }
+
+    #[test]
+    fn test_load_file_based_app_configuration_values_with_whitespace() {
+        let project_cs = r#"
+#:property AssemblyName= foo 
+#:sdk  Microsoft.NET.Sdk.Web 
+#:property TargetFramework= net11.0 
+
+Console.WriteLine("foobar");
+"#;
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_path = temp_dir.path().join("MyApp.cs");
+        fs::write(&app_path, project_cs).unwrap();
+
+        let project = Project::load_from_file_based_app(&app_path).unwrap();
+
+        assert_eq!(project.assembly_name, "foo");
+        assert_eq!(project.project_type, ProjectType::WebApplication);
+        assert_eq!(project.target_framework, "net11.0");
     }
 
     #[test]

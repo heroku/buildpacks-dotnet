@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for configuring the target framework using `Directory.Build.props`. ([#362](https://github.com/heroku/buildpacks-dotnet/pull/362))
+- Support for configuring the `AssemblyName` property in file-based apps. ([#359](https://github.com/heroku/buildpacks-dotnet/pull/359))
+
+### Fixed
+
+- Fixed an issue where leading whitespace in file-based app configuration values was incorrectly included. ([#359](https://github.com/heroku/buildpacks-dotnet/pull/359))
 
 ## [0.13.0] - 2025-12-09
 
