@@ -18,6 +18,31 @@ pub(crate) fn project_toml_file<P: AsRef<Path>>(dir: P) -> Option<PathBuf> {
     path.is_file().then_some(path)
 }
 
+/// Returns the path to `Directory.Build.props` by walking up the directory tree
+/// from the given starting path. Returns `None` if no such file is found
+/// before reaching the filesystem root.
+///
+/// This follows `MSBuild`'s convention where `Directory.Build.props` files in
+/// parent directories are automatically imported into projects.
+///
+/// The starting path can be a file or a directory. If it is a file, the search
+/// effectively begins at its parent directory.
+pub(crate) fn directory_build_props_file<P: AsRef<Path>>(start_path: P) -> Option<PathBuf> {
+    let path = start_path.as_ref();
+
+    for ancestor in path.ancestors() {
+        let props_path = ancestor.join("Directory.Build.props");
+
+        // Note: If 'ancestor' is a file, the OS guarantees this check returns false,
+        // so we don't need to manually check `is_dir()` on the ancestor first.
+        if props_path.is_file() {
+            return Some(props_path);
+        }
+    }
+
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -98,5 +123,61 @@ mod tests {
 
         let result = project_toml_file(temp_dir.path());
         assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_directory_build_props_file_exists_in_same_dir() {
+        let temp_dir = TempDir::new().unwrap();
+        let props_path = temp_dir.path().join("Directory.Build.props");
+        File::create(&props_path).unwrap();
+
+        let result = directory_build_props_file(temp_dir.path());
+        assert_eq!(result, Some(props_path));
+    }
+
+    #[test]
+    fn test_directory_build_props_file_does_not_exist() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = directory_build_props_file(temp_dir.path());
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_directory_build_props_file_walks_up_tree() {
+        let temp_dir = TempDir::new().unwrap();
+        let props_path = temp_dir.path().join("Directory.Build.props");
+        File::create(&props_path).unwrap();
+
+        let nested_dir = temp_dir.path().join("src").join("project");
+        fs::create_dir_all(&nested_dir).unwrap();
+
+        let result = directory_build_props_file(&nested_dir);
+        assert_eq!(result, Some(props_path));
+    }
+
+    #[test]
+    fn test_directory_build_props_file_is_directory() {
+        let temp_dir = TempDir::new().unwrap();
+        let props_path = temp_dir.path().join("Directory.Build.props");
+        fs::create_dir(&props_path).unwrap();
+
+        let result = directory_build_props_file(temp_dir.path());
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_directory_build_props_file_finds_nearest() {
+        let temp_dir = TempDir::new().unwrap();
+
+        let root_props = temp_dir.path().join("Directory.Build.props");
+        File::create(&root_props).unwrap();
+
+        let nested_dir = temp_dir.path().join("src");
+        fs::create_dir(&nested_dir).unwrap();
+        let nested_props = nested_dir.join("Directory.Build.props");
+        File::create(&nested_props).unwrap();
+
+        let result = directory_build_props_file(&nested_dir);
+        assert_eq!(result, Some(nested_props));
     }
 }

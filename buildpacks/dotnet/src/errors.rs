@@ -209,7 +209,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     on_load_dotnet_project_error_with_writer(
                         &mut writer,
                         load_project_error,
-                        "reading solution project files",
+                        "solution project",
                     );
                 }
                 solution::LoadError::ProjectNotFound(project_path) => {
@@ -247,19 +247,10 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                 }
             },
             app_source::LoadError::Project(error) => {
-                on_load_dotnet_project_error_with_writer(
-                    &mut writer,
-                    error,
-                    "reading root project file",
-                );
+                on_load_dotnet_project_error_with_writer(&mut writer, error, "project");
             }
             app_source::LoadError::FileBasedApp(error) => {
-                log_io_error_to(
-                    &mut writer,
-                    "Error loading file-based app",
-                    "reading file-based app file",
-                    error,
-                );
+                on_load_dotnet_project_error_with_writer(&mut writer, error, "file-based app");
             }
         },
         DotnetBuildpackError::ParseTargetFrameworkMoniker(error) => match error {
@@ -571,34 +562,65 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
 fn on_load_dotnet_project_error_with_writer(
     mut writer: impl Write,
     error: &project::LoadError,
-    occurred_while: &str,
+    context: &str,
 ) {
     match error {
-        project::LoadError::ReadProjectFile(io_error) => {
-            log_io_error_to(
+        project::LoadError::ProjectFile(file_error) => match file_error {
+            project::FileLoadError::Read(io_error) => {
+                log_io_error_to(
+                    &mut writer,
+                    &format!("Error loading {context}"),
+                    &format!("reading {context} file"),
+                    io_error,
+                );
+            }
+            project::FileLoadError::XmlParse(xml_parse_error) => log_error_to(
                 &mut writer,
-                "Error loading the project file",
-                occurred_while,
-                io_error,
-            );
-        }
-        project::LoadError::XmlParseError(xml_parse_error) => log_error_to(
-            &mut writer,
-            "Error parsing the project file",
-            formatdoc! {"
-                We can’t parse the project file’s XML content. Parsing errors usually
-                indicate an error in the project file.
-                
-                Use the debug information above to troubleshoot and retry your build."},
-            Some(xml_parse_error.to_string()),
-        ),
+                "Error parsing the project file",
+                formatdoc! {"
+                    We can’t parse the project file’s XML content. Parsing errors usually
+                    indicate an error in the project file.
+
+                    Use the debug information above to troubleshoot and retry your build."},
+                Some(xml_parse_error.to_string()),
+            ),
+        },
+        project::LoadError::DirectoryBuildProps(file_error) => match file_error {
+            project::FileLoadError::Read(io_error) => {
+                log_io_error_to(
+                    &mut writer,
+                    "Error reading `Directory.Build.props`",
+                    "loading a `Directory.Build.props` file",
+                    io_error,
+                );
+            }
+            project::FileLoadError::XmlParse(xml_parse_error) => {
+                log_error_to(
+                    &mut writer,
+                    "Error parsing `Directory.Build.props`",
+                    formatdoc! {"
+                        We can’t parse the `Directory.Build.props` file’s XML content. Parsing errors
+                        usually indicate an error in the file.
+
+                        Use the debug information above to troubleshoot and retry your build.
+
+                        For more information, see:
+                        https://github.com/heroku/buildpacks-dotnet#net-version
+                    "},
+                    Some(xml_parse_error.to_string()),
+                );
+            }
+        },
         project::LoadError::MissingTargetFramework(project_path) => {
             log_error_to(
                 &mut writer,
-                "Project file missing TargetFramework property",
+                "Missing target framework configuration",
                 formatdoc! {"
-                    The project file `{project_path}` is missing the `TargetFramework` property.
-                    You must set this required property.
+                    The project `{project_path}` is missing `TargetFramework` configuration.
+
+                    The `TargetFramework` property must be set either:
+                    * In the project file itself
+                    * In a `Directory.Build.props` file in the project directory or any parent directory
 
                     For more information, see:
                     https://github.com/heroku/buildpacks-dotnet#net-version
@@ -770,7 +792,7 @@ mod tests {
     fn test_load_app_source_solution_load_project_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
             app_source::LoadError::Solution(solution::LoadError::LoadProject(
-                project::LoadError::ReadProjectFile(create_io_error()),
+                project::LoadError::ProjectFile(project::FileLoadError::Read(create_io_error())),
             )),
         ));
     }
@@ -779,7 +801,9 @@ mod tests {
     fn test_load_app_source_solution_load_project_xml_parse_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
             app_source::LoadError::Solution(solution::LoadError::LoadProject(
-                project::LoadError::XmlParseError(create_xml_parse_error()),
+                project::LoadError::ProjectFile(project::FileLoadError::XmlParse(
+                    create_xml_parse_error(),
+                )),
             )),
         ));
     }
@@ -805,15 +829,17 @@ mod tests {
     #[test]
     fn test_load_app_source_project_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::Project(project::LoadError::ReadProjectFile(create_io_error())),
+            app_source::LoadError::Project(project::LoadError::ProjectFile(
+                project::FileLoadError::Read(create_io_error()),
+            )),
         ));
     }
 
     #[test]
     fn test_load_app_source_project_xml_parse_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::Project(project::LoadError::XmlParseError(
-                create_xml_parse_error(),
+            app_source::LoadError::Project(project::LoadError::ProjectFile(
+                project::FileLoadError::XmlParse(create_xml_parse_error()),
             )),
         ));
     }
@@ -822,7 +848,25 @@ mod tests {
     fn test_load_app_source_project_missing_target_framework_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
             app_source::LoadError::Project(project::LoadError::MissingTargetFramework(
-                PathBuf::from("fpp.csproj"),
+                PathBuf::from("foo.csproj"),
+            )),
+        ));
+    }
+
+    #[test]
+    fn test_load_app_source_project_read_directory_build_props_error() {
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::Project(project::LoadError::DirectoryBuildProps(
+                project::FileLoadError::Read(create_io_error()),
+            )),
+        ));
+    }
+
+    #[test]
+    fn test_load_app_source_project_xml_parse_directory_build_props_error() {
+        assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
+            app_source::LoadError::Project(project::LoadError::DirectoryBuildProps(
+                project::FileLoadError::XmlParse(create_xml_parse_error()),
             )),
         ));
     }
@@ -830,7 +874,9 @@ mod tests {
     #[test]
     fn test_load_app_source_file_based_app_read_error() {
         assert_error_snapshot(DotnetBuildpackError::LoadAppSource(
-            app_source::LoadError::FileBasedApp(create_io_error()),
+            app_source::LoadError::FileBasedApp(project::LoadError::ProjectFile(
+                project::FileLoadError::Read(create_io_error()),
+            )),
         ));
     }
 

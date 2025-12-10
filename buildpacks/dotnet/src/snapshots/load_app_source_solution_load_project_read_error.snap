@@ -4,9 +4,9 @@ source: buildpacks/dotnet/src/errors.rs
 - [1;36mDebug info[0m
   - foo bar baz
 
-[0;31m! Error loading the project file[0m
+[0;31m! Error loading solution project[0m
 [0;31m![0m
-[0;31m! An unexpected I/O error occurred while reading solution project files.[0m
+[0;31m! An unexpected I/O error occurred while reading solution project file.[0m
 [0;31m![0m
 [0;31m! Use the debug information above to troubleshoot and retry your build. If the[0m
 [0;31m! issue persists, file an issue here:[0m

@@ -43,7 +43,9 @@ The buildpack supports C#, Visual Basic and F# apps using the .NET and ASP.NET C
 
 ### .NET Version
 
-By default, the buildpack will install the latest available .NET SDK based on the value of the [`TargetFramework` property][target-framework], which must be set in each project file. TFM values that follow the `net{major_version}.0` format are currently supported (e.g. `net6.0`, `net7.0`, `net8.0`). If a solution references projects that target different framework versions, the most recent version will be preferred when inferring the .NET SDK version to install.
+By default, the buildpack will install the latest available .NET SDK based on the value of the [`TargetFramework` property][target-framework], which must be configured for each project. If a project file doesn't specify `TargetFramework`, the buildpack will look for a [`Directory.Build.props`][directory-build-props] file in the project directory or any parent directory and use the `TargetFramework` property if defined there.
+
+Target framework moniker (TFM) values that follow the `net{major_version}.0` format are currently supported (e.g. `net8.0`, `net9.0`, `net10.0`). If a solution references projects that target different framework versions, the most recent version will be preferred when inferring the .NET SDK version to install.
 
 To install a different .NET SDK version, add a [`global.json` file][global-json] to the root directory. The buildpack supports specifying both the `version` and `rollForward` policy to define which .NET SDK version to install. For instance, to install a specific version a `global.json` file may look like this:
 
@@ -124,6 +126,7 @@ Issues and pull requests are welcome. See our [contributing guidelines](./CONTRI
 [ci-url]: https://github.com/heroku/buildpacks-dotnet/actions/workflows/ci.yml
 [classic-buildpack]: https://github.com/heroku/heroku-buildpack-dotnet
 [cnb]: https://buildpacks.io
+[directory-build-props]: https://learn.microsoft.com/en-us/visualstudio/msbuild/customize-by-directory#directorybuildprops-and-directorybuildtargets
 [file-based-apps]: https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-10/sdk#file-based-apps-enhancements
 [heroku-buildpacks]: https://github.com/heroku/buildpacks
 [pack-install]: https://buildpacks.io/docs/for-platform-operators/how-to/integrate-ci/pack/

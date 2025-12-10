@@ -1,3 +1,4 @@
+use crate::detect;
 use quick_xml::de::from_str;
 use serde::Deserialize;
 use std::io;
@@ -14,18 +15,20 @@ pub(crate) struct Project {
 
 impl Project {
     pub(crate) fn load_from_path(path: &Path) -> Result<Self, LoadError> {
-        let content = fs_err::read_to_string(path).map_err(LoadError::ReadProjectFile)?;
-        let project_xml: ProjectXml = from_str(&content).map_err(LoadError::XmlParseError)?;
+        let content = fs_err::read_to_string(path)
+            .map_err(|e| LoadError::ProjectFile(FileLoadError::Read(e)))?;
+        let project_xml: ProjectXml =
+            from_str(&content).map_err(|e| LoadError::ProjectFile(FileLoadError::XmlParse(e)))?;
 
         let property_groups = &project_xml.property_groups;
 
-        // Find the last one; it's an error if it's missing.
-        let target_framework = property_groups
-            .iter()
-            .filter_map(|pg| pg.target_framework.as_ref())
-            .next_back()
-            .cloned()
-            .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?;
+        // Try to find TargetFramework in project file first, then Directory.Build.props
+        let target_framework = match extract_target_framework(property_groups) {
+            Some(tfm) => tfm,
+            None => find_target_framework_from_directory_build_props(path)
+                .map_err(LoadError::DirectoryBuildProps)?
+                .ok_or_else(|| LoadError::MissingTargetFramework(path.to_path_buf()))?,
+        };
 
         // Find the last one, but if it's blank, fall back to the file name
         // (even if an earlier, non-empty/whitespace assembly name is set).
@@ -64,8 +67,9 @@ impl Project {
         })
     }
 
-    pub(crate) fn load_from_file_based_app(path: &Path) -> Result<Self, io::Error> {
-        let content = fs_err::read_to_string(path)?;
+    pub(crate) fn load_from_file_based_app(path: &Path) -> Result<Self, LoadError> {
+        let content = fs_err::read_to_string(path)
+            .map_err(|e| LoadError::ProjectFile(FileLoadError::Read(e)))?;
 
         let mut sdk_id: Option<&str> = None;
         let mut target_framework: Option<&str> = None;
@@ -95,8 +99,13 @@ impl Project {
 
         // Apply defaults if values were not found in the file
         let final_sdk_id = sdk_id.unwrap_or("Microsoft.NET.Sdk");
-        let final_target_framework = target_framework.unwrap_or("net10.0").to_string();
-
+        let final_target_framework = if let Some(tfm) = target_framework {
+            tfm.to_string()
+        } else {
+            find_target_framework_from_directory_build_props(path)
+                .map_err(LoadError::DirectoryBuildProps)?
+                .unwrap_or_else(|| "net10.0".to_string())
+        };
         // File-based apps are executables, so pass 'Exe' as the output type when
         // when inferring project type (e.g. default to ConsoleApplication).
         let project_type = infer_project_type(final_sdk_id, Some("Exe"));
@@ -137,6 +146,12 @@ struct ProjectXml {
 }
 
 #[derive(Debug, Deserialize)]
+struct DirectoryBuildPropsXml {
+    #[serde(rename = "PropertyGroup", default)]
+    property_groups: Vec<PropertyGroup>,
+}
+
+#[derive(Debug, Deserialize)]
 struct SdkElement {
     #[serde(rename = "@Name")]
     name: String,
@@ -151,9 +166,15 @@ pub(crate) enum ProjectType {
 }
 
 #[derive(Debug)]
+pub(crate) enum FileLoadError {
+    Read(io::Error),
+    XmlParse(quick_xml::de::DeError),
+}
+
+#[derive(Debug)]
 pub(crate) enum LoadError {
-    ReadProjectFile(io::Error),
-    XmlParseError(quick_xml::de::DeError),
+    ProjectFile(FileLoadError),
+    DirectoryBuildProps(FileLoadError),
     MissingTargetFramework(PathBuf),
 }
 
@@ -167,6 +188,27 @@ fn infer_project_type(sdk_id: &str, output_type: Option<&str>) -> ProjectType {
         "Microsoft.NET.Sdk.Worker" => ProjectType::WorkerService,
         _ => ProjectType::Unknown,
     }
+}
+
+fn extract_target_framework(property_groups: &[PropertyGroup]) -> Option<String> {
+    property_groups
+        .iter()
+        .filter_map(|pg| pg.target_framework.as_ref())
+        .next_back()
+        .cloned()
+}
+
+fn find_target_framework_from_directory_build_props(
+    file_path: &Path,
+) -> Result<Option<String>, FileLoadError> {
+    let Some(props_path) = detect::directory_build_props_file(file_path) else {
+        return Ok(None);
+    };
+
+    let content = fs_err::read_to_string(&props_path).map_err(FileLoadError::Read)?;
+    let props_xml: DirectoryBuildPropsXml = from_str(&content).map_err(FileLoadError::XmlParse)?;
+
+    Ok(extract_target_framework(&props_xml.property_groups))
 }
 
 #[cfg(test)]
@@ -308,7 +350,7 @@ mod tests {
         let nonexistent_path = Path::new("/nonexistent/path/test.csproj");
         let result = Project::load_from_path(nonexistent_path).unwrap_err();
 
-        assert_matches!(result, LoadError::ReadProjectFile(error) if error.kind() == ErrorKind::NotFound);
+        assert_matches!(result, LoadError::ProjectFile(FileLoadError::Read(error)) if error.kind() == ErrorKind::NotFound);
     }
 
     #[test]
@@ -318,7 +360,10 @@ mod tests {
         fs::write(&project_path, "not valid xml").unwrap();
 
         let result = Project::load_from_path(&project_path);
-        assert_matches!(result, Err(LoadError::XmlParseError(_)));
+        assert_matches!(
+            result,
+            Err(LoadError::ProjectFile(FileLoadError::XmlParse(_)))
+        );
     }
 
     #[test]
@@ -326,7 +371,7 @@ mod tests {
         let nonexistent_path = Path::new("/nonexistent/path/test.cs");
         let result = Project::load_from_file_based_app(nonexistent_path);
 
-        assert_matches!(result, Err(error) if error.kind() == ErrorKind::NotFound);
+        assert_matches!(result, Err(LoadError::ProjectFile(FileLoadError::Read(error))) if error.kind() == ErrorKind::NotFound);
     }
 
     #[test]
@@ -438,5 +483,233 @@ Console.WriteLine("foobar");
         assert_eq!(project.project_type, ProjectType::WorkerService);
         assert_eq!(project.target_framework, "net10.0");
         assert_eq!(project.assembly_name, "WorkerApp");
+    }
+
+    #[test]
+    fn test_load_file_based_app_with_directory_build_props() {
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        fs::write(
+            temp_dir.path().join("Directory.Build.props"),
+            r"
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+    </PropertyGroup>
+</Project>",
+        )
+        .unwrap();
+
+        let app_path = temp_dir.path().join("MyApp.cs");
+        fs::write(
+            &app_path,
+            r#"
+#:sdk Microsoft.NET.Sdk
+
+Console.WriteLine("Hello from file-based app!");
+"#,
+        )
+        .unwrap();
+
+        let project = Project::load_from_file_based_app(&app_path).unwrap();
+
+        assert_eq!(project.target_framework, "net9.0");
+        assert_eq!(project.project_type, ProjectType::ConsoleApplication);
+        assert_eq!(project.assembly_name, "MyApp");
+    }
+
+    #[test]
+    fn test_load_file_based_app_with_malformed_directory_build_props() {
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        fs::write(
+            temp_dir.path().join("Directory.Build.props"),
+            "not valid xml",
+        )
+        .unwrap();
+
+        let app_path = temp_dir.path().join("MyApp.cs");
+        fs::write(
+            &app_path,
+            r#"
+#:sdk Microsoft.NET.Sdk
+
+Console.WriteLine("Hello from file-based app!");
+"#,
+        )
+        .unwrap();
+
+        let result = Project::load_from_file_based_app(&app_path);
+        assert_matches!(
+            result,
+            Err(LoadError::DirectoryBuildProps(FileLoadError::XmlParse(_)))
+        );
+    }
+
+    #[test]
+    fn test_load_project_with_directory_build_props() {
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        fs::write(
+            temp_dir.path().join("Directory.Build.props"),
+            r"
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+    </PropertyGroup>
+</Project>",
+        )
+        .unwrap();
+
+        let project_dir = temp_dir.path().join("MyProject");
+        fs::create_dir(&project_dir).unwrap();
+        let project_path = project_dir.join("MyProject.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+</Project>"#,
+        )
+        .unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        assert_eq!(project.target_framework, "net8.0");
+        assert_eq!(project.project_type, ProjectType::ConsoleApplication);
+    }
+
+    #[test]
+    fn test_project_target_framework_overrides_directory_build_props() {
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        fs::write(
+            temp_dir.path().join("Directory.Build.props"),
+            r"
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
+</Project>",
+        )
+        .unwrap();
+
+        let project_path = temp_dir.path().join("MyProject.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+    </PropertyGroup>
+</Project>"#,
+        )
+        .unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        assert_eq!(project.target_framework, "net8.0");
+    }
+
+    #[test]
+    fn test_malformed_directory_build_props_returns_error() {
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        fs::write(
+            temp_dir.path().join("Directory.Build.props"),
+            "not valid xml",
+        )
+        .unwrap();
+
+        let project_path = temp_dir.path().join("MyProject.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+</Project>"#,
+        )
+        .unwrap();
+
+        let result = Project::load_from_path(&project_path);
+        assert_matches!(
+            result,
+            Err(LoadError::DirectoryBuildProps(FileLoadError::XmlParse(_)))
+        );
+    }
+
+    #[test]
+    fn test_directory_build_props_with_multiple_property_groups() {
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        fs::write(
+            temp_dir.path().join("Directory.Build.props"),
+            r"
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+    </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+    </PropertyGroup>
+</Project>",
+        )
+        .unwrap();
+
+        let project_path = temp_dir.path().join("MyProject.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+</Project>"#,
+        )
+        .unwrap();
+
+        let project = Project::load_from_path(&project_path).unwrap();
+        assert_eq!(project.target_framework, "net8.0");
+    }
+
+    #[test]
+    fn test_directory_build_props_read_io_error() {
+        use std::fs::Permissions;
+        use std::os::unix::fs::PermissionsExt;
+
+        let temp_dir = tempfile::tempdir().unwrap();
+
+        let props_path = temp_dir.path().join("Directory.Build.props");
+        fs::write(
+            &props_path,
+            r"
+<Project>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+    </PropertyGroup>
+</Project>",
+        )
+        .unwrap();
+
+        // Make the file unreadable
+        fs::set_permissions(&props_path, Permissions::from_mode(0o000)).unwrap();
+
+        let project_path = temp_dir.path().join("MyProject.csproj");
+        fs::write(
+            &project_path,
+            r#"
+<Project Sdk="Microsoft.NET.Sdk">
+</Project>"#,
+        )
+        .unwrap();
+
+        let result = Project::load_from_path(&project_path);
+
+        // Restore permissions for cleanup
+        let _ = fs::set_permissions(&props_path, Permissions::from_mode(0o644));
+
+        assert_matches!(
+            result,
+            Err(LoadError::DirectoryBuildProps(FileLoadError::Read(_)))
+        );
     }
 }

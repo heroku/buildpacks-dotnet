@@ -43,7 +43,11 @@ impl Solution {
 
 fn try_load_project(path: PathBuf) -> Result<Project, LoadError> {
     path.try_exists()
-        .map_err(|error| LoadError::LoadProject(project::LoadError::ReadProjectFile(error)))
+        .map_err(|error| {
+            LoadError::LoadProject(project::LoadError::ProjectFile(
+                project::FileLoadError::Read(error),
+            ))
+        })
         .and_then(|exists| {
             if exists {
                 Project::load_from_path(&path).map_err(LoadError::LoadProject)
@@ -120,7 +124,7 @@ mod tests {
         let invalid_path = PathBuf::from("some\0file.csproj");
 
         let result = try_load_project(invalid_path);
-        assert_matches!(result, Err(LoadError::LoadProject(project::LoadError::ReadProjectFile(error))) if error.kind() == ErrorKind::InvalidInput);
+        assert_matches!(result, Err(LoadError::LoadProject(project::LoadError::ProjectFile(project::FileLoadError::Read(error)))) if error.kind() == ErrorKind::InvalidInput);
     }
 
     #[test]
