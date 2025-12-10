@@ -182,9 +182,10 @@ fn test_dotnet_publish_file_based_app_basic_console() {
                 "- Running `dotnet publish /workspace/foo.cs"
             );
             assert_contains!(context.pack_stdout, "foo -> /workspace/bin/publish/");
+            assert_contains!(context.pack_stdout, "- Analyzing candidates:");
             assert_contains!(
                 context.pack_stdout,
-                "- Found `foo`: bash -c cd bin/publish; ./foo"
+                "- `foo.cs`: Found executable at `bin/publish/foo`"
             );
         },
     );
@@ -210,9 +211,10 @@ fn test_dotnet_publish_file_based_app_basic_web() {
                 "- Running `dotnet publish /workspace/foo.cs"
             );
             assert_contains!(context.pack_stdout, "foo -> /workspace/bin/publish/");
+            assert_contains!(context.pack_stdout, "- Analyzing candidates:");
             assert_contains!(
                 context.pack_stdout,
-                "- Found `web`: bash -c cd bin/publish; ./foo --urls http://*:$PORT"
+                "- `foo.cs`: Found executable at `bin/publish/foo`"
             );
         },
     );
@@ -230,9 +232,12 @@ fn test_dotnet_publish_process_registration_with_procfile() {
                 indoc! { r"
                     - Process types
                       - Detecting process types from published artifacts
-                      - Found `web`: bash -c cd bin/publish; ./foo --urls http://*:$PORT
+                      - Analyzing candidates:
+                      - `foo.csproj`: Found executable at `bin/publish/foo`
                       - Procfile detected
-                      - Skipping process type registration (add process types to your Procfile as needed)"}
+                      - Skipping automatic registration (Procfile takes precedence)
+                      - Available process types (for reference):
+                      - `web`: bash -c cd bin/publish; ./foo --urls http://*:$PORT"}
             );
         },
     );
@@ -250,9 +255,11 @@ fn test_dotnet_publish_process_registration_without_procfile() {
                 indoc! { r"
                 - Process types
                   - Detecting process types from published artifacts
-                  - Found `web`: bash -c cd bin/publish; ./foo --urls http://*:$PORT
+                  - Analyzing candidates:
+                  - `foo.csproj`: Found executable at `bin/publish/foo`
                   - No Procfile detected
-                  - Registering detected process types as launch processes
+                  - Registering launch processes:
+                  - `web`: bash -c cd bin/publish; ./foo --urls http://*:$PORT
                 - Done"}
             );
         },
@@ -271,7 +278,7 @@ fn test_dotnet_publish_process_registration_without_process_types() {
                 indoc! { r"
                 - Process types
                   - Detecting process types from published artifacts
-                  - No processes were detected"}
+                  - No candidate projects detected"}
             );
         },
     );
@@ -326,7 +333,11 @@ fn test_dotnet_publish_with_space_in_project_filename() {
 
             assert_contains!(
                 &context.pack_stdout,
-                r"Found `console-app`: bash -c cd 'console app/bin/publish'; ./'console app'"
+                r"- `console app/console app.csproj`: Found executable at `console app/bin/publish/console app`"
+            );
+            assert_contains!(
+                &context.pack_stdout,
+                r"- `console-app`: bash -c cd 'console app/bin/publish'; ./'console app'"
             );
 
             context.start_container(
@@ -355,10 +366,13 @@ fn test_dotnet_publish_with_updated_process_type_name_heroku_warning() {
                 &formatdoc! {r"
                   - Process types
                     - Detecting process types from published artifacts
-                    - Found `web`: bash -c cd web/bin/publish; ./web --urls http://*:$PORT
-                    - Found `worker`: bash -c cd worker/bin/publish; ./worker
+                    - Analyzing candidates:
+                    - `web/web.csproj`: Found executable at `web/bin/publish/web`
+                    - `worker/worker.csproj`: Found executable at `worker/bin/publish/worker`
                     - No Procfile detected
-                    - Registering detected process types as launch processes
+                    - Registering launch processes:
+                    - `web`: bash -c cd web/bin/publish; ./web --urls http://*:$PORT
+                    - `worker`: bash -c cd worker/bin/publish; ./worker
                   - Done"}
             );
             assert_contains!(context.pack_stdout, "web -> /workspace/web/bin/publish/");
@@ -379,10 +393,13 @@ fn test_dotnet_publish_slnx_with_web_and_console_projects() {
                 &formatdoc! {r"
                   - Process types
                     - Detecting process types from published artifacts
-                    - Found `web`: bash -c cd web/bin/publish; ./web --urls http://*:$PORT
-                    - Found `worker`: bash -c cd worker/bin/publish; ./worker
+                    - Analyzing candidates:
+                    - `web/web.csproj`: Found executable at `web/bin/publish/web`
+                    - `worker/worker.csproj`: Found executable at `worker/bin/publish/worker`
                     - No Procfile detected
-                    - Registering detected process types as launch processes
+                    - Registering launch processes:
+                    - `web`: bash -c cd web/bin/publish; ./web --urls http://*:$PORT
+                    - `worker`: bash -c cd worker/bin/publish; ./worker
                   - Done"}
             );
             assert_contains!(context.pack_stdout, "web -> /workspace/web/bin/publish/");

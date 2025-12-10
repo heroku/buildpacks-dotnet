@@ -242,27 +242,62 @@ impl Buildpack for DotnetBuildpack {
 
                 print::bullet("Process types");
                 print::sub_bullet("Detecting process types from published artifacts");
-                let processes =
+
+                let detection_results =
                     launch_process::detect_solution_processes(&context.app_dir, &solution);
-                if processes.is_empty() {
-                    print::sub_bullet("No processes were detected");
+
+                if detection_results.is_empty() {
+                    print::sub_bullet("No candidate projects detected");
                 } else {
-                    for process in &processes {
+                    print::sub_bullet("Analyzing candidates:");
+
+                    // Print all detection results
+                    for result in &detection_results {
+                        let outcome = if result.process.is_some() {
+                            "Found executable at"
+                        } else {
+                            "No executable found at"
+                        };
+
                         print::sub_bullet(format!(
-                            "Found {}: {}",
-                            style::value(process.r#type.to_string()),
-                            process.command.join(" ")
+                            "{}: {outcome} {}",
+                            style::value(result.relative_project_file.display().to_string()),
+                            style::value(result.relative_executable.display().to_string())
                         ));
                     }
-                    if Path::exists(&context.app_dir.join("Procfile")) {
-                        print::sub_bullet("Procfile detected");
-                        print::sub_bullet(
-                            "Skipping process type registration (add process types to your Procfile as needed)",
-                        );
-                    } else {
-                        launch_builder.processes(processes.clone());
-                        print::sub_bullet("No Procfile detected");
-                        print::sub_bullet("Registering detected process types as launch processes");
+
+                    // Filter to only valid processes
+                    let valid_processes: Vec<_> = detection_results
+                        .into_iter()
+                        .filter_map(|result| result.process)
+                        .collect();
+
+                    if !valid_processes.is_empty() {
+                        if Path::exists(&context.app_dir.join("Procfile")) {
+                            print::sub_bullet("Procfile detected");
+                            print::sub_bullet(
+                                "Skipping automatic registration (Procfile takes precedence)",
+                            );
+                            print::sub_bullet("Available process types (for reference):");
+                            for process in &valid_processes {
+                                print::sub_bullet(format!(
+                                    "{}: {}",
+                                    style::value(process.r#type.to_string()),
+                                    process.command.join(" ")
+                                ));
+                            }
+                        } else {
+                            print::sub_bullet("No Procfile detected");
+                            print::sub_bullet("Registering launch processes:");
+                            for process in &valid_processes {
+                                print::sub_bullet(format!(
+                                    "{}: {}",
+                                    style::value(process.r#type.to_string()),
+                                    process.command.join(" ")
+                                ));
+                            }
+                            launch_builder.processes(valid_processes);
+                        }
                     }
                 }
             }
