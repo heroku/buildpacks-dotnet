@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support for configuring the target framework using `Directory.Build.props`. ([#362](https://github.com/heroku/buildpacks-dotnet/pull/362))
+
 ## [0.13.0] - 2025-12-09
 
 ### Changed
