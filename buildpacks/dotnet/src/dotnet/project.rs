@@ -191,7 +191,6 @@ fn infer_project_type(sdk_id: &str, output_type: Option<&str>) -> ProjectType {
 }
 
 fn extract_target_framework(property_groups: &[PropertyGroup]) -> Option<String> {
-    // Find the last TargetFramework property (last wins)
     property_groups
         .iter()
         .filter_map(|pg| pg.target_framework.as_ref())
@@ -490,7 +489,6 @@ Console.WriteLine("foobar");
     fn test_load_file_based_app_with_directory_build_props() {
         let temp_dir = tempfile::tempdir().unwrap();
 
-        // Create Directory.Build.props with TargetFramework
         fs::write(
             temp_dir.path().join("Directory.Build.props"),
             r"
@@ -502,7 +500,6 @@ Console.WriteLine("foobar");
         )
         .unwrap();
 
-        // Create file-based app without TargetFramework property
         let app_path = temp_dir.path().join("MyApp.cs");
         fs::write(
             &app_path,
@@ -525,14 +522,12 @@ Console.WriteLine("Hello from file-based app!");
     fn test_load_file_based_app_with_malformed_directory_build_props() {
         let temp_dir = tempfile::tempdir().unwrap();
 
-        // Create malformed Directory.Build.props
         fs::write(
             temp_dir.path().join("Directory.Build.props"),
             "not valid xml",
         )
         .unwrap();
 
-        // Create file-based app without TargetFramework property
         let app_path = temp_dir.path().join("MyApp.cs");
         fs::write(
             &app_path,
@@ -555,7 +550,6 @@ Console.WriteLine("Hello from file-based app!");
     fn test_load_project_with_directory_build_props() {
         let temp_dir = tempfile::tempdir().unwrap();
 
-        // Create Directory.Build.props with TargetFramework
         fs::write(
             temp_dir.path().join("Directory.Build.props"),
             r"
@@ -567,7 +561,6 @@ Console.WriteLine("Hello from file-based app!");
         )
         .unwrap();
 
-        // Create subdirectory with project that doesn't specify TargetFramework
         let project_dir = temp_dir.path().join("MyProject");
         fs::create_dir(&project_dir).unwrap();
         let project_path = project_dir.join("MyProject.csproj");
@@ -591,7 +584,6 @@ Console.WriteLine("Hello from file-based app!");
     fn test_project_target_framework_overrides_directory_build_props() {
         let temp_dir = tempfile::tempdir().unwrap();
 
-        // Directory.Build.props has net6.0
         fs::write(
             temp_dir.path().join("Directory.Build.props"),
             r"
@@ -603,7 +595,6 @@ Console.WriteLine("Hello from file-based app!");
         )
         .unwrap();
 
-        // Project file has net8.0 - Directory.Build.props should be ignored
         let project_path = temp_dir.path().join("MyProject.csproj");
         fs::write(
             &project_path,
@@ -617,7 +608,6 @@ Console.WriteLine("Hello from file-based app!");
         .unwrap();
 
         let project = Project::load_from_path(&project_path).unwrap();
-        // Project file's TargetFramework is used, Directory.Build.props is not consulted
         assert_eq!(project.target_framework, "net8.0");
     }
 
@@ -651,7 +641,6 @@ Console.WriteLine("Hello from file-based app!");
     fn test_directory_build_props_with_multiple_property_groups() {
         let temp_dir = tempfile::tempdir().unwrap();
 
-        // Directory.Build.props with multiple PropertyGroups
         fs::write(
             temp_dir.path().join("Directory.Build.props"),
             r"
@@ -679,7 +668,6 @@ Console.WriteLine("Hello from file-based app!");
         .unwrap();
 
         let project = Project::load_from_path(&project_path).unwrap();
-        // Last PropertyGroup wins
         assert_eq!(project.target_framework, "net8.0");
     }
 
@@ -690,7 +678,6 @@ Console.WriteLine("Hello from file-based app!");
 
         let temp_dir = tempfile::tempdir().unwrap();
 
-        // Create Directory.Build.props file and make it unreadable
         let props_path = temp_dir.path().join("Directory.Build.props");
         fs::write(
             &props_path,
@@ -703,7 +690,7 @@ Console.WriteLine("Hello from file-based app!");
         )
         .unwrap();
 
-        // Make the file unreadable (mode 000)
+        // Make the file unreadable
         fs::set_permissions(&props_path, Permissions::from_mode(0o000)).unwrap();
 
         let project_path = temp_dir.path().join("MyProject.csproj");

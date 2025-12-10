@@ -169,17 +169,14 @@ mod tests {
     fn test_directory_build_props_file_finds_nearest() {
         let temp_dir = TempDir::new().unwrap();
 
-        // Create props file at root
         let root_props = temp_dir.path().join("Directory.Build.props");
         File::create(&root_props).unwrap();
 
-        // Create nested directory with its own props file
         let nested_dir = temp_dir.path().join("src");
         fs::create_dir(&nested_dir).unwrap();
         let nested_props = nested_dir.join("Directory.Build.props");
         File::create(&nested_props).unwrap();
 
-        // Should find the nearest one (in nested_dir)
         let result = directory_build_props_file(&nested_dir);
         assert_eq!(result, Some(nested_props));
     }
