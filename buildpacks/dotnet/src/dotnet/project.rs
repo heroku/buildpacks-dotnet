@@ -82,7 +82,7 @@ impl Project {
             if sdk_id.is_none()
                 && let Some(sdk_val) = trimmed_line.strip_prefix("#:sdk ")
             {
-                sdk_id = Some(sdk_val);
+                sdk_id = Some(sdk_val.trim_start());
             }
 
             // Find the *first* TargetFramework. Specifying duplicate properties will cause an error during
@@ -90,14 +90,14 @@ impl Project {
             if target_framework.is_none()
                 && let Some(tfm_val) = trimmed_line.strip_prefix("#:property TargetFramework=")
             {
-                target_framework = Some(tfm_val);
+                target_framework = Some(tfm_val.trim_start());
             }
 
             // Find the *first* AssemblyName
             if assembly_name.is_none()
                 && let Some(asm_val) = trimmed_line.strip_prefix("#:property AssemblyName=")
             {
-                assembly_name = Some(asm_val);
+                assembly_name = Some(asm_val.trim_start());
             }
 
             if sdk_id.is_some() && target_framework.is_some() && assembly_name.is_some() {
@@ -476,6 +476,26 @@ Console.WriteLine("foobar");
         // It should find the AssemblyName
         assert_eq!(project.assembly_name, "CustomAssemblyName");
         assert_eq!(project.path, app_path);
+    }
+
+    #[test]
+    fn test_load_file_based_app_configuration_values_with_whitespace() {
+        let project_cs = r#"
+#:property AssemblyName= foo 
+#:sdk  Microsoft.NET.Sdk.Web 
+#:property TargetFramework= net11.0 
+
+Console.WriteLine("foobar");
+"#;
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_path = temp_dir.path().join("MyApp.cs");
+        fs::write(&app_path, project_cs).unwrap();
+
+        let project = Project::load_from_file_based_app(&app_path).unwrap();
+
+        assert_eq!(project.assembly_name, "foo");
+        assert_eq!(project.project_type, ProjectType::WebApplication);
+        assert_eq!(project.target_framework, "net11.0");
     }
 
     #[test]
