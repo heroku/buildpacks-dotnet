@@ -18,8 +18,16 @@ pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> 
     solution
         .projects
         .iter()
-        .filter_map(|project| {
-            let mut process = project_launch_process(app_dir, project)?;
+        .filter(|project| {
+            matches!(
+                project.project_type,
+                ProjectType::ConsoleApplication
+                    | ProjectType::WebApplication
+                    | ProjectType::WorkerService
+            )
+        })
+        .map(|project| {
+            let mut process = project_launch_process(app_dir, project);
 
             // If it's a web app and the only one, override its type and make it default.
             if has_single_web_app && project.project_type == ProjectType::WebApplication {
@@ -27,19 +35,12 @@ pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> 
                 process.default = true;
             }
 
-            Some(process)
+            process
         })
         .collect()
 }
 
-/// Determines if a project should have a launchable process and constructs it
-fn project_launch_process(app_dir: &Path, project: &Project) -> Option<Process> {
-    if !matches!(
-        project.project_type,
-        ProjectType::ConsoleApplication | ProjectType::WebApplication | ProjectType::WorkerService
-    ) {
-        return None;
-    }
+fn project_launch_process(app_dir: &Path, project: &Project) -> Process {
     let relative_executable_path = project_executable_path(project)
         .strip_prefix(app_dir)
         .expect("Executable path should be inside the app directory")
@@ -49,7 +50,7 @@ fn project_launch_process(app_dir: &Path, project: &Project) -> Option<Process> 
 
     let process_type = project_process_type(project);
 
-    Some(ProcessBuilder::new(process_type, ["bash", "-c", &command]).build())
+    ProcessBuilder::new(process_type, ["bash", "-c", &command]).build()
 }
 
 /// Constructs the shell command for launching the process
