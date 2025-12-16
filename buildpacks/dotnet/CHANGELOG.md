@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Launch process detection now skips projects whose executables don't exist at the expected path. ([#364](https://github.com/heroku/buildpacks-dotnet/pull/364))
+
 ## [0.14.0] - 2025-12-13
 
 ### Added
