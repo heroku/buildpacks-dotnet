@@ -147,13 +147,17 @@ mod tests {
 
     #[test]
     fn test_detect_solution_processes_single_web_app() {
-        let app_dir = Path::new("/tmp");
-        let project =
-            create_test_project("/tmp/bar/bar.csproj", "bar", ProjectType::WebApplication);
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_dir = temp_dir.path();
+        let project = create_test_project(
+            &format!("{}/bar/bar.csproj", app_dir.display()),
+            "bar",
+            ProjectType::WebApplication,
+        );
         create_executable_for_project(&project);
 
         let solution = Solution {
-            path: PathBuf::from("/tmp/foo.sln"),
+            path: app_dir.join("foo.sln"),
             projects: vec![project],
         };
 
@@ -177,16 +181,23 @@ mod tests {
 
     #[test]
     fn test_detect_solution_processes_multiple_web_apps() {
-        let app_dir = Path::new("/tmp");
-        let project1 =
-            create_test_project("/tmp/bar/bar.csproj", "bar", ProjectType::WebApplication);
-        let project2 =
-            create_test_project("/tmp/baz/baz.csproj", "baz", ProjectType::WebApplication);
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_dir = temp_dir.path();
+        let project1 = create_test_project(
+            &format!("{}/bar/bar.csproj", app_dir.display()),
+            "bar",
+            ProjectType::WebApplication,
+        );
+        let project2 = create_test_project(
+            &format!("{}/baz/baz.csproj", app_dir.display()),
+            "baz",
+            ProjectType::WebApplication,
+        );
         create_executable_for_project(&project1);
         create_executable_for_project(&project2);
 
         let solution = Solution {
-            path: PathBuf::from("/tmp/foo.sln"),
+            path: app_dir.join("foo.sln"),
             projects: vec![project1, project2],
         };
         assert_eq!(
@@ -200,12 +211,20 @@ mod tests {
 
     #[test]
     fn test_detect_solution_processes_single_web_app_and_console_app() {
-        let app_dir = Path::new("/tmp");
-        let project1 = create_test_project("/tmp/qux/qux.csproj", "qux", ProjectType::Unknown);
-        let project2 =
-            create_test_project("/tmp/bar/bar.csproj", "bar", ProjectType::WebApplication);
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_dir = temp_dir.path();
+        let project1 = create_test_project(
+            &format!("{}/qux/qux.csproj", app_dir.display()),
+            "qux",
+            ProjectType::Unknown,
+        );
+        let project2 = create_test_project(
+            &format!("{}/bar/bar.csproj", app_dir.display()),
+            "bar",
+            ProjectType::WebApplication,
+        );
         let project3 = create_test_project(
-            "/tmp/baz/baz.csproj",
+            &format!("{}/baz/baz.csproj", app_dir.display()),
             "baz",
             ProjectType::ConsoleApplication,
         );
@@ -213,7 +232,7 @@ mod tests {
         create_executable_for_project(&project3);
 
         let solution = Solution {
-            path: PathBuf::from("/tmp/foo.sln"),
+            path: app_dir.join("foo.sln"),
             projects: vec![project1, project2, project3],
         };
         assert_eq!(
@@ -227,16 +246,20 @@ mod tests {
 
     #[test]
     fn test_detect_solution_processes_with_spaces() {
-        let app_dir = Path::new("/tmp");
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_dir = temp_dir.path();
         let project = create_test_project(
-            "/tmp/My Project With Spaces/project.csproj",
+            &format!(
+                "{}/My Project With Spaces/project.csproj",
+                app_dir.display()
+            ),
             "My App",
             ProjectType::ConsoleApplication,
         );
         create_executable_for_project(&project);
 
         let solution = Solution {
-            path: PathBuf::from("/tmp/My Solution With Spaces.sln"),
+            path: app_dir.join("My Solution With Spaces.sln"),
             projects: vec![project],
         };
 
@@ -300,16 +323,17 @@ mod tests {
 
     #[test]
     fn test_detect_solution_processes_nested_solution() {
-        let app_dir = Path::new("/tmp");
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_dir = temp_dir.path();
         let project = create_test_project(
-            "/tmp/src/MyApp/MyApp.csproj", // Project is also in src/ subdirectory
+            &format!("{}/src/MyApp/MyApp.csproj", app_dir.display()), // Project is also in src/ subdirectory
             "MyApp",
             ProjectType::WebApplication,
         );
         create_executable_for_project(&project);
 
         let solution = Solution {
-            path: PathBuf::from("/tmp/src/MyApp.sln"), // Solution is in src/ subdirectory
+            path: app_dir.join("src/MyApp.sln"), // Solution is in src/ subdirectory
             projects: vec![project],
         };
 
