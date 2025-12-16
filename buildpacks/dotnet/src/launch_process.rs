@@ -26,8 +26,8 @@ pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> 
                     | ProjectType::WorkerService
             )
         })
-        .map(|project| {
-            let mut process = project_launch_process(app_dir, project);
+        .filter_map(|project| {
+            let mut process = project_launch_process(app_dir, project)?;
 
             // If it's a web app and the only one, override its type and make it default.
             if has_single_web_app && project.project_type == ProjectType::WebApplication {
@@ -35,12 +35,12 @@ pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> 
                 process.default = true;
             }
 
-            process
+            Some(process)
         })
         .collect()
 }
 
-fn project_launch_process(app_dir: &Path, project: &Project) -> Process {
+fn project_launch_process(app_dir: &Path, project: &Project) -> Option<Process> {
     let executable_path = project_executable_path(project);
     let relative_executable_path = executable_path
         .strip_prefix(app_dir)
@@ -51,7 +51,7 @@ fn project_launch_process(app_dir: &Path, project: &Project) -> Process {
 
     let process_type = project_process_type(project);
 
-    ProcessBuilder::new(process_type, ["bash", "-c", &command]).build()
+    Some(ProcessBuilder::new(process_type, ["bash", "-c", &command]).build())
 }
 
 /// Constructs the shell command for launching the process
