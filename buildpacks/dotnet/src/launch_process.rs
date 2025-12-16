@@ -40,7 +40,10 @@ fn project_launch_process(app_dir: &Path, project: &Project) -> Option<Process> 
     ) {
         return None;
     }
-    let relative_executable_path = relative_executable_path(app_dir, project);
+    let relative_executable_path = project_executable_path(project)
+        .strip_prefix(app_dir)
+        .expect("Executable path should be inside the app directory")
+        .to_path_buf();
 
     let command = build_command(&relative_executable_path, project.project_type);
 
@@ -82,14 +85,6 @@ fn project_process_type(project: &Project) -> ProcessType {
         .expect("Assembly name to include at least one character compatible with the RFC 1123 DNS label spec")
         .parse::<ProcessType>()
         .expect("Sanitized process type name should always be valid")
-}
-
-/// Returns the (expected) relative executable path from the app directory
-fn relative_executable_path(app_dir: &Path, project: &Project) -> PathBuf {
-    project_executable_path(project)
-        .strip_prefix(app_dir)
-        .expect("Executable path should be inside the app directory")
-        .to_path_buf()
 }
 
 /// Returns the (expected) absolute path to the project's compiled executable
@@ -219,21 +214,6 @@ mod tests {
         assert_eq!(
             detect_solution_processes(app_dir, &solution),
             expected_processes
-        );
-    }
-
-    #[test]
-    fn test_relative_executable_path() {
-        let app_dir = Path::new("/tmp");
-        let project = create_test_project(
-            "/tmp/project/project.csproj",
-            "TestApp",
-            ProjectType::ConsoleApplication,
-        );
-
-        assert_eq!(
-            relative_executable_path(app_dir, &project),
-            PathBuf::from("project/bin/publish/TestApp")
         );
     }
 
