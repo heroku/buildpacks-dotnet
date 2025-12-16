@@ -3,6 +3,7 @@ use crate::dotnet::solution::Solution;
 use crate::{Project, utils};
 use libcnb::data::launch::{Process, ProcessBuilder, ProcessType};
 use libcnb::data::process_type;
+use std::io;
 use std::path::{Path, PathBuf};
 
 /// Detects processes in a solution's projects
@@ -27,7 +28,7 @@ pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> 
             )
         })
         .filter_map(|project| {
-            let mut process = project_launch_process(app_dir, project)?;
+            let mut process = project_launch_process(app_dir, project).ok()?;
 
             // If it's a web app and the only one, override its type and make it default.
             if has_single_web_app && project.project_type == ProjectType::WebApplication {
@@ -40,11 +41,14 @@ pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> 
         .collect()
 }
 
-fn project_launch_process(app_dir: &Path, project: &Project) -> Option<Process> {
+fn project_launch_process(app_dir: &Path, project: &Project) -> io::Result<Process> {
     let executable_path = project_executable_path(project);
 
     if !executable_path.exists() {
-        return None;
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("Executable not found: {}", executable_path.display()),
+        ));
     }
 
     let relative_executable_path = executable_path
@@ -56,7 +60,7 @@ fn project_launch_process(app_dir: &Path, project: &Project) -> Option<Process> 
 
     let process_type = project_process_type(project);
 
-    Some(ProcessBuilder::new(process_type, ["bash", "-c", &command]).build())
+    Ok(ProcessBuilder::new(process_type, ["bash", "-c", &command]).build())
 }
 
 /// Constructs the shell command for launching the process
