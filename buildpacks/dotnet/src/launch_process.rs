@@ -129,6 +129,23 @@ mod tests {
     }
 
     #[test]
+    fn test_detect_solution_processes_missing_project_executable() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_dir = temp_dir.path();
+
+        let solution = Solution {
+            path: app_dir.join("foo.sln"),
+            projects: vec![create_test_project(
+                &format!("{}/bar/bar.csproj", app_dir.display()),
+                "bar",
+                ProjectType::WebApplication,
+            )],
+        };
+
+        assert!(detect_solution_processes(app_dir, &solution).is_empty());
+    }
+
+    #[test]
     fn test_detect_solution_processes_single_web_app() {
         let app_dir = Path::new("/tmp");
         let project =
