@@ -5,6 +5,7 @@ use libcnb::data::launch::{Process, ProcessBuilder, ProcessType};
 use libcnb::data::process_type;
 use std::io;
 use std::path::{Path, PathBuf};
+use tracing::instrument;
 
 /// Detects processes in a solution's projects
 pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> Vec<Process> {
@@ -41,6 +42,7 @@ pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> 
         .collect()
 }
 
+#[instrument(skip(app_dir), err)]
 fn project_launch_process(app_dir: &Path, project: &Project) -> io::Result<Process> {
     let executable_path = project_executable_path(project);
 
