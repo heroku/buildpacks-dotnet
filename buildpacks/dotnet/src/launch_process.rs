@@ -41,7 +41,8 @@ pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> 
 }
 
 fn project_launch_process(app_dir: &Path, project: &Project) -> Process {
-    let relative_executable_path = project_executable_path(project)
+    let executable_path = project_executable_path(project);
+    let relative_executable_path = executable_path
         .strip_prefix(app_dir)
         .expect("Executable path should be inside the app directory")
         .to_path_buf();
