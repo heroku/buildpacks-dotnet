@@ -131,11 +131,8 @@ mod tests {
     #[test]
     fn test_detect_solution_processes_single_web_app() {
         let app_dir = Path::new("/tmp");
-        let project = create_test_project(
-            "/tmp/bar/bar.csproj",
-            "bar",
-            ProjectType::WebApplication,
-        );
+        let project =
+            create_test_project("/tmp/bar/bar.csproj", "bar", ProjectType::WebApplication);
         create_executable_for_project(&project);
 
         let solution = Solution {
@@ -164,8 +161,10 @@ mod tests {
     #[test]
     fn test_detect_solution_processes_multiple_web_apps() {
         let app_dir = Path::new("/tmp");
-        let project1 = create_test_project("/tmp/bar/bar.csproj", "bar", ProjectType::WebApplication);
-        let project2 = create_test_project("/tmp/baz/baz.csproj", "baz", ProjectType::WebApplication);
+        let project1 =
+            create_test_project("/tmp/bar/bar.csproj", "bar", ProjectType::WebApplication);
+        let project2 =
+            create_test_project("/tmp/baz/baz.csproj", "baz", ProjectType::WebApplication);
         create_executable_for_project(&project1);
         create_executable_for_project(&project2);
 
@@ -186,7 +185,8 @@ mod tests {
     fn test_detect_solution_processes_single_web_app_and_console_app() {
         let app_dir = Path::new("/tmp");
         let project1 = create_test_project("/tmp/qux/qux.csproj", "qux", ProjectType::Unknown);
-        let project2 = create_test_project("/tmp/bar/bar.csproj", "bar", ProjectType::WebApplication);
+        let project2 =
+            create_test_project("/tmp/bar/bar.csproj", "bar", ProjectType::WebApplication);
         let project3 = create_test_project(
             "/tmp/baz/baz.csproj",
             "baz",
