@@ -3,7 +3,9 @@ use crate::dotnet::solution::Solution;
 use crate::{Project, utils};
 use libcnb::data::launch::{Process, ProcessBuilder, ProcessType};
 use libcnb::data::process_type;
+use std::io;
 use std::path::{Path, PathBuf};
+use tracing::instrument;
 
 /// Detects processes in a solution's projects
 pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> Vec<Process> {
@@ -18,8 +20,16 @@ pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> 
     solution
         .projects
         .iter()
+        .filter(|project| {
+            matches!(
+                project.project_type,
+                ProjectType::ConsoleApplication
+                    | ProjectType::WebApplication
+                    | ProjectType::WorkerService
+            )
+        })
         .filter_map(|project| {
-            let mut process = project_launch_process(app_dir, project)?;
+            let mut process = project_launch_process(app_dir, project).ok()?;
 
             // If it's a web app and the only one, override its type and make it default.
             if has_single_web_app && project.project_type == ProjectType::WebApplication {
@@ -32,21 +42,27 @@ pub(crate) fn detect_solution_processes(app_dir: &Path, solution: &Solution) -> 
         .collect()
 }
 
-/// Determines if a project should have a launchable process and constructs it
-fn project_launch_process(app_dir: &Path, project: &Project) -> Option<Process> {
-    if !matches!(
-        project.project_type,
-        ProjectType::ConsoleApplication | ProjectType::WebApplication | ProjectType::WorkerService
-    ) {
-        return None;
+#[instrument(skip(app_dir), err)]
+fn project_launch_process(app_dir: &Path, project: &Project) -> io::Result<Process> {
+    let executable_path = project_executable_path(project);
+
+    if !executable_path.exists() {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("Executable not found: {}", executable_path.display()),
+        ));
     }
-    let relative_executable_path = relative_executable_path(app_dir, project);
+
+    let relative_executable_path = executable_path
+        .strip_prefix(app_dir)
+        .expect("Executable path should be inside the app directory")
+        .to_path_buf();
 
     let command = build_command(&relative_executable_path, project.project_type);
 
     let process_type = project_process_type(project);
 
-    Some(ProcessBuilder::new(process_type, ["bash", "-c", &command]).build())
+    Ok(ProcessBuilder::new(process_type, ["bash", "-c", &command]).build())
 }
 
 /// Constructs the shell command for launching the process
@@ -84,14 +100,6 @@ fn project_process_type(project: &Project) -> ProcessType {
         .expect("Sanitized process type name should always be valid")
 }
 
-/// Returns the (expected) relative executable path from the app directory
-fn relative_executable_path(app_dir: &Path, project: &Project) -> PathBuf {
-    project_executable_path(project)
-        .strip_prefix(app_dir)
-        .expect("Executable path should be inside the app directory")
-        .to_path_buf()
-}
-
 /// Returns the (expected) absolute path to the project's compiled executable
 fn project_executable_path(project: &Project) -> PathBuf {
     project
@@ -108,6 +116,7 @@ mod tests {
     use super::*;
     use libcnb::data::launch::{Process, WorkingDirectory};
     use libcnb::data::process_type;
+    use std::fs;
     use std::path::PathBuf;
 
     fn create_test_project(path: &str, assembly_name: &str, project_type: ProjectType) -> Project {
@@ -119,16 +128,43 @@ mod tests {
         }
     }
 
+    fn create_executable_for_project(project: &Project) {
+        let executable_path = project_executable_path(project);
+        fs::create_dir_all(executable_path.parent().unwrap()).unwrap();
+        fs::write(&executable_path, "").unwrap();
+    }
+
     #[test]
-    fn test_detect_solution_processes_single_web_app() {
-        let app_dir = Path::new("/tmp");
+    fn test_detect_solution_processes_missing_project_executable() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_dir = temp_dir.path();
+
         let solution = Solution {
-            path: PathBuf::from("/tmp/foo.sln"),
+            path: app_dir.join("foo.sln"),
             projects: vec![create_test_project(
-                "/tmp/bar/bar.csproj",
+                &format!("{}/bar/bar.csproj", app_dir.display()),
                 "bar",
                 ProjectType::WebApplication,
             )],
+        };
+
+        assert!(detect_solution_processes(app_dir, &solution).is_empty());
+    }
+
+    #[test]
+    fn test_detect_solution_processes_single_web_app() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_dir = temp_dir.path();
+        let project = create_test_project(
+            &format!("{}/bar/bar.csproj", app_dir.display()),
+            "bar",
+            ProjectType::WebApplication,
+        );
+        create_executable_for_project(&project);
+
+        let solution = Solution {
+            path: app_dir.join("foo.sln"),
+            projects: vec![project],
         };
 
         let expected_processes = vec![Process {
@@ -151,13 +187,24 @@ mod tests {
 
     #[test]
     fn test_detect_solution_processes_multiple_web_apps() {
-        let app_dir = Path::new("/tmp");
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_dir = temp_dir.path();
+        let project1 = create_test_project(
+            &format!("{}/bar/bar.csproj", app_dir.display()),
+            "bar",
+            ProjectType::WebApplication,
+        );
+        let project2 = create_test_project(
+            &format!("{}/baz/baz.csproj", app_dir.display()),
+            "baz",
+            ProjectType::WebApplication,
+        );
+        create_executable_for_project(&project1);
+        create_executable_for_project(&project2);
+
         let solution = Solution {
-            path: PathBuf::from("/tmp/foo.sln"),
-            projects: vec![
-                create_test_project("/tmp/bar/bar.csproj", "bar", ProjectType::WebApplication),
-                create_test_project("/tmp/baz/baz.csproj", "baz", ProjectType::WebApplication),
-            ],
+            path: app_dir.join("foo.sln"),
+            projects: vec![project1, project2],
         };
         assert_eq!(
             detect_solution_processes(app_dir, &solution)
@@ -170,18 +217,29 @@ mod tests {
 
     #[test]
     fn test_detect_solution_processes_single_web_app_and_console_app() {
-        let app_dir = Path::new("/tmp");
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_dir = temp_dir.path();
+        let project1 = create_test_project(
+            &format!("{}/qux/qux.csproj", app_dir.display()),
+            "qux",
+            ProjectType::Unknown,
+        );
+        let project2 = create_test_project(
+            &format!("{}/bar/bar.csproj", app_dir.display()),
+            "bar",
+            ProjectType::WebApplication,
+        );
+        let project3 = create_test_project(
+            &format!("{}/baz/baz.csproj", app_dir.display()),
+            "baz",
+            ProjectType::ConsoleApplication,
+        );
+        create_executable_for_project(&project2);
+        create_executable_for_project(&project3);
+
         let solution = Solution {
-            path: PathBuf::from("/tmp/foo.sln"),
-            projects: vec![
-                create_test_project("/tmp/qux/qux.csproj", "qux", ProjectType::Unknown),
-                create_test_project("/tmp/bar/bar.csproj", "bar", ProjectType::WebApplication),
-                create_test_project(
-                    "/tmp/baz/baz.csproj",
-                    "baz",
-                    ProjectType::ConsoleApplication,
-                ),
-            ],
+            path: app_dir.join("foo.sln"),
+            projects: vec![project1, project2, project3],
         };
         assert_eq!(
             detect_solution_processes(app_dir, &solution)
@@ -194,14 +252,21 @@ mod tests {
 
     #[test]
     fn test_detect_solution_processes_with_spaces() {
-        let app_dir = Path::new("/tmp");
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_dir = temp_dir.path();
+        let project = create_test_project(
+            &format!(
+                "{}/My Project With Spaces/project.csproj",
+                app_dir.display()
+            ),
+            "My App",
+            ProjectType::ConsoleApplication,
+        );
+        create_executable_for_project(&project);
+
         let solution = Solution {
-            path: PathBuf::from("/tmp/My Solution With Spaces.sln"),
-            projects: vec![create_test_project(
-                "/tmp/My Project With Spaces/project.csproj",
-                "My App",
-                ProjectType::ConsoleApplication,
-            )],
+            path: app_dir.join("My Solution With Spaces.sln"),
+            projects: vec![project],
         };
 
         let expected_processes = vec![Process {
@@ -219,21 +284,6 @@ mod tests {
         assert_eq!(
             detect_solution_processes(app_dir, &solution),
             expected_processes
-        );
-    }
-
-    #[test]
-    fn test_relative_executable_path() {
-        let app_dir = Path::new("/tmp");
-        let project = create_test_project(
-            "/tmp/project/project.csproj",
-            "TestApp",
-            ProjectType::ConsoleApplication,
-        );
-
-        assert_eq!(
-            relative_executable_path(app_dir, &project),
-            PathBuf::from("project/bin/publish/TestApp")
         );
     }
 
@@ -279,14 +329,18 @@ mod tests {
 
     #[test]
     fn test_detect_solution_processes_nested_solution() {
-        let app_dir = Path::new("/tmp");
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_dir = temp_dir.path();
+        let project = create_test_project(
+            &format!("{}/src/MyApp/MyApp.csproj", app_dir.display()), // Project is also in src/ subdirectory
+            "MyApp",
+            ProjectType::WebApplication,
+        );
+        create_executable_for_project(&project);
+
         let solution = Solution {
-            path: PathBuf::from("/tmp/src/MyApp.sln"), // Solution is in src/ subdirectory
-            projects: vec![create_test_project(
-                "/tmp/src/MyApp/MyApp.csproj", // Project is also in src/ subdirectory
-                "MyApp",
-                ProjectType::WebApplication,
-            )],
+            path: app_dir.join("src/MyApp.sln"), // Solution is in src/ subdirectory
+            projects: vec![project],
         };
 
         let expected_processes = vec![Process {
