@@ -1,6 +1,7 @@
 ---
 source: buildpacks/dotnet/src/errors.rs
 ---
+
 [0;31m! Missing project referenced in solution[0m
 [0;31m![0m
 [0;31m! The solution references a project file that does not exist: `src/MyProject/MyProject.csproj`.[0m

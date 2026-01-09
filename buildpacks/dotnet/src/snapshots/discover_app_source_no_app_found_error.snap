@@ -1,6 +1,7 @@
 ---
 source: buildpacks/dotnet/src/errors.rs
 ---
+
 [0;31m! No .NET application found[0m
 [0;31m![0m
 [0;31m! No .NET application found. This buildpack requires solution (`.sln`, `.slnx`),[0m

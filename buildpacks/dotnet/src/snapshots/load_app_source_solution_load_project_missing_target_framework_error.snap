@@ -1,6 +1,7 @@
 ---
 source: buildpacks/dotnet/src/errors.rs
 ---
+
 [0;31m! Missing target framework configuration[0m
 [0;31m![0m
 [0;31m! The project `foo.csproj` is missing `TargetFramework` configuration.[0m

@@ -1,6 +1,7 @@
 ---
 source: buildpacks/dotnet/src/errors.rs
 ---
+
 [0;31m! Multiple .NET file-based apps[0m
 [0;31m![0m
 [0;31m! The root directory contains multiple C# files: `foo.cs`, `bar.cs`.[0m

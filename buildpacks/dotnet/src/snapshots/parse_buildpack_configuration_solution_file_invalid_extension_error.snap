@@ -1,6 +1,7 @@
 ---
 source: buildpacks/dotnet/src/errors.rs
 ---
+
 [0;31m! Invalid solution file extension[0m
 [0;31m![0m
 [0;31m! The configured solution file `MyApp.txt` must have a `.sln` or `.slnx` extension.[0m
