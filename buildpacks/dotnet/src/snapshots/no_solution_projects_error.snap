@@ -1,6 +1,7 @@
 ---
 source: buildpacks/dotnet/src/errors.rs
 ---
+
 [0;31m! No project references found in solution[0m
 [0;31m![0m
 [0;31m! The solution file `/foo/bar.sln` has no project references.[0m

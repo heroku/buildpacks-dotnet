@@ -1,6 +1,7 @@
 ---
 source: buildpacks/dotnet/src/errors.rs
 ---
+
 [0;31m! Multiple .NET solution files[0m
 [0;31m![0m
 [0;31m! The root directory contains multiple .NET solution files: `foo.sln`, `bar.sln`.[0m

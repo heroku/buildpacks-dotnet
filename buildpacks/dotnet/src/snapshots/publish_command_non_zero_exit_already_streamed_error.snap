@@ -1,6 +1,7 @@
 ---
 source: buildpacks/dotnet/src/errors.rs
 ---
+
 [0;31m! Unable to publish[0m
 [0;31m![0m
 [0;31m! The `dotnet publish` command failed (signal: 1 (SIGHUP)).[0m

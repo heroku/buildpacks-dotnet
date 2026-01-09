@@ -1,6 +1,7 @@
 ---
 source: buildpacks/dotnet/src/errors.rs
 ---
+
 [0;31m! Invalid configured application path[0m
 [0;31m![0m
 [0;31m! The configured application path `MyApp.txt` is not a valid .NET application file.[0m

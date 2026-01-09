@@ -1,6 +1,7 @@
 ---
 source: buildpacks/dotnet/src/errors.rs
 ---
+
 [0;31m! Invalid `rollForward` policy in `global.json`[0m
 [0;31m![0m
 [0;31m! The `rollForward` policy (`foo`) in your `global.json` file is not valid.[0m

@@ -1,6 +1,7 @@
 ---
 source: buildpacks/dotnet/src/errors.rs
 ---
+
 [0;31m! Corrupted .NET SDK download[0m
 [0;31m![0m
 [0;31m! Validation of the downloaded .NET SDK failed due to a checksum mismatch. This error can[0m

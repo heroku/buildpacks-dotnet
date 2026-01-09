@@ -1,6 +1,7 @@
 ---
 source: buildpacks/dotnet/src/errors.rs
 ---
+
 [0;31m! Unsupported .NET SDK version[0m
 [0;31m![0m
 [0;31m! We can’t find a compatible .NET SDK release for the detected version[0m
