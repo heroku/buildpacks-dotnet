@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-01-15
+
 ### Fixed
 
 - The .NET SDK inventory was updated with correct checksum values for version 9.0.113 release artifacts. ([#375](https://github.com/heroku/buildpacks-dotnet/pull/375))
@@ -367,7 +369,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.0...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.15.0...v1.0.0
 [0.15.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/heroku/buildpacks-dotnet/compare/v0.13.0...v0.14.0
