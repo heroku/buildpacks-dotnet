@@ -7,13 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Fixed
 
-- Support for .NET SDK versions: 9.0.113.
-
-### Removed
-
-- Support for .NET SDK versions: 9.0.113.
+- The .NET SDK inventory was updated with correct checksum values for version 9.0.113 release artifacts. ([#375](https://github.com/heroku/buildpacks-dotnet/pull/375))
 
 ## [1.0.0] - 2026-01-13
 
