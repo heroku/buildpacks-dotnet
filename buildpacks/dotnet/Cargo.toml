@@ -16,7 +16,7 @@ hex = "0.4"
 indoc = "2"
 libcnb = { version = "0.29", features = ["trace"] }
 libherokubuildpack = { version = "0.30", default-features = false, features = ["tar", "download", "inventory", "inventory-semver", "inventory-sha2"] }
-quick-xml = { version = "0.38", features = ["serialize"] }
+quick-xml = { version = "0.39", features = ["serialize"] }
 regex = "1"
 retry = { version = "2", default-features = false }
 semver = "1"
