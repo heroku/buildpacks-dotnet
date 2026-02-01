@@ -38,7 +38,7 @@ jobs:
     - name: Rust Cache
       uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2.8.2
     - name: Install cargo-llvm-cov
-      uses: taiki-e/install-action@a983ca795126a4be4e8a44879ac5c4c3ef66cae1 # v2.65.11
+      uses: taiki-e/install-action@650c5ca14212efbbf3e580844b04bdccf68dac31 # v2.67.18
       with:
         tool: cargo-llvm-cov
     - name: Run tests and generate coverage report
@@ -82,7 +82,7 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2.8.2
       - name: Install Pack CLI
-        uses: buildpacks/github-actions/setup-pack@04ab0323472d0da53769093d940a4956477636a2 # v5.10.0
+        uses: buildpacks/github-actions/setup-pack@f3ec16c6d708761c6e87bbc8fe7f97375f80e7cd # v5.10.1
       # The images are pulled up front to prevent duplicate pulls due to the tests being run concurrently.
       - name: Pull builder image
         run: docker pull '${{ env.INTEGRATION_TEST_BUILDER }}'
@@ -121,7 +121,7 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2.8.2
       - name: Install Pack CLI
-        uses: buildpacks/github-actions/setup-pack@04ab0323472d0da53769093d940a4956477636a2 # v5.10.0
+        uses: buildpacks/github-actions/setup-pack@f3ec16c6d708761c6e87bbc8fe7f97375f80e7cd # v5.10.1
       - name: Clone getting started guide
         uses: actions/checkout@v6
         with:
