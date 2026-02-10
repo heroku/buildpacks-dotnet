@@ -2,7 +2,7 @@ api = "0.10"
 
 [buildpack]
 id = "heroku/dotnet"
-version = "1.0.2"
+version = "1.0.3"
 name = "Heroku .NET"
 homepage = "https://github.com/heroku/buildpacks-dotnet"
 description = "Heroku's buildpack for .NET applications."
