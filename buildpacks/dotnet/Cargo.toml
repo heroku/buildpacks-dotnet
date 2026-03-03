@@ -29,7 +29,7 @@ tracing = "0.1"
 
 [dev-dependencies]
 insta = "1"
-libcnb-test = "0.29"
+libcnb-test = "0.30"
 regex = "1"
 reqwest = { version = "0.12", default-features = false }
 tempfile = "3"
