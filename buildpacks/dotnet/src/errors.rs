@@ -957,10 +957,13 @@ mod tests {
 
     #[test]
     fn test_sdk_layer_download_archive_http_error() {
+        // Using an empty URL will cause a "builder error" without making any requests, avoiding a
+        // direct dependency on reqwest (which must be kept in sync with the version used by
+        // libherokubuildpack).
+        let download_error =
+            libherokubuildpack::download::download_file("", "/dev/null").unwrap_err();
         assert_error_snapshot(DotnetBuildpackError::SdkLayer(
-            SdkLayerError::DownloadArchive(libherokubuildpack::download::DownloadError::HttpError(
-                reqwest::blocking::get("").unwrap_err(), // An empty URL will return a "builder error" (without making any requests).
-            )),
+            SdkLayerError::DownloadArchive(download_error),
         ));
     }
 
