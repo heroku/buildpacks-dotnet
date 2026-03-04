@@ -961,8 +961,7 @@ mod tests {
         // direct dependency on reqwest (which must be kept in sync with the version used by
         // libherokubuildpack).
         let download_error =
-            libherokubuildpack::download::download_file("", std::path::Path::new("/dev/null"))
-                .unwrap_err();
+            libherokubuildpack::download::download_file("", "/dev/null").unwrap_err();
         assert_error_snapshot(DotnetBuildpackError::SdkLayer(
             SdkLayerError::DownloadArchive(download_error),
         ));
