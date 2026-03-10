@@ -461,6 +461,20 @@ url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.124/dotnet-sdk-8.0.124
 checksum = "sha512:d263c7ae7e942e98a371ba1f2432be739220465480c81a9fb4b4b4ad8e73cb558a69239906477fe78ec39ee1fc19ef39c2060bf18d93e5fc6a82edb72986d961"
 
 [[artifacts]]
+version = "8.0.125"
+os = "linux"
+arch = "amd64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.125/dotnet-sdk-8.0.125-linux-x64.tar.gz"
+checksum = "sha512:2973854ab90af54f2c626a8032f4dfb41bfedd5921f1d5b9a4b68328927e785e5c8aa693d24f739304ca46d9a4f5a84081fa94b8452e1f4f83040a8e582a2b37"
+
+[[artifacts]]
+version = "8.0.125"
+os = "linux"
+arch = "arm64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.125/dotnet-sdk-8.0.125-linux-arm64.tar.gz"
+checksum = "sha512:b1b2f092325401cc312b41276f50e188b0229f6f87420c648d1ab05da86dc407bc928a9b953ced15a779cfcafee9e34f08009413568b0399c727f8bf71b71cbc"
+
+[[artifacts]]
 version = "8.0.200"
 os = "linux"
 arch = "amd64"
@@ -1091,6 +1105,20 @@ url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.418/dotnet-sdk-8.0.418
 checksum = "sha512:9193c9a77a5eedfac24974160e9b2d95865e88c8c4f0741042d2ebb4bc3317bf341ecb974ac6dad91c10d7adee22db717b35d3fef686f5aad67f4aff44574033"
 
 [[artifacts]]
+version = "8.0.419"
+os = "linux"
+arch = "amd64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.419/dotnet-sdk-8.0.419-linux-x64.tar.gz"
+checksum = "sha512:fcd6761101395fbda362a217545f3689e2b1ed42ed439bc39406df6d046d2bbcf60902833e868d5aed4d4a9b036628865e019450bb16d744d716e05fcac3c3cd"
+
+[[artifacts]]
+version = "8.0.419"
+os = "linux"
+arch = "arm64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.419/dotnet-sdk-8.0.419-linux-arm64.tar.gz"
+checksum = "sha512:9ff6ba023e7a6c1d7ed074bf272a1c6ef00a3d5893823aee02b83b47ee60c45826c927c8ebd0e08dbfd8229e592c78fa819e22ff93ca06ee8c1d8c9ca8735a05"
+
+[[artifacts]]
 version = "9.0.100-preview.1.24101.2"
 os = "linux"
 arch = "amd64"
@@ -1427,6 +1455,20 @@ url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.114/dotnet-sdk-9.0.114
 checksum = "sha512:d9f9175992c5137f7d01989346de6f555d9f85da760bcba12a0aa867c52b2191f69269197764dda6e9d116ade8fc183b3f833153dccac3f5649e5a2c2bb3f80e"
 
 [[artifacts]]
+version = "9.0.115"
+os = "linux"
+arch = "amd64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.115/dotnet-sdk-9.0.115-linux-x64.tar.gz"
+checksum = "sha512:837f237b80fc58cdc97f80154c7cfe505a7328dc93c54140670761055ab56d41da11f8620e500aa4055786a7ee0b138b5b73606b4bce4e12c8601ba426d3ad83"
+
+[[artifacts]]
+version = "9.0.115"
+os = "linux"
+arch = "arm64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.115/dotnet-sdk-9.0.115-linux-arm64.tar.gz"
+checksum = "sha512:cc984d2d45ce9eed24dd78a1d921b419b81131927ae910ba50bd2809f64cc400c6525240270532a2903a54f5908c45809864cc354655a8ba4450172637dcfe72"
+
+[[artifacts]]
 version = "9.0.200"
 os = "linux"
 arch = "amd64"
@@ -1679,6 +1721,20 @@ url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.311/dotnet-sdk-9.0.311
 checksum = "sha512:58ce76d1cce856eb64a284b3b4a4d1675578be0d6ece4c54987c5531f3ade7096084d9d85ca1af2ee28361918e8dba24f230fecce9145a4ea67ecfb66e436d3c"
 
 [[artifacts]]
+version = "9.0.312"
+os = "linux"
+arch = "amd64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.312/dotnet-sdk-9.0.312-linux-x64.tar.gz"
+checksum = "sha512:430aac61d509b020adc17f0adb7e81b5be85046d49784ab2ff927ca9108625c5cdf64a0e185a09df234c2ac1ecfeadb5b10714f0d9b5e0c1f72b5b20fbed7440"
+
+[[artifacts]]
+version = "9.0.312"
+os = "linux"
+arch = "arm64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/9.0.312/dotnet-sdk-9.0.312-linux-arm64.tar.gz"
+checksum = "sha512:e52a99348d5097ae263049c14c74c93d9affbe0c38620c8ede2d1120faa0ede2f1347525ef409eedc95485da07704ddaad5857ea954e1451920f0373f787a817"
+
+[[artifacts]]
 version = "10.0.100-preview.1.25120.13"
 os = "linux"
 arch = "amd64"
@@ -1859,3 +1915,31 @@ os = "linux"
 arch = "arm64"
 url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.103/dotnet-sdk-10.0.103-linux-arm64.tar.gz"
 checksum = "sha512:ab45b6baeae956e4465151787d8b8113b66679ed55da1e72c57e99aa5ab8f42471e80dc8a5fd22c31df74e60446a3b252d2900658cefc9506fcb0da7e2831e21"
+
+[[artifacts]]
+version = "10.0.104"
+os = "linux"
+arch = "amd64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.104/dotnet-sdk-10.0.104-linux-x64.tar.gz"
+checksum = "sha512:dc475e85c6d5c34c27c25772a3c93a94eec09bcccb8409b610d3fae016a9043ceb99ff60f3a003443c6e99257e237bf9f0cb5c509049ec707e92498776d1e35f"
+
+[[artifacts]]
+version = "10.0.104"
+os = "linux"
+arch = "arm64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.104/dotnet-sdk-10.0.104-linux-arm64.tar.gz"
+checksum = "sha512:3c243e261669a0e69e9074b0abbbe812596f8e051baf3e588436959f0bd7037260d52257b6be9ae3151accda91394d4d1e0725f69272648cf43797c2cbb18c59"
+
+[[artifacts]]
+version = "10.0.200"
+os = "linux"
+arch = "amd64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.200/dotnet-sdk-10.0.200-linux-x64.tar.gz"
+checksum = "sha512:48738fed91d6a47daf778b5729fe169d65a1ba43d5ecc3e4da139712b66d2c62c516878700f5e2749f4af8f816ca3562f3d93367b03e369b6faffafc11bce69b"
+
+[[artifacts]]
+version = "10.0.200"
+os = "linux"
+arch = "arm64"
+url = "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.200/dotnet-sdk-10.0.200-linux-arm64.tar.gz"
+checksum = "sha512:ed00104271c4db3063d0739efe48ee2395d5d38d7952de531dd4ee1177dfc762751ef0ae5e856e71f9f6b3a75b9ed9d38c692340f50aacf240dd11c202b46e36"
