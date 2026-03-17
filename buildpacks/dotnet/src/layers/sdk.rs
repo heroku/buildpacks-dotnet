@@ -48,8 +48,8 @@ pub(crate) fn handle(
             launch: available_at_launch,
             invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
             restored_layer_action: &|metadata: &SdkLayerMetadata, _path| {
-                // Compare all artifact fields except metadata, which contains the EOL date.
-                // This avoids unnecessary cache invalidation when the EOL date changes.
+                // Compare all artifact fields except metadata, which currently may contain an EOL timestamp.
+                // This avoids unnecessary cache invalidation when or if the metadata changes.
                 if metadata.artifact.version == artifact.version
                     && metadata.artifact.os == artifact.os
                     && metadata.artifact.arch == artifact.arch

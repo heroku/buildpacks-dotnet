@@ -425,8 +425,8 @@ fn detect_global_json_sdk_configuration(
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq)]
 pub(crate) struct SdkMetadata {
     // Serialization is skipped because this value is only read from the inventory at build time.
-    // Also, including it in the SDK layer cache causes cache invalidation (possibly due to a
-    // lifecycle TOML <> JSON metadata serialization).
+    // Also, including it in the layer metadata causes cache invalidation due to invalid metadata
+    // (possibly caused by a TOML <> JSON / image metadata serialization issue).
     // TODO: Investigate compatibility issue when eol is included in the SDK layer metadata.
     #[serde(skip_serializing, default, with = "toml_datetime_compat")]
     eol: Option<time::OffsetDateTime>,
