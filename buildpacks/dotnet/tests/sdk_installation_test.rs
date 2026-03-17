@@ -131,7 +131,14 @@ fn test_sdk_installation_with_global_json() {
                       - Detected .NET project: `/workspace/foo.csproj`
                       - Detecting version requirement from root global.json file
                       - Detected version requirement: `=8.0.101`
-                      - Resolved .NET SDK version `8.0.101` (linux-{artifact_arch})
+                      - Resolved .NET SDK version `8.0.101` (linux-{artifact_arch})"
+                )
+            );
+            // When .NET 8.0 reaches end-of-life, a warning will be printed before the SDK installation output.
+            // TODO: Add test asserting the EOL warning output (i.e. after 2026-11-10).
+            assert_contains!(
+                context.pack_stdout,
+                &formatdoc!("
                     - SDK installation
                       - Downloading SDK from https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.101/dotnet-sdk-8.0.101-linux-{dotnet_arch}.tar.gz"
                 )
