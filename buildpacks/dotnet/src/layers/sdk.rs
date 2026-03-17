@@ -1,4 +1,4 @@
-use crate::{DotnetBuildpack, DotnetBuildpackError};
+use crate::{DotnetBuildpack, DotnetBuildpackError, SdkMetadata};
 use bullet_stream::global::print;
 use bullet_stream::style;
 use fs_err::File;
@@ -24,12 +24,12 @@ use tracing::instrument;
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SdkLayerMetadata {
-    artifact: Artifact<Version, Sha512, Option<()>>,
+    artifact: Artifact<Version, Sha512, SdkMetadata>,
 }
 
 pub(crate) enum CustomCause {
     Ok,
-    DifferentSdkArtifact(Artifact<Version, Sha512, Option<()>>),
+    DifferentSdkArtifact(Artifact<Version, Sha512, SdkMetadata>),
 }
 
 const MAX_RETRIES: usize = 4;
@@ -39,7 +39,7 @@ const RETRY_DELAY: Duration = Duration::from_secs(1);
 pub(crate) fn handle(
     context: &libcnb::build::BuildContext<DotnetBuildpack>,
     available_at_launch: bool,
-    artifact: &Artifact<Version, Sha512, Option<()>>,
+    artifact: &Artifact<Version, Sha512, SdkMetadata>,
 ) -> Result<LayerRef<DotnetBuildpack, (), CustomCause>, libcnb::Error<DotnetBuildpackError>> {
     let sdk_layer = context.cached_layer(
         layer_name!("sdk"),
@@ -48,7 +48,14 @@ pub(crate) fn handle(
             launch: available_at_launch,
             invalid_metadata_action: &|_| InvalidMetadataAction::DeleteLayer,
             restored_layer_action: &|metadata: &SdkLayerMetadata, _path| {
-                if metadata.artifact == *artifact {
+                // Compare all artifact fields except metadata, which contains the EOL date.
+                // This avoids unnecessary cache invalidation when the EOL date changes.
+                if metadata.artifact.version == artifact.version
+                    && metadata.artifact.os == artifact.os
+                    && metadata.artifact.arch == artifact.arch
+                    && metadata.artifact.url == artifact.url
+                    && metadata.artifact.checksum == artifact.checksum
+                {
                     (RestoredLayerAction::KeepLayer, CustomCause::Ok)
                 } else {
                     (
@@ -98,7 +105,7 @@ pub(crate) fn handle(
 
 #[instrument(skip_all, err)]
 fn download_sdk(
-    artifact: &Artifact<Version, Sha512, Option<()>>,
+    artifact: &Artifact<Version, Sha512, SdkMetadata>,
     path: &Path,
 ) -> Result<(), DownloadError> {
     let retry_strategy = Fixed::from(RETRY_DELAY).take(MAX_RETRIES);

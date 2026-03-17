@@ -122,7 +122,9 @@ dependencies = [
  "sha2",
  "shell-words",
  "tempfile",
+ "time",
  "toml",
+ "toml-datetime-compat",
  "tracing",
 ]
 
@@ -344,6 +346,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7cd812cc2bc1d69d4764bd80df88b4317eaef9e773c75226407d9bc0876b211c"
 dependencies = [
  "powerfmt",
+ "serde_core",
 ]
 
 [[package]]
@@ -958,7 +961,10 @@ dependencies = [
  "libherokubuildpack",
  "semver",
  "serde",
+ "serde_json",
  "sha2",
+ "time",
+ "toml-datetime-compat",
  "ureq",
 ]
 
@@ -2154,10 +2160,31 @@ dependencies = [
  "indexmap",
  "serde_core",
  "serde_spanned",
- "toml_datetime",
+ "toml_datetime 1.0.0+spec-1.1.0",
  "toml_parser",
  "toml_writer",
  "winnow",
+]
+
+[[package]]
+name = "toml-datetime-compat"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18435fd3f58059d1fcd97ff5620a25a461d072f28a9121685ae0f84b5ddbd653"
+dependencies = [
+ "serde",
+ "thiserror 1.0.69",
+ "time",
+ "toml_datetime 0.5.1",
+]
+
+[[package]]
+name = "toml_datetime"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4553f467ac8e3d374bc9a177a26801e5d0f9b211aa1673fb137a403afd1c9cf5"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

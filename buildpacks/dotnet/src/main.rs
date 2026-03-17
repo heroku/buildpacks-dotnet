@@ -47,11 +47,13 @@ use libcnb::{Buildpack, Env, Target, buildpack_main};
 use libherokubuildpack::inventory;
 use libherokubuildpack::inventory::artifact::Artifact;
 use semver::{Version, VersionReq};
+use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::io;
 use std::io::{Write, stderr};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use time::macros::format_description;
 use tracing::instrument;
 
 struct DotnetBuildpack;
@@ -138,6 +140,25 @@ impl Buildpack for DotnetBuildpack {
         let sdk_version_requirement = detect_sdk_version_requirement(&context, &solution)?;
 
         let sdk_artifact = resolve_sdk_artifact(&context.target, sdk_version_requirement)?;
+
+        if let Some(eol_date) = sdk_artifact.metadata.eol_date
+            && time::OffsetDateTime::now_utc() >= eol_date
+        {
+            let formatted_eol_date = eol_date
+                .format(format_description!(
+                    "[month repr:long] [day padding:none], [year]" // e.g., November 10, 2026
+                ))
+                .expect("EOL date should be formattable");
+            print::warning(format!(
+                r"
+.NET {}.{} reached end-of-support on {formatted_eol_date}.
+Upgrade to a supported .NET version as soon as possible.
+
+For more information, see:
+https://devcenter.heroku.com/articles/dotnet-heroku-support-reference#net-version-policy",
+                sdk_artifact.version.major, sdk_artifact.version.minor
+            ));
+        }
 
         let sdk_scope = match buildpack_configuration.execution_environment {
             ExecutionEnvironment::Production => Scope::Build,
@@ -308,7 +329,7 @@ fn load_project_toml_config(app_dir: &Path) -> Result<Option<DotnetConfig>, Dotn
 fn resolve_sdk_artifact(
     target: &Target,
     sdk_version_requirement: VersionReq,
-) -> Result<Artifact<Version, Sha512, Option<()>>, DotnetBuildpackError> {
+) -> Result<Artifact<Version, Sha512, SdkMetadata>, DotnetBuildpackError> {
     include_str!("../inventory.toml")
         .parse::<Inventory<_, _, _>>()
         .map_err(DotnetBuildpackError::ParseInventory)
@@ -399,6 +420,16 @@ fn detect_global_json_sdk_configuration(
                 })
         },
     )
+}
+
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq)]
+pub(crate) struct SdkMetadata {
+    // Serialization is skipped because this value is only read from the inventory at build time.
+    // Also, including it in the SDK layer cache causes cache invalidation (possibly due to a
+    // lifecycle TOML <> JSON metadata serialization).
+    // TODO: Investigate compatibility issue when eol_date is included in the SDK layer metadata.
+    #[serde(skip_serializing, default, with = "toml_datetime_compat")]
+    eol_date: Option<time::OffsetDateTime>,
 }
 
 #[derive(Debug)]

@@ -5,7 +5,7 @@ use itertools::Itertools;
 use keep_a_changelog_file::{ChangeGroup, Changelog};
 use libherokubuildpack::inventory;
 use semver::Version;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::env;
 use std::fs;
@@ -27,7 +27,7 @@ fn main() {
             eprintln!("Error reading inventory file at '{inventory_path}': {e}");
             process::exit(1);
         })
-        .parse::<Inventory<Version, Sha512, Option<()>>>()
+        .parse::<Inventory<Version, Sha512, SdkMetadata>>()
         .unwrap_or_else(|e| {
             eprintln!("Error parsing inventory file at '{inventory_path}': {e}");
             process::exit(1);
@@ -81,7 +81,7 @@ fn difference<'a, T: Eq>(a: &'a [T], b: &'a [T]) -> Vec<&'a T> {
 fn update_changelog(
     changelog: &mut Changelog,
     change_group: ChangeGroup,
-    artifacts: &[&Artifact<Version, Sha512, Option<()>>],
+    artifacts: &[&Artifact<Version, Sha512, SdkMetadata>],
 ) {
     if !artifacts.is_empty() {
         let mut versions = artifacts
@@ -99,6 +99,8 @@ fn update_changelog(
 
 #[derive(Deserialize)]
 struct DotNetReleaseFeed {
+    #[serde(rename = "eol-date")]
+    eol_date: Option<String>,
     releases: Vec<Release>,
 }
 
@@ -123,53 +125,88 @@ struct File {
     hash: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq)]
+struct SdkMetadata {
+    #[serde(with = "toml_datetime_compat", default)]
+    eol_date: Option<time::OffsetDateTime>,
+}
+
+/// Parses an ISO date string (e.g., "2026-11-10") into a [`time::OffsetDateTime`] at midnight UTC.
+fn parse_eol_date(s: &str) -> time::OffsetDateTime {
+    let parts: Vec<&str> = s.splitn(3, '-').collect();
+    assert!(
+        parts.len() == 3,
+        "eol-date should be in YYYY-MM-DD format: {s}"
+    );
+    let year: i32 = parts[0].parse().expect("year should be a valid number");
+    let month: u8 = parts[1].parse().expect("month should be a valid number");
+    let day: u8 = parts[2].parse().expect("day should be a valid number");
+    time::Date::from_calendar_date(
+        year,
+        time::Month::try_from(month).expect("month should be valid"),
+        day,
+    )
+    .expect("eol-date should be a valid calendar date")
+    .midnight()
+    .assume_utc()
+}
+
 const SUPPORTED_MAJOR_VERSIONS: &[i32] = &[8, 9, 10];
 const REQUIRED_ARCHS: [Arch; 2] = [Arch::Amd64, Arch::Arm64];
 
-fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, Option<()>>> {
-    SUPPORTED_MAJOR_VERSIONS
+fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, SdkMetadata>> {
+    let feeds: Vec<DotNetReleaseFeed> = SUPPORTED_MAJOR_VERSIONS
         .iter()
-        .flat_map(|major_version| {
+        .map(|major_version| {
             ureq::get(&format!("https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/{major_version}.0/releases.json"))
                 .call()
                 .expect(".NET release feed should be available")
                 .body_mut()
                 .read_json::<DotNetReleaseFeed>()
                 .expect(".NET release feed should be parsable from JSON")
-                .releases
         })
-        .flat_map(|release| release.sdks)
-        .flat_map(|sdk| {
-            REQUIRED_ARCHS.iter().map(move |&arch| {
-                let rid = match arch {
-                    Arch::Amd64 => "linux-x64",
-                    Arch::Arm64 => "linux-arm64",
-                };
+        .collect();
 
-                // Find the corresponding file in the SDK's file list.
-                // Panic if a required artifact is missing, as we require each version
-                // to support all required platforms.
-                let file = sdk
-                    .files
-                    .iter()
-                    .find(|file| file.rid == rid)
-                    .unwrap_or_else(|| {
-                        panic!(
-                            "SDK version {} is missing the {rid} artifact for Linux.",
-                            sdk.version
-                        )
-                    });
+    feeds
+        .iter()
+        .flat_map(|feed| {
+            let metadata = SdkMetadata {
+                eol_date: feed.eol_date.as_deref().map(parse_eol_date),
+            };
+            feed.releases.iter().flat_map(move |release| {
+                release.sdks.iter().flat_map(move |sdk| {
+                    REQUIRED_ARCHS.iter().map(move |&arch| {
+                        let rid = match arch {
+                            Arch::Amd64 => "linux-x64",
+                            Arch::Arm64 => "linux-arm64",
+                        };
 
-                Artifact {
-                    version: sdk.version.clone(),
-                    os: Os::Linux,
-                    arch,
-                    url: file.url.clone(),
-                    checksum: format!("sha512:{}", file.hash)
-                        .parse::<Checksum<Sha512>>()
-                        .expect("Checksum should be a valid hex-encoded SHA-512 string"),
-                    metadata: None,
-                }
+                        // Find the corresponding file in the SDK's file list.
+                        // Panic if a required artifact is missing, as we require each version
+                        // to support all required platforms.
+                        let file = sdk
+                            .files
+                            .iter()
+                            .find(|file| file.rid == rid)
+                            .unwrap_or_else(|| {
+                                panic!(
+                                    "SDK version {} is missing the {rid} artifact for Linux.",
+                                    sdk.version
+                                )
+                            });
+
+                        Artifact {
+                            version: sdk.version.clone(),
+                            os: Os::Linux,
+                            arch,
+                            url: file.url.clone(),
+                            checksum: format!("sha512:{}", file.hash)
+                                .parse::<Checksum<Sha512>>()
+                                .expect("Checksum should be a valid hex-encoded SHA-512 string"),
+                            metadata,
+                        }
+                    })
+                })
             })
         })
         .collect()
@@ -182,13 +219,13 @@ mod tests {
     #[test]
     fn test_find_difference() {
         let local_inventory = Inventory {
-            artifacts: vec![Artifact::<Version, Sha512, Option<()>> {
+            artifacts: vec![Artifact::<Version, Sha512, SdkMetadata> {
                 version: Version::parse("1.0.0").unwrap(),
                 os: Os::Linux,
                 arch: Arch::Amd64,
                 url: "http://example.com/sdk1".to_string(),
                 checksum: format!("sha512:{}", "0".repeat(128)).parse().unwrap(),
-                metadata: None,
+                metadata: SdkMetadata { eol_date: None },
             }],
         };
 
@@ -200,7 +237,7 @@ mod tests {
                     arch: Arch::Amd64,
                     url: "http://example.com/sdk1".to_string(),
                     checksum: format!("sha512:{}", "0".repeat(128)).parse().unwrap(),
-                    metadata: None,
+                    metadata: SdkMetadata { eol_date: None },
                 },
                 Artifact {
                     version: Version::parse("1.1.0").unwrap(),
@@ -208,7 +245,7 @@ mod tests {
                     arch: Arch::Amd64,
                     url: "http://example.com/sdk2".to_string(),
                     checksum: format!("sha512:{}", "1".repeat(128)).parse().unwrap(),
-                    metadata: None,
+                    metadata: SdkMetadata { eol_date: None },
                 },
             ],
         };
@@ -219,5 +256,24 @@ mod tests {
 
         let removed_artifacts = difference(&local_inventory.artifacts, &remote_inventory.artifacts);
         assert!(removed_artifacts.is_empty());
+    }
+
+    #[test]
+    fn test_parse_release_feed_with_eol_date() {
+        let json = r#"{
+            "eol-date": "2026-11-10",
+            "releases": []
+        }"#;
+        let feed: DotNetReleaseFeed = serde_json::from_str(json).unwrap();
+        assert_eq!(feed.eol_date.as_deref(), Some("2026-11-10"));
+    }
+
+    #[test]
+    fn test_parse_release_feed_without_eol_date() {
+        let json = r#"{
+            "releases": []
+        }"#;
+        let feed: DotNetReleaseFeed = serde_json::from_str(json).unwrap();
+        assert_eq!(feed.eol_date, None);
     }
 }
