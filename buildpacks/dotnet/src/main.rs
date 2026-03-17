@@ -141,17 +141,17 @@ impl Buildpack for DotnetBuildpack {
 
         let sdk_artifact = resolve_sdk_artifact(&context.target, sdk_version_requirement)?;
 
-        if let Some(eol_date) = sdk_artifact.metadata.eol_date
-            && time::OffsetDateTime::now_utc() >= eol_date
+        if let Some(eol) = sdk_artifact.metadata.eol
+            && time::OffsetDateTime::now_utc() >= eol
         {
-            let formatted_eol_date = eol_date
+            let formatted_eol = eol
                 .format(format_description!(
                     "[month repr:long] [day padding:none], [year]" // e.g., November 10, 2026
                 ))
                 .expect("EOL date should be formattable");
             print::warning(format!(
                 r"
-.NET {}.{} reached end-of-support on {formatted_eol_date}.
+.NET {}.{} reached end-of-support on {formatted_eol}.
 Upgrade to a supported .NET version as soon as possible.
 
 For more information, see:
@@ -427,9 +427,9 @@ pub(crate) struct SdkMetadata {
     // Serialization is skipped because this value is only read from the inventory at build time.
     // Also, including it in the SDK layer cache causes cache invalidation (possibly due to a
     // lifecycle TOML <> JSON metadata serialization).
-    // TODO: Investigate compatibility issue when eol_date is included in the SDK layer metadata.
+    // TODO: Investigate compatibility issue when eol is included in the SDK layer metadata.
     #[serde(skip_serializing, default, with = "toml_datetime_compat")]
-    eol_date: Option<time::OffsetDateTime>,
+    eol: Option<time::OffsetDateTime>,
 }
 
 #[derive(Debug)]

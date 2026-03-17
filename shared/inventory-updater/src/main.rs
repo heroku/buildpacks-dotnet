@@ -128,7 +128,7 @@ struct File {
 #[derive(Debug, Serialize, Deserialize, Copy, Clone, Eq, PartialEq)]
 struct SdkMetadata {
     #[serde(with = "toml_datetime_compat", default)]
-    eol_date: Option<time::OffsetDateTime>,
+    eol: Option<time::OffsetDateTime>,
 }
 
 /// Parses an ISO date string (e.g., "2026-11-10") into a [`time::OffsetDateTime`] at midnight UTC.
@@ -171,7 +171,7 @@ fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, SdkMetadata>> {
         .iter()
         .flat_map(|feed| {
             let metadata = SdkMetadata {
-                eol_date: feed.eol_date.as_deref().map(parse_eol_date),
+                eol: feed.eol_date.as_deref().map(parse_eol_date),
             };
             feed.releases.iter().flat_map(move |release| {
                 release.sdks.iter().flat_map(move |sdk| {
@@ -225,7 +225,7 @@ mod tests {
                 arch: Arch::Amd64,
                 url: "http://example.com/sdk1".to_string(),
                 checksum: format!("sha512:{}", "0".repeat(128)).parse().unwrap(),
-                metadata: SdkMetadata { eol_date: None },
+                metadata: SdkMetadata { eol: None },
             }],
         };
 
@@ -237,7 +237,7 @@ mod tests {
                     arch: Arch::Amd64,
                     url: "http://example.com/sdk1".to_string(),
                     checksum: format!("sha512:{}", "0".repeat(128)).parse().unwrap(),
-                    metadata: SdkMetadata { eol_date: None },
+                    metadata: SdkMetadata { eol: None },
                 },
                 Artifact {
                     version: Version::parse("1.1.0").unwrap(),
@@ -245,7 +245,7 @@ mod tests {
                     arch: Arch::Amd64,
                     url: "http://example.com/sdk2".to_string(),
                     checksum: format!("sha512:{}", "1".repeat(128)).parse().unwrap(),
-                    metadata: SdkMetadata { eol_date: None },
+                    metadata: SdkMetadata { eol: None },
                 },
             ],
         };
