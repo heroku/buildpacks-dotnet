@@ -129,14 +129,14 @@ jobs:
           path: tmp/guide
       # The images are pulled up front to prevent duplicate pulls due to the tests being run concurrently.
       - name: Pull builder image
-        run: docker pull heroku/builder:24
+        run: docker pull heroku/builder:26
       - name: Pull run image
-        run: docker pull heroku/heroku:24
+        run: docker pull heroku/heroku:26
       - name: Install libcnb-cargo for `cargo libcnb package` command
         run: cargo install libcnb-cargo
       - name: Compile buildpack
         run: cargo libcnb package --target aarch64-unknown-linux-musl
       - name: "PRINT: Getting started guide output"
-        run: pack build my-image --force-color --builder heroku/builder:24 --trust-extra-buildpacks --buildpack packaged/aarch64-unknown-linux-musl/debug/heroku_dotnet --path tmp/guide --pull-policy never
+        run: pack build my-image --force-color --builder heroku/builder:26 --trust-extra-buildpacks --buildpack packaged/aarch64-unknown-linux-musl/debug/heroku_dotnet --path tmp/guide --pull-policy never
       - name: "PRINT: Cached getting started guide output"
-        run: pack build my-image --force-color --builder heroku/builder:24 --trust-extra-buildpacks --buildpack packaged/aarch64-unknown-linux-musl/debug/heroku_dotnet --path tmp/guide --pull-policy never
+        run: pack build my-image --force-color --builder heroku/builder:26 --trust-extra-buildpacks --buildpack packaged/aarch64-unknown-linux-musl/debug/heroku_dotnet --path tmp/guide --pull-policy never
