@@ -10,8 +10,7 @@ mod runtime_dependencies_test;
 mod sdk_installation_test;
 mod test_execution_environment_test;
 
-// TODO: Update to `heroku/builder:26` after GA
-const DEFAULT_BUILDER: &str = "heroku/builder:24";
+const DEFAULT_BUILDER: &str = "heroku/builder:26";
 
 pub(crate) fn default_build_config(fixture_path: impl AsRef<Path>) -> BuildConfig {
     let builder = builder();
