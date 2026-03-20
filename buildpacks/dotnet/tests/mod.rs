@@ -20,7 +20,9 @@ pub(crate) fn default_build_config(fixture_path: impl AsRef<Path>) -> BuildConfi
     // to allow configuring the target arch independently of the builder name (eg via env var).
     let target_triple = match builder.as_str() {
         // Compile the buildpack for ARM64 if the builder supports multi-arch and the host is ARM64.
-        "heroku/builder:24" if cfg!(target_arch = "aarch64") => "aarch64-unknown-linux-musl",
+        "heroku/builder:24" | "heroku/builder:26" if cfg!(target_arch = "aarch64") => {
+            "aarch64-unknown-linux-musl"
+        }
         _ => "x86_64-unknown-linux-musl",
     };
     config.target_triple(target_triple);
