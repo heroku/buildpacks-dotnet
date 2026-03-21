@@ -136,7 +136,8 @@ jobs:
         run: cargo install libcnb-cargo
       - name: Compile buildpack
         run: cargo libcnb package --target aarch64-unknown-linux-musl
+      # TODO: Remove `--trust-builder` once `heroku/builder:26` has been added to pack's trusted builders list.
       - name: "PRINT: Getting started guide output"
-        run: pack build my-image --force-color --builder heroku/builder:26 --trust-extra-buildpacks --buildpack packaged/aarch64-unknown-linux-musl/debug/heroku_dotnet --path tmp/guide --pull-policy never
+        run: pack build my-image --force-color --builder heroku/builder:26 --trust-extra-buildpacks --buildpack packaged/aarch64-unknown-linux-musl/debug/heroku_dotnet --path tmp/guide --pull-policy never --trust-builder
       - name: "PRINT: Cached getting started guide output"
-        run: pack build my-image --force-color --builder heroku/builder:26 --trust-extra-buildpacks --buildpack packaged/aarch64-unknown-linux-musl/debug/heroku_dotnet --path tmp/guide --pull-policy never
+        run: pack build my-image --force-color --builder heroku/builder:26 --trust-extra-buildpacks --buildpack packaged/aarch64-unknown-linux-musl/debug/heroku_dotnet --path tmp/guide --pull-policy never --trust-builder
