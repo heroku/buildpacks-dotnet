@@ -122,6 +122,7 @@ dependencies = [
  "sha2",
  "shell-words",
  "tempfile",
+ "time",
  "toml",
  "tracing",
 ]
@@ -1131,8 +1132,7 @@ dependencies = [
 [[package]]
 name = "libherokubuildpack"
 version = "0.30.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9e8d088fe5a6a49aecc159edfc61c7833866a8716d4585e10a929fbc213eeb6"
+source = "git+https://github.com/heroku/libcnb.rs?branch=add-release-schedule-module#4e7f77164c353c49619dd39d6559e7276379756d"
 dependencies = [
  "flate2",
  "hex",
