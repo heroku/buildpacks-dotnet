@@ -46,7 +46,7 @@ use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{Buildpack, Env, Target, buildpack_main};
 use libherokubuildpack::inventory;
 use libherokubuildpack::inventory::artifact::Artifact;
-use libherokubuildpack::inventory::schedule::{Release, Schedule};
+use libherokubuildpack::inventory::schedule::Schedule;
 use semver::{Version, VersionReq};
 use sha2::Sha512;
 use std::io;
@@ -54,7 +54,6 @@ use std::io::{Write, stderr};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use time::OffsetDateTime;
-use time::macros::date;
 use tracing::instrument;
 
 struct DotnetBuildpack;
@@ -376,25 +375,7 @@ fn log_release_schedule_warnings(
 
 #[allow(clippy::unwrap_used)]
 fn release_schedule() -> Schedule<VersionReq, time::Date, Option<()>> {
-    Schedule {
-        releases: vec![
-            Release {
-                requirement: VersionReq::parse("^8.0").unwrap(),
-                end_of_life: date!(2026 - 11 - 10),
-                metadata: None,
-            },
-            Release {
-                requirement: VersionReq::parse("^9.0").unwrap(),
-                end_of_life: date!(2026 - 11 - 10),
-                metadata: None,
-            },
-            Release {
-                requirement: VersionReq::parse("^10.0").unwrap(),
-                end_of_life: date!(2028 - 11 - 14),
-                metadata: None,
-            },
-        ],
-    }
+    include_str!("../release_schedule.toml").parse().unwrap()
 }
 
 #[instrument(skip_all, err(Debug))]

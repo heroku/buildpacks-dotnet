@@ -11,7 +11,8 @@ workspace = true
 itertools = "0.14"
 libherokubuildpack = { version = "0.30", default-features = false, features = ["inventory", "inventory-semver", "inventory-sha2"] }
 keep_a_changelog_file = "0.1"
-semver = "1.0"
+semver = { version = "1.0", features = ["serde"] }
 serde = "1"
 sha2 = "0.10"
+time = { version = "0.3", features = ["serde-human-readable", "macros"] }
 ureq = { version = "3", features = ["json"] }

@@ -4,22 +4,27 @@ use inventory::checksum::Checksum;
 use itertools::Itertools;
 use keep_a_changelog_file::{ChangeGroup, Changelog};
 use libherokubuildpack::inventory;
-use semver::Version;
+use libherokubuildpack::inventory::schedule::Schedule;
+use semver::{Version, VersionReq};
 use serde::Deserialize;
 use sha2::Sha512;
 use std::env;
 use std::fs;
 use std::process;
 use std::str::FromStr;
+use time::Date;
+use time::macros::format_description;
 
 fn main() {
-    let (inventory_path, changelog_path) = {
+    let (inventory_path, changelog_path, schedule_path) = {
         let args: Vec<String> = env::args().collect();
-        if args.len() != 3 {
-            eprintln!("Usage: inventory-updater <path/to/inventory.toml> <path/to/CHANGELOG.md>");
+        if args.len() != 4 {
+            eprintln!(
+                "Usage: inventory-updater <path/to/inventory.toml> <path/to/CHANGELOG.md> <path/to/release_schedule.toml>"
+            );
             process::exit(1);
         }
-        (args[1].clone(), args[2].clone())
+        (args[1].clone(), args[2].clone(), args[3].clone())
     };
 
     let local_inventory = fs::read_to_string(&inventory_path)
@@ -33,7 +38,9 @@ fn main() {
             process::exit(1);
         });
 
-    let mut upstream_artifacts = list_upstream_artifacts();
+    let feeds = fetch_release_feeds();
+
+    let mut upstream_artifacts = list_upstream_artifacts(&feeds);
     upstream_artifacts
         .sort_by_key(|artifact| (artifact.version.clone(), artifact.arch.to_string()));
     let remote_inventory = Inventory {
@@ -70,6 +77,12 @@ fn main() {
         eprintln!("Failed to write to changelog: {e}");
         process::exit(1);
     });
+
+    let schedule = build_release_schedule(&feeds);
+    fs::write(&schedule_path, schedule.to_string()).unwrap_or_else(|e| {
+        eprintln!("Error writing release schedule to file: {e}");
+        process::exit(1);
+    });
 }
 
 /// Finds the difference between two slices.
@@ -98,7 +111,10 @@ fn update_changelog(
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "kebab-case")]
 struct DotNetReleaseFeed {
+    channel_version: String,
+    eol_date: String,
     releases: Vec<Release>,
 }
 
@@ -126,19 +142,27 @@ struct File {
 const SUPPORTED_MAJOR_VERSIONS: &[i32] = &[8, 9, 10];
 const REQUIRED_ARCHS: [Arch; 2] = [Arch::Amd64, Arch::Arm64];
 
-fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, Option<()>>> {
+fn fetch_release_feeds() -> Vec<DotNetReleaseFeed> {
     SUPPORTED_MAJOR_VERSIONS
         .iter()
-        .flat_map(|major_version| {
+        .map(|major_version| {
             ureq::get(&format!("https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/{major_version}.0/releases.json"))
                 .call()
                 .expect(".NET release feed should be available")
                 .body_mut()
                 .read_json::<DotNetReleaseFeed>()
                 .expect(".NET release feed should be parsable from JSON")
-                .releases
         })
-        .flat_map(|release| release.sdks)
+        .collect()
+}
+
+fn list_upstream_artifacts(
+    feeds: &[DotNetReleaseFeed],
+) -> Vec<Artifact<Version, Sha512, Option<()>>> {
+    feeds
+        .iter()
+        .flat_map(|feed| &feed.releases)
+        .flat_map(|release| &release.sdks)
         .flat_map(|sdk| {
             REQUIRED_ARCHS.iter().map(move |&arch| {
                 let rid = match arch {
@@ -173,6 +197,28 @@ fn list_upstream_artifacts() -> Vec<Artifact<Version, Sha512, Option<()>>> {
             })
         })
         .collect()
+}
+
+fn build_release_schedule(feeds: &[DotNetReleaseFeed]) -> Schedule<VersionReq, Date, Option<()>> {
+    let date_format = format_description!("[year]-[month]-[day]");
+    let mut schedule = Schedule::new();
+    for feed in feeds {
+        let requirement =
+            VersionReq::parse(&format!("^{}", feed.channel_version)).unwrap_or_else(|e| {
+                panic!(
+                    "Channel version '{}' should be a valid version requirement: {e}",
+                    feed.channel_version
+                )
+            });
+        let eol_date = Date::parse(&feed.eol_date, date_format)
+            .unwrap_or_else(|e| panic!("EOL date '{}' should be a valid date: {e}", feed.eol_date));
+        schedule.push(inventory::schedule::Release {
+            requirement,
+            end_of_life: eol_date,
+            metadata: None,
+        });
+    }
+    schedule
 }
 
 #[cfg(test)]

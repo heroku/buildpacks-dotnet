@@ -1,0 +1,11 @@
+[[releases]]
+requirement = "^8.0"
+end_of_life = "2026-11-10"
+
+[[releases]]
+requirement = "^9.0"
+end_of_life = "2026-11-10"
+
+[[releases]]
+requirement = "^10.0"
+end_of_life = "2028-11-14"
