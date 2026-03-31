@@ -33,7 +33,7 @@ use crate::utils::{PathsExt, list_files};
 use bullet_stream::fun_run::{self, CommandWithName};
 use bullet_stream::global::print;
 use bullet_stream::style;
-use indoc::{formatdoc, printdoc};
+use indoc::printdoc;
 use inventory::artifact::{Arch, Os};
 use inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
@@ -46,14 +46,13 @@ use libcnb::layer_env::{LayerEnv, Scope};
 use libcnb::{Buildpack, Env, Target, buildpack_main};
 use libherokubuildpack::inventory;
 use libherokubuildpack::inventory::artifact::Artifact;
-use libherokubuildpack::inventory::schedule::Schedule;
+use libherokubuildpack::inventory::warning::VersionWarnings;
 use semver::{Version, VersionReq};
 use sha2::Sha512;
 use std::io;
 use std::io::{Write, stderr};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use time::OffsetDateTime;
 use tracing::instrument;
 
 struct DotnetBuildpack;
@@ -331,39 +330,19 @@ fn resolve_sdk_artifact(
                         style::value(artifact.version.to_string()),
                         style::details(format!("{}-{}", artifact.os, artifact.arch))
                     ));
-                    log_release_schedule_warnings(&inventory, artifact);
+                    log_version_warnings(artifact);
                 })
         })
 }
 
-fn log_release_schedule_warnings(
-    inventory: &Inventory<Version, Sha512, Option<()>>,
-    artifact: &Artifact<Version, Sha512, Option<()>>,
-) {
-    let schedule = release_schedule();
-    if let Some(release) = schedule.resolve(&artifact.version) {
-        if OffsetDateTime::now_utc().date() >= release.end_of_life {
-            let requirement = &release.requirement;
-            let eol_date = release.end_of_life;
-            let support_url = style::url(
-                "https://devcenter.heroku.com/articles/dotnet-heroku-support-reference#net-versions",
-            );
-            print::warning(formatdoc! {"
-                .NET {requirement} reached end-of-life on {eol_date} and is no
-                longer supported on Heroku. End-of-life versions no longer
-                receive security updates or bug fixes from the .NET team.
-
-                To continue receiving updates, upgrade to a supported .NET
-                SDK version. For more information, see:
-                {support_url}
-            "});
-        }
+fn log_version_warnings(artifact: &Artifact<Version, Sha512, Option<()>>) {
+    for warning in include_str!("../version_warnings.toml")
+        .parse::<VersionWarnings<VersionReq>>()
+        .expect("Should parse version warnings")
+        .resolve(&artifact.version)
+    {
+        print::warning(&warning.message);
     }
-}
-
-#[allow(clippy::unwrap_used)]
-fn release_schedule() -> Schedule<VersionReq, time::Date, Option<()>> {
-    include_str!("../release_schedule.toml").parse().unwrap()
 }
 
 #[instrument(skip_all, err(Debug))]

@@ -122,7 +122,6 @@ dependencies = [
  "sha2",
  "shell-words",
  "tempfile",
- "time",
  "toml",
  "tracing",
 ]
@@ -1134,7 +1133,7 @@ dependencies = [
 [[package]]
 name = "libherokubuildpack"
 version = "0.30.3"
-source = "git+https://github.com/heroku/libcnb.rs?branch=add-release-schedule-module#4e7f77164c353c49619dd39d6559e7276379756d"
+source = "git+https://github.com/heroku/libcnb.rs?branch=add-version-warnings#f8713d776af1cb2438c49bd39f17fc7ec2e30f5e"
 dependencies = [
  "flate2",
  "hex",

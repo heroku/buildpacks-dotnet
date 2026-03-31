@@ -31,7 +31,7 @@ jobs:
 
       - name: Rebuild Inventory
         id: rebuild-inventory
-        run: cargo run --package inventory-updater buildpacks/dotnet/inventory.toml buildpacks/dotnet/CHANGELOG.md buildpacks/dotnet/release_schedule.toml
+        run: cargo run --package inventory-updater buildpacks/dotnet/inventory.toml buildpacks/dotnet/CHANGELOG.md buildpacks/dotnet/version_warnings.toml
 
       - name: Create Pull Request
         id: pr

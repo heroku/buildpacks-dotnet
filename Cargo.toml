@@ -29,7 +29,7 @@ missing_panics_doc = "allow"
 heroku-dotnet-utils = { path = "./shared/dotnet-utils" }
 
 [patch.crates-io]
-libherokubuildpack = { git = "https://github.com/heroku/libcnb.rs", branch = "add-release-schedule-module" }
+libherokubuildpack = { git = "https://github.com/heroku/libcnb.rs", branch = "add-version-warnings" }
 
 [profile.release]
 strip = true

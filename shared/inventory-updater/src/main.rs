@@ -4,7 +4,7 @@ use inventory::checksum::Checksum;
 use itertools::Itertools;
 use keep_a_changelog_file::{ChangeGroup, Changelog};
 use libherokubuildpack::inventory;
-use libherokubuildpack::inventory::schedule::Schedule;
+use libherokubuildpack::inventory::warning::{VersionWarning, VersionWarnings};
 use semver::{Version, VersionReq};
 use serde::Deserialize;
 use sha2::Sha512;
@@ -13,14 +13,15 @@ use std::fs;
 use std::process;
 use std::str::FromStr;
 use time::Date;
+use time::OffsetDateTime;
 use time::macros::format_description;
 
 fn main() {
-    let (inventory_path, changelog_path, schedule_path) = {
+    let (inventory_path, changelog_path, warnings_path) = {
         let args: Vec<String> = env::args().collect();
         if args.len() != 4 {
             eprintln!(
-                "Usage: inventory-updater <path/to/inventory.toml> <path/to/CHANGELOG.md> <path/to/release_schedule.toml>"
+                "Usage: inventory-updater <path/to/inventory.toml> <path/to/CHANGELOG.md> <path/to/version_warnings.toml>"
             );
             process::exit(1);
         }
@@ -78,9 +79,9 @@ fn main() {
         process::exit(1);
     });
 
-    let schedule = build_release_schedule(&feeds);
-    fs::write(&schedule_path, schedule.to_string()).unwrap_or_else(|e| {
-        eprintln!("Error writing release schedule to file: {e}");
+    let warnings = build_version_warnings(&feeds);
+    fs::write(&warnings_path, warnings.to_string()).unwrap_or_else(|e| {
+        eprintln!("Error writing version warnings to file: {e}");
         process::exit(1);
     });
 }
@@ -199,10 +200,16 @@ fn list_upstream_artifacts(
         .collect()
 }
 
-fn build_release_schedule(feeds: &[DotNetReleaseFeed]) -> Schedule<VersionReq, Date, Option<()>> {
+fn build_version_warnings(feeds: &[DotNetReleaseFeed]) -> VersionWarnings<VersionReq> {
     let date_format = format_description!("[year]-[month]-[day]");
-    let mut schedule = Schedule::new();
+    let today = OffsetDateTime::now_utc().date();
+    let mut warnings = VersionWarnings::new();
     for feed in feeds {
+        let eol_date = Date::parse(&feed.eol_date, date_format)
+            .unwrap_or_else(|e| panic!("EOL date '{}' should be a valid date: {e}", feed.eol_date));
+        if today < eol_date {
+            continue;
+        }
         let requirement =
             VersionReq::parse(&format!("^{}", feed.channel_version)).unwrap_or_else(|e| {
                 panic!(
@@ -210,15 +217,23 @@ fn build_release_schedule(feeds: &[DotNetReleaseFeed]) -> Schedule<VersionReq, D
                     feed.channel_version
                 )
             });
-        let eol_date = Date::parse(&feed.eol_date, date_format)
-            .unwrap_or_else(|e| panic!("EOL date '{}' should be a valid date: {e}", feed.eol_date));
-        schedule.push(inventory::schedule::Release {
+        let channel_version = &feed.channel_version;
+        let eol_date = &feed.eol_date;
+        let message = format!(
+            ".NET {channel_version} reached end-of-life on {eol_date} and is no\n\
+             longer supported on Heroku. End-of-life versions no longer\n\
+             receive security updates or bug fixes from the .NET team.\n\
+             \n\
+             To continue receiving updates, upgrade to a supported .NET\n\
+             SDK version. For more information, see:\n\
+             https://devcenter.heroku.com/articles/dotnet-heroku-support-reference#net-versions"
+        );
+        warnings.push(VersionWarning {
             requirement,
-            end_of_life: eol_date,
-            metadata: None,
+            message,
         });
     }
-    schedule
+    warnings
 }
 
 #[cfg(test)]
