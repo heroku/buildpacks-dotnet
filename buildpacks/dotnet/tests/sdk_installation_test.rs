@@ -131,8 +131,7 @@ fn test_sdk_installation_with_global_json() {
                       - Detected .NET project: `/workspace/foo.csproj`
                       - Detecting version requirement from root global.json file
                       - Detected version requirement: `=8.0.101`
-                      - Resolved .NET SDK version `8.0.101` (linux-{artifact_arch})
-                      - Note: A newer .NET `^8.0` SDK is available (version `8.0.")
+                      - Resolved .NET SDK version `8.0.101` (linux-{artifact_arch})")
             );
             assert_contains!(
                 context.pack_stdout,

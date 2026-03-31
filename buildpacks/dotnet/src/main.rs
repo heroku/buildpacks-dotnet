@@ -342,18 +342,6 @@ fn log_release_schedule_warnings(
 ) {
     let schedule = release_schedule();
     if let Some(release) = schedule.resolve(&artifact.version) {
-        if let Some(latest) = inventory
-            .resolve(artifact.os, artifact.arch, &release.requirement)
-            .filter(|a| a.version > artifact.version)
-        {
-            print::sub_bullet(format!(
-                "{} A newer .NET {} SDK is available (version {})",
-                style::important("Note:"),
-                style::value(release.requirement.to_string()),
-                style::value(latest.version.to_string()),
-            ));
-        }
-
         if OffsetDateTime::now_utc().date() >= release.end_of_life {
             let requirement = &release.requirement;
             let eol_date = release.end_of_life;
