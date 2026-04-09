@@ -224,6 +224,7 @@ fn find_target_framework_from_directory_build_props(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use libcnb_test::assert_matches;
     use std::fs;
     use std::io::ErrorKind;
 
@@ -352,7 +353,7 @@ mod tests {
         .unwrap();
 
         let result = Project::load_from_path(&project_path);
-        assert_matches!(result, Err(LoadError::MissingTargetFramework(path)) if path == &project_path);
+        assert_matches!(result, Err(LoadError::MissingTargetFramework(path)) if path == project_path);
     }
 
     #[test]

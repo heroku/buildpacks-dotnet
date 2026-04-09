@@ -46,6 +46,7 @@ pub(crate) fn parse(contents: &str) -> Result<Option<DotnetConfig>, toml::de::Er
 #[cfg(test)]
 mod tests {
     use super::*;
+    use libcnb_test::assert_matches;
 
     #[test]
     fn test_parse() {

@@ -119,6 +119,7 @@ impl TryFrom<SdkConfig> for VersionReq {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use libcnb_test::assert_matches;
     use semver::VersionReq;
     use std::str::FromStr;
 
@@ -302,7 +303,7 @@ mod tests {
             " patch ",
         ];
 
-        for input in &invalid_cases {
+        for input in invalid_cases {
             let result = RollForwardPolicy::from_str(input);
             assert_matches!(result, Err(error) if error == input);
         }

@@ -113,6 +113,7 @@ impl TryFrom<AppSource> for Solution {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use libcnb_test::assert_matches;
     use std::fs;
     use std::io::ErrorKind;
     use tempfile::TempDir;
@@ -347,7 +348,7 @@ mod tests {
         let expected_path = temp_dir.path().join("src/MyApp/MyApp.csproj");
         let app_source = AppSource::from_file(&expected_path).unwrap();
 
-        assert_matches!(app_source, AppSource::Project(path) if path == &expected_path);
+        assert_matches!(app_source, AppSource::Project(path) if path == expected_path);
     }
 
     #[test]
@@ -356,7 +357,7 @@ mod tests {
         let invalid_path = temp_dir.path().join("MyApp.txt");
         let result = AppSource::from_file(&invalid_path).unwrap_err();
 
-        assert_matches!(result, DiscoveryError::UnrecognizedAppExtension(path) if path == &invalid_path);
+        assert_matches!(result, DiscoveryError::UnrecognizedAppExtension(path) if path == invalid_path);
     }
 
     #[test]
@@ -365,7 +366,7 @@ mod tests {
         let invalid_path = temp_dir.path().join("MyApp");
         let result = AppSource::from_file(&invalid_path).unwrap_err();
 
-        assert_matches!(result, DiscoveryError::UnrecognizedAppExtension(path) if path == &invalid_path);
+        assert_matches!(result, DiscoveryError::UnrecognizedAppExtension(path) if path == invalid_path);
     }
 
     #[test]
