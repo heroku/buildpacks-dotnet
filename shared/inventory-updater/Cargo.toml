@@ -13,5 +13,5 @@ libherokubuildpack = { version = "0.30", default-features = false, features = ["
 keep_a_changelog_file = "0.1"
 semver = "1.0"
 serde = "1"
-sha2 = "0.10"
+sha2 = "0.11"
 ureq = { version = "3", features = ["json"] }
