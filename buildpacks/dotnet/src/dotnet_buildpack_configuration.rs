@@ -138,6 +138,7 @@ mod tests {
     use super::*;
     use crate::project_toml::MsbuildConfig;
     use libcnb::Env;
+    use libcnb_test::assert_matches;
 
     fn create_env(variables: &[(&str, &str)]) -> Env {
         let mut env = Env::new();

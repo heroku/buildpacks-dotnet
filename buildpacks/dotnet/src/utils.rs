@@ -114,6 +114,7 @@ pub(crate) fn to_rfc1123_label(input: &str) -> Result<String, ()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use libcnb_test::assert_matches;
     use std::fs;
 
     #[test]

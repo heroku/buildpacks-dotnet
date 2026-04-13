@@ -83,6 +83,7 @@ fn extract_project_references(contents: &str) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use libcnb_test::assert_matches;
     use std::fs;
     use std::io::ErrorKind;
 
@@ -257,7 +258,7 @@ mod tests {
         fs::write(&solution_path, solution_content).unwrap();
 
         let result = Solution::load_from_path(&solution_path);
-        assert_matches!(result, Err(LoadError::ProjectNotFound(path)) if path == &missing_project_path);
+        assert_matches!(result, Err(LoadError::ProjectNotFound(path)) if path == missing_project_path);
     }
 
     #[test]
