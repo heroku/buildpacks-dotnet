@@ -91,11 +91,9 @@ pub(crate) fn to_rfc1123_label(input: &str) -> Result<String, ()> {
                 label.push(char);
                 previous_char_was_hyphen = false;
             }
-            '-' | '.' | '_' | ' ' => {
-                if !previous_char_was_hyphen {
-                    label.push('-');
-                    previous_char_was_hyphen = true;
-                }
+            '-' | '.' | '_' | ' ' if !previous_char_was_hyphen => {
+                label.push('-');
+                previous_char_was_hyphen = true;
             }
             _ => {}
         }
