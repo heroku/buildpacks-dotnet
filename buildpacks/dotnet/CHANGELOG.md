@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-04-21
+
 ### Fixed
 
 - Transient HTTP errors (e.g. connection failures, timeouts, 5xx responses) when downloading the .NET SDK now retry, matching the existing behaviour for I/O errors. ([#415](https://github.com/heroku/buildpacks-dotnet/pull/415))
@@ -407,7 +409,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.6...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.7...HEAD
+[1.0.7]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.3...v1.0.4
