@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Transient HTTP errors (e.g. connection failures, timeouts, 5xx responses) when downloading the .NET SDK now retry, matching the existing behaviour for I/O errors. ([#415](https://github.com/heroku/buildpacks-dotnet/pull/415))
 
+### Added
+
+- Support for .NET SDK versions: 10.0.107, 10.0.203.
+
 ## [1.0.6] - 2026-04-14
 
 ### Added
