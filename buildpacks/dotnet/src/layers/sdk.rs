@@ -118,8 +118,19 @@ fn download_sdk(
         }
         match download_result {
             Ok(()) => OperationResult::Ok(()),
-            Err(error @ DownloadError::IoError(_)) => OperationResult::Retry(error),
-            Err(error) => OperationResult::Err(error),
+            Err(error) => {
+                let is_retryable = match &error {
+                    DownloadError::IoError(_) => true,
+                    DownloadError::HttpError(http_error) => http_error
+                        .status()
+                        .is_none_or(|status| !status.is_client_error()),
+                };
+                if is_retryable {
+                    OperationResult::Retry(error)
+                } else {
+                    OperationResult::Err(error)
+                }
+            }
         }
     })
     .map_err(|error| error.error)
