@@ -308,16 +308,16 @@ fn build_announcement(
 
     let runtime_paragraph = sentences.join(" ");
 
-    let (title_noun, title_verb, body_noun, body_verb) = if added_versions.len() == 1 {
-        ("SDK", "is", "SDK", "has")
+    let (noun, title_verb, body_verb) = if added_versions.len() == 1 {
+        ("SDK", "is", "has")
     } else {
-        ("SDKs", "are", "SDKs", "have")
+        ("SDKs", "are", "have")
     };
 
     Announcement {
-        title: format!(".NET {title_noun} {plain_sdk_list} {title_verb} now available\n"),
+        title: format!(".NET {noun} {plain_sdk_list} {title_verb} now available\n"),
         body: format!(
-            ".NET {body_noun} {backtick_sdk_list} {body_verb} been made available for builds on Heroku.\n\n{runtime_paragraph}\n\nFor additional information, please see our article on [.NET support](https://devcenter.heroku.com/articles/dotnet-heroku-support-reference).\n",
+            ".NET {noun} {backtick_sdk_list} {body_verb} been made available for builds on Heroku.\n\n{runtime_paragraph}\n\nFor additional information, please see our article on [.NET support](https://devcenter.heroku.com/articles/dotnet-heroku-support-reference).\n",
         ),
     }
 }
