@@ -64,11 +64,5 @@ jobs:
           commit-message: "Update Inventory for heroku/dotnet"
           committer: ${{ vars.LINGUIST_GH_APP_USERNAME }} <${{ vars.LINGUIST_GH_APP_EMAIL }}>
           author: ${{ vars.LINGUIST_GH_APP_USERNAME }} <${{ vars.LINGUIST_GH_APP_EMAIL }}>
-          branch: update-dotnet-inventory
+          branch: test-update-dotnet-inventory
           body-path: ${{ runner.temp }}/pr-body.md
-
-      - name: Configure PR
-        if: steps.pr.outputs.pull-request-operation == 'created'
-        env:
-          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-        run: gh pr merge --squash --auto "${{ steps.pr.outputs.pull-request-number }}"
