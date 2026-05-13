@@ -281,20 +281,20 @@ fn build_announcement(
         if runtime_pairs.len() == 1 {
             let ((runtime, aspnet), _) = runtime_pairs.iter().next().expect("exactly one entry");
             sentences.push(format!(
-                "The .NET {major}.0 SDK releases include .NET Runtime `{runtime}` and ASP.NET Core Runtime `{aspnet}`."
+                "The .NET {major}.0 SDKs include .NET Runtime `{runtime}` and ASP.NET Core Runtime `{aspnet}`."
             ));
         } else {
             for ((runtime, aspnet), sdks) in runtime_pairs {
                 let mut sorted_sdks = sdks.clone();
                 sorted_sdks.sort();
                 let sdk_list = format_version_list(&sorted_sdks, "`");
-                let verb = if sorted_sdks.len() == 1 {
-                    "includes"
+                let (noun, verb) = if sorted_sdks.len() == 1 {
+                    ("SDK", "includes")
                 } else {
-                    "include"
+                    ("SDKs", "include")
                 };
                 sentences.push(format!(
-                    ".NET SDK {sdk_list} {verb} .NET Runtime `{runtime}` and ASP.NET Core Runtime `{aspnet}`."
+                    ".NET {noun} {sdk_list} {verb} .NET Runtime `{runtime}` and ASP.NET Core Runtime `{aspnet}`."
                 ));
             }
         }
@@ -439,9 +439,9 @@ mod tests {
 
         let expected_title = ".NET SDK 8.0.127, 8.0.421, 9.0.117, 9.0.314, 10.0.108, 10.0.204 and 10.0.300 are now available\n";
         let expected_body = ".NET SDK `8.0.127`, `8.0.421`, `9.0.117`, `9.0.314`, `10.0.108`, `10.0.204` and `10.0.300` have been made available for builds on Heroku.\n\n\
-            The .NET 8.0 SDK releases include .NET Runtime `8.0.27` and ASP.NET Core Runtime `8.0.27`. \
-            The .NET 9.0 SDK releases include .NET Runtime `9.0.16` and ASP.NET Core Runtime `9.0.16`. \
-            The .NET 10.0 SDK releases include .NET Runtime `10.0.8` and ASP.NET Core Runtime `10.0.8`.\n\n\
+            The .NET 8.0 SDKs include .NET Runtime `8.0.27` and ASP.NET Core Runtime `8.0.27`. \
+            The .NET 9.0 SDKs include .NET Runtime `9.0.16` and ASP.NET Core Runtime `9.0.16`. \
+            The .NET 10.0 SDKs include .NET Runtime `10.0.8` and ASP.NET Core Runtime `10.0.8`.\n\n\
             For additional information, please see our article on [.NET support](https://devcenter.heroku.com/articles/dotnet-heroku-support-reference).\n";
 
         let announcement = build_announcement(&added, &runtimes);
@@ -486,7 +486,7 @@ mod tests {
             announcement.body,
             ".NET SDK `10.0.108`, `10.0.204` and `10.0.300` have been made available for builds on Heroku.\n\n\
             .NET SDK `10.0.108` includes .NET Runtime `10.0.7` and ASP.NET Core Runtime `10.0.7`. \
-            .NET SDK `10.0.204` and `10.0.300` include .NET Runtime `10.0.8` and ASP.NET Core Runtime `10.0.9`.\n\n\
+            .NET SDKs `10.0.204` and `10.0.300` include .NET Runtime `10.0.8` and ASP.NET Core Runtime `10.0.9`.\n\n\
             For additional information, please see our article on [.NET support](https://devcenter.heroku.com/articles/dotnet-heroku-support-reference).\n"
         );
     }
