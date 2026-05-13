@@ -31,7 +31,14 @@ jobs:
 
       - name: Rebuild Inventory
         id: rebuild-inventory
-        run: cargo run --package inventory-updater buildpacks/dotnet/inventory.toml buildpacks/dotnet/CHANGELOG.md
+        run: cargo run --package inventory-updater buildpacks/dotnet/inventory.toml buildpacks/dotnet/CHANGELOG.md "${RUNNER_TEMP}/announcement"
+
+      - name: Upload announcement
+        if: hashFiles(format('{0}/announcement/body.md', runner.temp)) != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: announcement
+          path: ${{ runner.temp }}/announcement/
 
       - name: Create Pull Request
         id: pr
