@@ -279,8 +279,7 @@ fn build_announcement(
         // ".NET X.0 SDK(s) include …" form. Otherwise, name the SDKs in each
         // group so the SDK ↔ runtime mapping is explicit.
         if runtime_pairs.len() == 1 {
-            let ((runtime, aspnet), sdks) =
-                runtime_pairs.iter().next().expect("exactly one entry");
+            let ((runtime, aspnet), sdks) = runtime_pairs.iter().next().expect("exactly one entry");
             let (noun, verb) = if sdks.len() == 1 {
                 ("SDK", "includes")
             } else {
@@ -516,10 +515,7 @@ mod tests {
         )]);
 
         let announcement = build_announcement(&added, &runtimes);
-        assert_eq!(
-            announcement.title,
-            ".NET 10.0.300 SDK is now available\n"
-        );
+        assert_eq!(announcement.title, ".NET 10.0.300 SDK is now available\n");
         assert_eq!(
             announcement.body,
             ".NET `10.0.300` SDK has been made available for builds on Heroku.\n\n\
