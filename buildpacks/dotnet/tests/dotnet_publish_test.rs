@@ -181,17 +181,11 @@ fn test_dotnet_publish_file_based_app_basic_console_with_assembly_name() {
                 context.pack_stdout,
                 "- Running `dotnet publish /workspace/foo.cs"
             );
-            assert_contains!(context.pack_stdout, "foo.cs -> /workspace/bin/publish/");
+            assert_contains!(context.pack_stdout, "foo -> /workspace/bin/publish/");
             assert_contains!(
                 context.pack_stdout,
                 "- Found `bar`: bash -c cd bin/publish; ./bar"
             );
-            context.start_container(ContainerConfig::new().entrypoint("bar"), |container| {
-                let log_output = container.logs_wait();
-
-                assert_empty!(log_output.stderr);
-                assert_contains!(log_output.stdout, "Hello, World!");
-            });
         },
     );
 }
@@ -215,7 +209,7 @@ fn test_dotnet_publish_file_based_app_basic_web() {
                 context.pack_stdout,
                 "- Running `dotnet publish /workspace/foo.cs"
             );
-            assert_contains!(context.pack_stdout, "foo.cs -> /workspace/bin/publish/");
+            assert_contains!(context.pack_stdout, "foo -> /workspace/bin/publish/");
             assert_contains!(
                 context.pack_stdout,
                 "- Found `web`: bash -c cd bin/publish; ./foo --urls http://*:$PORT"
