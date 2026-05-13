@@ -39,9 +39,7 @@ jobs:
             echo "Automated pull-request to update heroku/dotnet inventory."
             if [ -f "${RUNNER_TEMP}/announcement/body.md" ]; then
               echo
-              echo "## Devcenter changelog announcement"
-              echo
-              echo "Copy these into Devcenter when you're ready to publish."
+              echo "## Dev Center changelog draft"
               echo
               echo "**Title**"
               echo
