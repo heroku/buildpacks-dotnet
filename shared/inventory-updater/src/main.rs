@@ -276,12 +276,18 @@ fn build_announcement(
     let mut sentences = Vec::new();
     for (major, runtime_pairs) in &sdks_by_major_and_runtimes {
         // When every SDK in the major shares one runtime pair, use the compact
-        // ".NET X.0 SDK releases include …" form. Otherwise, name the SDKs in
-        // each group so the SDK ↔ runtime mapping is explicit.
+        // ".NET X.0 SDK(s) include …" form. Otherwise, name the SDKs in each
+        // group so the SDK ↔ runtime mapping is explicit.
         if runtime_pairs.len() == 1 {
-            let ((runtime, aspnet), _) = runtime_pairs.iter().next().expect("exactly one entry");
+            let ((runtime, aspnet), sdks) =
+                runtime_pairs.iter().next().expect("exactly one entry");
+            let (noun, verb) = if sdks.len() == 1 {
+                ("SDK", "includes")
+            } else {
+                ("SDKs", "include")
+            };
             sentences.push(format!(
-                "The .NET {major}.0 SDKs include .NET Runtime `{runtime}` and ASP.NET Core Runtime `{aspnet}`."
+                "The .NET {major}.0 {noun} {verb} .NET Runtime `{runtime}` and ASP.NET Core Runtime `{aspnet}`."
             ));
         } else {
             for ((runtime, aspnet), sdks) in runtime_pairs {
@@ -302,10 +308,16 @@ fn build_announcement(
 
     let runtime_paragraph = sentences.join(" ");
 
+    let (title_noun, title_verb, body_noun, body_verb) = if added_versions.len() == 1 {
+        ("SDK", "is", "SDK", "has")
+    } else {
+        ("SDKs", "are", "SDKs", "have")
+    };
+
     Announcement {
-        title: format!(".NET SDK {plain_sdk_list} are now available\n"),
+        title: format!(".NET {title_noun} {plain_sdk_list} {title_verb} now available\n"),
         body: format!(
-            ".NET SDK {backtick_sdk_list} have been made available for builds on Heroku.\n\n{runtime_paragraph}\n\nFor additional information, please see our article on [.NET support](https://devcenter.heroku.com/articles/dotnet-heroku-support-reference).\n",
+            ".NET {body_noun} {backtick_sdk_list} {body_verb} been made available for builds on Heroku.\n\n{runtime_paragraph}\n\nFor additional information, please see our article on [.NET support](https://devcenter.heroku.com/articles/dotnet-heroku-support-reference).\n",
         ),
     }
 }
@@ -437,8 +449,8 @@ mod tests {
             ),
         ]);
 
-        let expected_title = ".NET SDK 8.0.127, 8.0.421, 9.0.117, 9.0.314, 10.0.108, 10.0.204 and 10.0.300 are now available\n";
-        let expected_body = ".NET SDK `8.0.127`, `8.0.421`, `9.0.117`, `9.0.314`, `10.0.108`, `10.0.204` and `10.0.300` have been made available for builds on Heroku.\n\n\
+        let expected_title = ".NET SDKs 8.0.127, 8.0.421, 9.0.117, 9.0.314, 10.0.108, 10.0.204 and 10.0.300 are now available\n";
+        let expected_body = ".NET SDKs `8.0.127`, `8.0.421`, `9.0.117`, `9.0.314`, `10.0.108`, `10.0.204` and `10.0.300` have been made available for builds on Heroku.\n\n\
             The .NET 8.0 SDKs include .NET Runtime `8.0.27` and ASP.NET Core Runtime `8.0.27`. \
             The .NET 9.0 SDKs include .NET Runtime `9.0.16` and ASP.NET Core Runtime `9.0.16`. \
             The .NET 10.0 SDKs include .NET Runtime `10.0.8` and ASP.NET Core Runtime `10.0.8`.\n\n\
@@ -484,9 +496,34 @@ mod tests {
         let announcement = build_announcement(&added, &runtimes);
         assert_eq!(
             announcement.body,
-            ".NET SDK `10.0.108`, `10.0.204` and `10.0.300` have been made available for builds on Heroku.\n\n\
+            ".NET SDKs `10.0.108`, `10.0.204` and `10.0.300` have been made available for builds on Heroku.\n\n\
             .NET SDK `10.0.108` includes .NET Runtime `10.0.7` and ASP.NET Core Runtime `10.0.7`. \
             .NET SDKs `10.0.204` and `10.0.300` include .NET Runtime `10.0.8` and ASP.NET Core Runtime `10.0.9`.\n\n\
+            For additional information, please see our article on [.NET support](https://devcenter.heroku.com/articles/dotnet-heroku-support-reference).\n"
+        );
+    }
+
+    #[test]
+    fn test_build_announcement_handles_single_sdk() {
+        let added = vec![Version::parse("10.0.300").unwrap()];
+
+        let runtimes = HashMap::from([(
+            Version::parse("10.0.300").unwrap(),
+            RuntimeVersions {
+                runtime: Version::parse("10.0.8").unwrap(),
+                aspnetcore_runtime: Version::parse("10.0.8").unwrap(),
+            },
+        )]);
+
+        let announcement = build_announcement(&added, &runtimes);
+        assert_eq!(
+            announcement.title,
+            ".NET SDK 10.0.300 is now available\n"
+        );
+        assert_eq!(
+            announcement.body,
+            ".NET SDK `10.0.300` has been made available for builds on Heroku.\n\n\
+            The .NET 10.0 SDK includes .NET Runtime `10.0.8` and ASP.NET Core Runtime `10.0.8`.\n\n\
             For additional information, please see our article on [.NET support](https://devcenter.heroku.com/articles/dotnet-heroku-support-reference).\n"
         );
     }
