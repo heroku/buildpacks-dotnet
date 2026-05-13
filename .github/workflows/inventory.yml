@@ -31,7 +31,29 @@ jobs:
 
       - name: Rebuild Inventory
         id: rebuild-inventory
-        run: cargo run --package inventory-updater buildpacks/dotnet/inventory.toml buildpacks/dotnet/CHANGELOG.md
+        run: cargo run --package inventory-updater buildpacks/dotnet/inventory.toml buildpacks/dotnet/CHANGELOG.md "${RUNNER_TEMP}/announcement"
+
+      - name: Build PR body
+        run: |
+          {
+            echo "Automated pull-request to update heroku/dotnet inventory."
+            if [ -f "${RUNNER_TEMP}/announcement/body.md" ]; then
+              echo
+              echo "## Dev Center changelog draft"
+              echo
+              echo "**Title**"
+              echo
+              echo '```'
+              cat "${RUNNER_TEMP}/announcement/title.md"
+              echo '```'
+              echo
+              echo "**Body**"
+              echo
+              echo '````markdown'
+              cat "${RUNNER_TEMP}/announcement/body.md"
+              echo '````'
+            fi
+          } > "${RUNNER_TEMP}/pr-body.md"
 
       - name: Create Pull Request
         id: pr
@@ -43,7 +65,7 @@ jobs:
           committer: ${{ vars.LINGUIST_GH_APP_USERNAME }} <${{ vars.LINGUIST_GH_APP_EMAIL }}>
           author: ${{ vars.LINGUIST_GH_APP_USERNAME }} <${{ vars.LINGUIST_GH_APP_EMAIL }}>
           branch: update-dotnet-inventory
-          body: "Automated pull-request to update heroku/dotnet inventory"
+          body-path: ${{ runner.temp }}/pr-body.md
 
       - name: Configure PR
         if: steps.pr.outputs.pull-request-operation == 'created'
