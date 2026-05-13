@@ -300,7 +300,7 @@ fn build_announcement(
                     ("SDKs", "include")
                 };
                 sentences.push(format!(
-                    ".NET {sdk_list} {noun} {verb} .NET Runtime `{runtime}` and ASP.NET Core Runtime `{aspnet}`."
+                    "The .NET {sdk_list} {noun} {verb} .NET Runtime `{runtime}` and ASP.NET Core Runtime `{aspnet}`."
                 ));
             }
         }
@@ -497,8 +497,8 @@ mod tests {
         assert_eq!(
             announcement.body,
             ".NET `10.0.108`, `10.0.204` and `10.0.300` SDKs have been made available for builds on Heroku.\n\n\
-            .NET `10.0.108` SDK includes .NET Runtime `10.0.7` and ASP.NET Core Runtime `10.0.7`. \
-            .NET `10.0.204` and `10.0.300` SDKs include .NET Runtime `10.0.8` and ASP.NET Core Runtime `10.0.9`.\n\n\
+            The .NET `10.0.108` SDK includes .NET Runtime `10.0.7` and ASP.NET Core Runtime `10.0.7`. \
+            The .NET `10.0.204` and `10.0.300` SDKs include .NET Runtime `10.0.8` and ASP.NET Core Runtime `10.0.9`.\n\n\
             For additional information, please see our article on [.NET support](https://devcenter.heroku.com/articles/dotnet-heroku-support-reference).\n"
         );
     }
