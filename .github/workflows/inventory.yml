@@ -35,7 +35,7 @@ jobs:
 
       - name: Upload announcement
         if: hashFiles(format('{0}/announcement/body.md', runner.temp)) != ''
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: announcement
           path: ${{ runner.temp }}/announcement/
