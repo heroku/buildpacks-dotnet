@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.9] - 2026-05-18
+
 ### Changed
 
 - The "Unsupported target framework" error message now lists the actual supported TFMs (`net8.0`, `net9.0`, `net10.0`) instead of stale values. ([#431](https://github.com/heroku/buildpacks-dotnet/pull/431))
@@ -419,7 +421,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.8...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.9...HEAD
+[1.0.9]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.8...v1.0.9
 [1.0.8]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.7...v1.0.8
 [1.0.7]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.5...v1.0.6
