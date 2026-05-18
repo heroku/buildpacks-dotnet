@@ -82,7 +82,7 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       - name: Install Pack CLI
-        uses: buildpacks/github-actions/setup-pack@2d50d4a5ef67c8e57fde3c935104dc22f7d10fd0 # v5.12.2
+        uses: buildpacks/github-actions/setup-pack@812ff667850b930be2217c48e1f980e71bd3e14f # v5.12.3
       # The images are pulled up front to prevent duplicate pulls due to the tests being run concurrently.
       - name: Pull builder image
         run: docker pull '${{ env.INTEGRATION_TEST_BUILDER }}'
@@ -121,7 +121,7 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       - name: Install Pack CLI
-        uses: buildpacks/github-actions/setup-pack@2d50d4a5ef67c8e57fde3c935104dc22f7d10fd0 # v5.12.2
+        uses: buildpacks/github-actions/setup-pack@812ff667850b930be2217c48e1f980e71bd3e14f # v5.12.3
       - name: Clone getting started guide
         uses: actions/checkout@v6
         with:
