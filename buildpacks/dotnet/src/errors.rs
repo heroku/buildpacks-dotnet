@@ -261,7 +261,7 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
                     "Unsupported target framework",
                     formatdoc! {"
                         The detected target framework moniker `{tfm}` is either invalid or unsupported. This
-                        buildpack currently supports the following TFMs: `net6.0`, `net7.0`, `net8.0`, `net9.0`.
+                        buildpack currently supports the following TFMs: `net8.0`, `net9.0`, `net10.0`.
 
                         For more information, see:
                         https://github.com/heroku/buildpacks-dotnet#net-version
