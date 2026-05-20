@@ -21,7 +21,7 @@ To build a .NET application codebase into a production image:
 
 ```bash
 $ cd ~/workdir/sample-dotnet-app
-$ pack build sample-app --builder heroku/builder:24
+$ pack build sample-app --builder heroku/builder:26
 ```
 
 Then run the image:
@@ -73,7 +73,7 @@ Set the `SOLUTION_FILE` environment variable during build:
 ```bash
 $ pack build sample-app \
     --env "SOLUTION_FILE=foo.sln" \
-    --builder heroku/builder:24
+    --builder heroku/builder:26
 ```
 
 #### Using project.toml
@@ -112,7 +112,7 @@ To build using a `Debug` build configuration and `detailed` verbosity level:
 $ pack build sample-app \
     --env "BUILD_CONFIGURATION=Debug" \
     --env "MSBUILD_VERBOSITY_LEVEL=detailed" \
-    --builder heroku/builder:24
+    --builder heroku/builder:26
 ```
 
 > [!NOTE]
