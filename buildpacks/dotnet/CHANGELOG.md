@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.11] - 2026-05-22
+
+- No changes.
+
 ## [1.0.10] - 2026-05-21
 
 - No changes.
@@ -425,7 +429,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.10...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.11...HEAD
+[1.0.11]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.10...v1.0.11
 [1.0.10]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.9...v1.0.10
 [1.0.9]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.8...v1.0.9
 [1.0.8]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.7...v1.0.8
