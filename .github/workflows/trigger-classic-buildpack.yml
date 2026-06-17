@@ -1,0 +1,40 @@
+name: Trigger Classic Buildpack Update
+
+# When a new CNB version is released here, kick off the classic buildpack's
+# "CNB" workflow (in heroku/heroku-buildpack-dotnet) so it bumps its pinned
+# DOTNET_CNB_VERSION right away, instead of waiting for its daily cron.
+#
+# Uses the `released` activity type (not `published`) so pre-releases don't
+# trigger a downstream bump — the classic buildpack should only ever pin a
+# shippable, non-prerelease version. Dry-run releases don't publish anything,
+# so they don't trigger this either. The release here is created with the
+# Linguist GitHub App token (not the default GITHUB_TOKEN), so it is allowed
+# to trigger this downstream workflow run.
+on:
+  release:
+    types:
+      - released
+
+# Disable all GITHUB_TOKEN permissions, since the GitHub App token is used instead.
+permissions: {}
+
+jobs:
+  trigger-cnb-update:
+    name: Trigger CNB version update
+    runs-on: pub-hk-ubuntu-24.04-ip
+    steps:
+      - name: Generate token for heroku/heroku-buildpack-dotnet
+        uses: actions/create-github-app-token@v3
+        id: generate-token
+        with:
+          app-id: ${{ vars.LINGUIST_GH_APP_ID }}
+          private-key: ${{ secrets.LINGUIST_GH_PRIVATE_KEY }}
+          owner: heroku
+          repositories: heroku-buildpack-dotnet
+
+      - name: Dispatch CNB workflow
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        # The "CNB" workflow is idempotent: if it doesn't find a newer release
+        # than the one it has pinned, it exits early without opening a PR.
+        run: gh workflow run cnb.yml --repo heroku/heroku-buildpack-dotnet --ref main
