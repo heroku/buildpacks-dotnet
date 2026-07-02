@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Update Rust toolchain
         run: rustup update
       - name: Rust Cache
@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
     - name: Update Rust toolchain
       run: rustup update
     - name: Rust Cache
@@ -66,7 +66,7 @@ jobs:
       INTEGRATION_TEST_BUILDER: heroku/${{ matrix.builder }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       # The dpkg man-db trigger is excessively slow on GHA runners, see e.g.:
       # https://github.com/actions/runner-images/issues/10977
       # https://github.com/actions/runner/issues/4030
@@ -105,7 +105,7 @@ jobs:
     runs-on: 'ubuntu-24.04-arm'
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       # The dpkg man-db trigger is excessively slow on GHA runners, see e.g.:
       # https://github.com/actions/runner-images/issues/10977
       # https://github.com/actions/runner/issues/4030
@@ -123,7 +123,7 @@ jobs:
       - name: Install Pack CLI
         uses: buildpacks/github-actions/setup-pack@e3b14c6e906f91da358e01dc2849ce068188107f # v5.12.5
       - name: Clone getting started guide
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: heroku/dotnet-getting-started
           path: tmp/guide
