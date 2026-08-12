@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support for .NET SDK versions: 8.0.130, 8.0.424, 9.0.120, 9.0.317, 10.0.111, 10.0.303, 10.0.400.
+
 ## [1.0.14] - 2026-07-15
 
 ### Added
