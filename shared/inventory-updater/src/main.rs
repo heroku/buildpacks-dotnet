@@ -381,7 +381,7 @@ mod tests {
         assert_eq!(added_artifacts[0].version, Version::parse("1.1.0").unwrap());
 
         let removed_artifacts = difference(&local_inventory.artifacts, &remote_inventory.artifacts);
-        assert!(removed_artifacts.is_empty());
+        assert_eq!(removed_artifacts.len(), 0);
     }
 
     #[test]

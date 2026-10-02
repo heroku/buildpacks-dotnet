@@ -148,7 +148,7 @@ mod tests {
             )],
         };
 
-        assert!(detect_solution_processes(app_dir, &solution).is_empty());
+        assert_eq!(detect_solution_processes(app_dir, &solution), vec![]);
     }
 
     #[test]
