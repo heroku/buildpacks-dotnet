@@ -107,30 +107,21 @@ mod tests {
 
     #[test]
     fn test_generate_dotnet_layer_env() {
-        let layer_env = generate_layer_env(Path::new("/layers/sdk"), &Scope::All, None);
+        for scope in [Scope::All, Scope::Build, Scope::Launch] {
+            let layer_env = generate_layer_env(Path::new("/layers/sdk"), &scope, None);
 
-        assert_eq!(
-            utils::environment_as_sorted_vector(&layer_env.apply_to_empty(Scope::Build)),
-            [
-                ("DOTNET_CLI_TELEMETRY_OPTOUT", "true"),
-                ("DOTNET_EnableWriteXorExecute", "0"),
-                ("DOTNET_NOLOGO", "true"),
-                ("DOTNET_ROOT", "/layers/sdk"),
-                ("DOTNET_RUNNING_IN_CONTAINER", "true"),
-                ("PATH", "/layers/sdk"),
-            ]
-        );
-        assert_eq!(
-            utils::environment_as_sorted_vector(&layer_env.apply_to_empty(Scope::Launch)),
-            [
-                ("DOTNET_CLI_TELEMETRY_OPTOUT", "true"),
-                ("DOTNET_EnableWriteXorExecute", "0"),
-                ("DOTNET_NOLOGO", "true"),
-                ("DOTNET_ROOT", "/layers/sdk"),
-                ("DOTNET_RUNNING_IN_CONTAINER", "true"),
-                ("PATH", "/layers/sdk"),
-            ]
-        );
+            assert_eq!(
+                utils::environment_as_sorted_vector(&layer_env.apply_to_empty(scope)),
+                [
+                    ("DOTNET_CLI_TELEMETRY_OPTOUT", "true"),
+                    ("DOTNET_EnableWriteXorExecute", "0"),
+                    ("DOTNET_NOLOGO", "true"),
+                    ("DOTNET_ROOT", "/layers/sdk"),
+                    ("DOTNET_RUNNING_IN_CONTAINER", "true"),
+                    ("PATH", "/layers/sdk")
+                ]
+            );
+        }
     }
 
     #[test]
