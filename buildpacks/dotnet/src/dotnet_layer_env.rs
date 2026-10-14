@@ -14,6 +14,8 @@ pub(crate) fn xdg_runtime_dir(target: &Target, layer_path: &Path) -> Option<Path
 
 pub(crate) fn prepare_xdg_runtime_dir(path: &Path) -> Result<(), io::Error> {
     fs::create_dir_all(path)?;
+    // XDG runtime directories must be private. New directories use the process umask rather than
+    // inheriting the parent directory's permissions.
     fs::set_permissions(path, fs::Permissions::from_mode(0o700))
 }
 
