@@ -24,9 +24,15 @@ pub(crate) fn handle(
             launch: true,
         },
     )?;
+    let xdg_runtime_dir = dotnet_layer_env::xdg_runtime_dir(&context.target, &runtime_layer.path());
+    if let Some(xdg_runtime_dir) = &xdg_runtime_dir {
+        dotnet_layer_env::prepare_xdg_runtime_dir(xdg_runtime_dir)
+            .map_err(DotnetBuildpackError::PrepareXdgRuntimeDir)?;
+    }
     runtime_layer.write_env(dotnet_layer_env::generate_layer_env(
         &runtime_layer.path(),
         &Scope::Launch,
+        xdg_runtime_dir.as_deref(),
     ))?;
 
     for path in RUNTIME_PATHS {
