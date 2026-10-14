@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Set `XDG_RUNTIME_DIR` for launch processes so .NET can initialize named mutexes on stacks where `HOME` is a symlink.
+- Set `XDG_RUNTIME_DIR` for launch processes so .NET can initialize named mutexes on stacks where `HOME` is a symlink. ([#482](https://github.com/heroku/buildpacks-dotnet/pull/482))
 
 ### Changed
 
