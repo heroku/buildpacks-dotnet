@@ -8,6 +8,15 @@ fn verify_installed_dotnet_runtime_dependencies() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/class_library"),
         |context| {
+        let runtime_dir_output = context.run_shell_command(
+            "test \"${XDG_RUNTIME_DIR}\" = /layers/heroku_dotnet/runtime && test -d \"${XDG_RUNTIME_DIR}\" && test -w \"${XDG_RUNTIME_DIR}\" && echo \"XDG runtime directory is writable.\"",
+        );
+        assert_empty!(runtime_dir_output.stderr);
+        assert_contains!(
+            runtime_dir_output.stdout,
+            "XDG runtime directory is writable."
+        );
+
         let command_output = context.run_shell_command(
             indoc! {r#"
                 set -euo pipefail
