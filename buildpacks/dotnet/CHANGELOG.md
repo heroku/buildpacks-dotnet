@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Set `XDG_RUNTIME_DIR` for launch processes so .NET can initialize named mutexes on stacks where `HOME` is a symlink.
+
 ### Changed
 
 - Updated libcnb to 0.32.0, which improves tarball decompression performance by switching to the `zlib-rs` backend, and includes OpenTelemetry crate upgrades. ([#479](https://github.com/heroku/buildpacks-dotnet/pull/479))
