@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-15
+
 ### Fixed
 
 - On Heroku-22, provide a private default `XDG_RUNTIME_DIR` for launch processes so .NET can initialize named mutexes when the stack's symlinked `HOME` is rejected. ([#482](https://github.com/heroku/buildpacks-dotnet/pull/482))
@@ -467,7 +469,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.16...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.16...v1.1.0
 [1.0.16]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.15...v1.0.16
 [1.0.15]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.14...v1.0.15
 [1.0.14]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.13...v1.0.14
