@@ -556,6 +556,12 @@ fn on_buildpack_error_with_writer(error: &DotnetBuildpackError, mut writer: impl
             "copying .NET runtime files from the SDK layer to the runtime layer",
             io_error,
         ),
+        DotnetBuildpackError::PrepareXdgRuntimeDir(io_error) => log_io_error_to(
+            writer,
+            "Error preparing XDG runtime directory",
+            "creating a private runtime directory for .NET named mutexes",
+            io_error,
+        ),
     }
 }
 
@@ -1091,6 +1097,11 @@ mod tests {
     #[test]
     fn test_copy_runtime_files_error() {
         assert_error_snapshot(DotnetBuildpackError::CopyRuntimeFiles(create_io_error()));
+    }
+
+    #[test]
+    fn test_prepare_xdg_runtime_dir_error() {
+        assert_error_snapshot(DotnetBuildpackError::PrepareXdgRuntimeDir(create_io_error()));
     }
 
     fn assert_error_snapshot(error: DotnetBuildpackError) {
