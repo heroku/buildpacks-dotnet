@@ -1,6 +1,7 @@
 use crate::tests::default_build_config;
 use indoc::indoc;
 use libcnb_test::{TestRunner, assert_contains, assert_empty};
+use std::env;
 
 #[test]
 #[ignore = "integration test"]
@@ -8,6 +9,17 @@ fn verify_installed_dotnet_runtime_dependencies() {
     TestRunner::default().build(
         default_build_config("tests/fixtures/class_library"),
         |context| {
+        if env::var("INTEGRATION_TEST_BUILDER").as_deref() == Ok("heroku/builder:22") {
+            let runtime_dir_output = context.run_shell_command(
+                "test \"${XDG_RUNTIME_DIR}\" = /layers/heroku_dotnet/runtime/xdg-runtime && test -d \"${XDG_RUNTIME_DIR}\" && test -w \"${XDG_RUNTIME_DIR}\" && test \"$(stat --format=%a \"${XDG_RUNTIME_DIR}\")\" = 700 && echo \"XDG runtime directory is private and writable.\"",
+            );
+            assert_empty!(runtime_dir_output.stderr);
+            assert_contains!(
+                runtime_dir_output.stdout,
+                "XDG runtime directory is private and writable."
+            );
+        }
+
         let command_output = context.run_shell_command(
             indoc! {r#"
                 set -euo pipefail

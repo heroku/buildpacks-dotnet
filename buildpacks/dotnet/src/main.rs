@@ -142,9 +142,17 @@ impl Buildpack for DotnetBuildpack {
         let sdk_available_at_launch = matches!(sdk_scope, Scope::Launch | Scope::All);
 
         let sdk_layer = layers::sdk::handle(&context, sdk_available_at_launch, &sdk_artifact)?;
+        let sdk_xdg_runtime_dir = sdk_available_at_launch
+            .then(|| dotnet_layer_env::xdg_runtime_dir(&context.target, &sdk_layer.path()))
+            .flatten();
+        if let Some(xdg_runtime_dir) = &sdk_xdg_runtime_dir {
+            dotnet_layer_env::prepare_xdg_runtime_dir(xdg_runtime_dir)
+                .map_err(DotnetBuildpackError::PrepareXdgRuntimeDir)?;
+        }
         sdk_layer.write_env(dotnet_layer_env::generate_layer_env(
             sdk_layer.path().as_path(),
             &sdk_scope,
+            sdk_xdg_runtime_dir.as_deref(),
         ))?;
 
         let nuget_cache_layer = layers::nuget_cache::handle(&context, sdk_available_at_launch)?;
@@ -418,6 +426,7 @@ enum DotnetBuildpackError {
     ParseBuildpackConfiguration(DotnetBuildpackConfigurationError),
     PublishCommand(fun_run::CmdError),
     CopyRuntimeFiles(io::Error),
+    PrepareXdgRuntimeDir(io::Error),
 }
 
 impl From<DotnetBuildpackError> for libcnb::Error<DotnetBuildpackError> {

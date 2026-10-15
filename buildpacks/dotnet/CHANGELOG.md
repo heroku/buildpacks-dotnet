@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- On Heroku-22, provide a private default `XDG_RUNTIME_DIR` for launch processes so .NET can initialize named mutexes when the stack's symlinked `HOME` is rejected. ([#482](https://github.com/heroku/buildpacks-dotnet/pull/482))
+
 ### Changed
 
 - Updated libcnb to 0.32.0, which improves tarball decompression performance by switching to the `zlib-rs` backend, and includes OpenTelemetry crate upgrades. ([#479](https://github.com/heroku/buildpacks-dotnet/pull/479))
