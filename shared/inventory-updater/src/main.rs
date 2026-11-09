@@ -175,7 +175,7 @@ struct UpstreamData {
     sdk_runtimes: HashMap<Version, RuntimeVersions>,
 }
 
-const SUPPORTED_MAJOR_VERSIONS: &[i32] = &[8, 9, 10];
+const SUPPORTED_MAJOR_VERSIONS: &[i32] = &[8, 9, 10, 11];
 const REQUIRED_ARCHS: [Arch; 2] = [Arch::Amd64, Arch::Arm64];
 
 fn list_upstream_data() -> UpstreamData {
@@ -192,6 +192,10 @@ fn list_upstream_data() -> UpstreamData {
 
         for release in feed.releases {
             for sdk in release.sdks {
+                if *major_version > 10 && !sdk.version.pre.is_empty() {
+                    continue;
+                }
+
                 sdk_runtimes.insert(
                     sdk.version.clone(),
                     RuntimeVersions {
