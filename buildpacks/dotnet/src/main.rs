@@ -29,7 +29,7 @@ use crate::utils::{PathsExt, list_files};
 use bullet_stream::fun_run::{self, CommandWithName};
 use bullet_stream::global::print;
 use bullet_stream::style;
-use indoc::printdoc;
+use indoc::{formatdoc, printdoc};
 use inventory::artifact::{Arch, Os};
 use inventory::{Inventory, ParseInventoryError};
 use libcnb::build::{BuildContext, BuildResult, BuildResultBuilder};
@@ -134,6 +134,21 @@ impl Buildpack for DotnetBuildpack {
         let sdk_version_requirement = detect_sdk_version_requirement(&context, &solution)?;
 
         let sdk_artifact = resolve_sdk_artifact(&context.target, sdk_version_requirement)?;
+        if let Some(eos_date) = end_of_support_date(sdk_artifact.version.major) {
+            print::warning(formatdoc!(
+                "
+                .NET {} reached end of support on {eos_date}.
+
+                Your app can continue to build while this SDK remains in the Heroku
+                inventory, but you should upgrade to a supported .NET version as soon
+                as possible.
+
+                For more information, see:
+                https://devcenter.heroku.com/articles/dotnet-heroku-support-reference#supported-net-versions
+                ",
+                sdk_artifact.version.major,
+            ));
+        }
 
         let sdk_scope = match buildpack_configuration.execution_environment {
             ExecutionEnvironment::Production => Scope::Build,
@@ -334,6 +349,13 @@ fn resolve_sdk_artifact(
                         style::details(format!("{}-{}", artifact.os, artifact.arch))
                     )))
         })
+}
+
+const fn end_of_support_date(major_version: u64) -> Option<&'static str> {
+    match major_version {
+        8 | 9 => Some("November 10, 2026"),
+        _ => None,
+    }
 }
 
 #[instrument(skip_all, err(Debug))]
