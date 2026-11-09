@@ -175,7 +175,7 @@ struct UpstreamData {
     sdk_runtimes: HashMap<Version, RuntimeVersions>,
 }
 
-const SUPPORTED_MAJOR_VERSIONS: &[i32] = &[8, 9, 10];
+const SUPPORTED_MAJOR_VERSIONS: &[i32] = &[8, 9, 10, 11];
 const REQUIRED_ARCHS: [Arch; 2] = [Arch::Amd64, Arch::Arm64];
 
 fn list_upstream_data() -> UpstreamData {
