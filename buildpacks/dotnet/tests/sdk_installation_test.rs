@@ -164,8 +164,8 @@ fn test_sdk_installation_with_global_json_prerelease_sdk() {
                     - SDK version detection
                       - Detected .NET project: `/workspace/foo.csproj`
                       - Detecting version requirement from root global.json file
-                      - Detected version requirement: `=10.0.100-preview.7.25380.108`
-                      - Resolved .NET SDK version `10.0.100-preview.7.25380.108`"
+                      - Detected version requirement: `=11.0.100-rc.3.26522.148`
+                      - Resolved .NET SDK version `11.0.100-rc.3.26522.148`"
                 }
             );
         },
