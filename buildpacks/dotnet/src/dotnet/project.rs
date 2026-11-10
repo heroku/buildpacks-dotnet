@@ -4,6 +4,8 @@ use serde::Deserialize;
 use std::io;
 use std::path::{Path, PathBuf};
 
+const DEFAULT_FILE_BASED_APP_TARGET_FRAMEWORK: &str = "net11.0";
+
 #[derive(Debug)]
 pub(crate) struct Project {
     pub(crate) path: PathBuf,
@@ -112,7 +114,7 @@ impl Project {
         } else {
             find_target_framework_from_directory_build_props(path)
                 .map_err(LoadError::DirectoryBuildProps)?
-                .unwrap_or_else(|| "net11.0".to_string())
+                .unwrap_or_else(|| DEFAULT_FILE_BASED_APP_TARGET_FRAMEWORK.to_string())
         };
         // File-based apps are executables, so pass 'Exe' as the output type when
         // when inferring project type (e.g. default to ConsoleApplication).
@@ -448,8 +450,10 @@ Console.WriteLine("foobar");
 
         // Should default to "Microsoft.NET.Sdk" and "Exe" output, so we expect ConsoleApplication
         assert_eq!(project.project_type, ProjectType::ConsoleApplication);
-        // Should default to "net11.0"
-        assert_eq!(project.target_framework, "net11.0");
+        assert_eq!(
+            project.target_framework,
+            DEFAULT_FILE_BASED_APP_TARGET_FRAMEWORK
+        );
         assert_eq!(project.assembly_name, "DefaultApp");
     }
 
@@ -513,7 +517,10 @@ Console.WriteLine("foobar");
         let project = Project::load_from_file_based_app(&app_path).unwrap();
 
         assert_eq!(project.project_type, ProjectType::WorkerService);
-        assert_eq!(project.target_framework, "net11.0");
+        assert_eq!(
+            project.target_framework,
+            DEFAULT_FILE_BASED_APP_TARGET_FRAMEWORK
+        );
         assert_eq!(project.assembly_name, "WorkerApp");
     }
 
