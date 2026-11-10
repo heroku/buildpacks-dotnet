@@ -2,7 +2,9 @@ use crate::tests::default_build_config;
 use crate::tests::get_dotnet_arch;
 use indoc::formatdoc;
 use indoc::indoc;
-use libcnb_test::{BuildpackReference, TestRunner, assert_contains, assert_empty};
+use libcnb_test::{
+    BuildpackReference, TestRunner, assert_contains, assert_empty, assert_not_contains,
+};
 
 #[test]
 #[ignore = "integration test"]
@@ -20,6 +22,11 @@ fn test_sdk_resolution_with_target_framework_8_0() {
                       - Detected version requirement: `^8.0`
                       - Resolved .NET SDK version `8.0"}
             );
+            assert_contains!(
+                context.pack_stdout,
+                ".NET 8 reached end of support on November 10, 2026."
+            );
+            assert_contains!(context.pack_stdout, "upgrade to a supported .NET version");
         },
     );
 }
@@ -39,6 +46,10 @@ fn test_sdk_resolution_with_target_framework_9_0() {
                       - Inferring version requirement from `/workspace/foo.csproj`
                       - Detected version requirement: `^9.0`
                       - Resolved .NET SDK version `9.0"}
+            );
+            assert_contains!(
+                context.pack_stdout,
+                ".NET 9 reached end of support on November 10, 2026."
             );
         },
     );
@@ -60,6 +71,7 @@ fn test_sdk_resolution_with_target_framework_10_0() {
                       - Detected version requirement: `^10.0`
                       - Resolved .NET SDK version `10.0"}
             );
+            assert_not_contains!(context.pack_stdout, "reached end of support");
         },
     );
 }
@@ -132,6 +144,16 @@ fn test_sdk_installation_with_global_json() {
                       - Detecting version requirement from root global.json file
                       - Detected version requirement: `=8.0.101`
                       - Resolved .NET SDK version `8.0.101` (linux-{artifact_arch})
+
+                    ! .NET 8 reached end of support on November 10, 2026.
+                    !
+                    ! Your app can continue to build while this SDK remains in the Heroku
+                    ! inventory, but you should upgrade to a supported .NET version as soon
+                    ! as possible.
+                    !
+                    ! For more information, see:
+                    ! https://devcenter.heroku.com/articles/dotnet-heroku-support-reference#supported-net-versions
+
                     - SDK installation
                       - Downloading SDK from https://builds.dotnet.microsoft.com/dotnet/Sdk/8.0.101/dotnet-sdk-8.0.101-linux-{dotnet_arch}.tar.gz"
                 )
