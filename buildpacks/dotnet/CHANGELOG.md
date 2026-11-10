@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Builds using .NET 8 or .NET 9 now display an end-of-support warning. ([#494](https://github.com/heroku/buildpacks-dotnet/pull/494))
 
+### Added
+
+- Support for .NET SDK versions: 8.0.134, 8.0.428, 9.0.124, 9.0.321, 10.0.115, 10.0.404, 11.0.100.
+
 ## [1.1.1] - 2026-10-25
 
 ### Added
