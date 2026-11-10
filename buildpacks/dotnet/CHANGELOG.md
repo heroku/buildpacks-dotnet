@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-10
+
 ### Changed
 
 - Builds using .NET 8 or .NET 9 now display an end-of-support warning. ([#494](https://github.com/heroku/buildpacks-dotnet/pull/494))
@@ -483,7 +485,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial implementation.
 
-[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v1.1.1...HEAD
+[unreleased]: https://github.com/heroku/buildpacks-dotnet/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/heroku/buildpacks-dotnet/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/heroku/buildpacks-dotnet/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.16...v1.1.0
 [1.0.16]: https://github.com/heroku/buildpacks-dotnet/compare/v1.0.15...v1.0.16
