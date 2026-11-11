@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- File-based apps without an explicit target framework now default to .NET 11. ([#495](https://github.com/heroku/buildpacks-dotnet/pull/495))
+
 ## [1.2.0] - 2026-11-10
 
 ### Changed

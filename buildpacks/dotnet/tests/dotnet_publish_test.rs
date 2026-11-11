@@ -175,7 +175,7 @@ fn test_dotnet_publish_file_based_app_basic_console_with_assembly_name() {
             );
             assert_contains!(
                 context.pack_stdout,
-                "- Detected version requirement: `^10.0`"
+                "- Detected version requirement: `^11.0`"
             );
             assert_contains!(
                 context.pack_stdout,
@@ -209,7 +209,7 @@ fn test_dotnet_publish_file_based_app_basic_web() {
             );
             assert_contains!(
                 context.pack_stdout,
-                "- Detected version requirement: `^10.0`"
+                "- Detected version requirement: `^11.0`"
             );
             assert_contains!(
                 context.pack_stdout,
